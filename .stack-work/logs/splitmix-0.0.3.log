@@ -1,0 +1,8 @@
+Configuring splitmix-0.0.3...
+Preprocessing library for splitmix-0.0.3..
+Building library for splitmix-0.0.3..
+[1 of 3] Compiling Data.Bits.Compat ( src-compat\Data\Bits\Compat.hs, .stack-work\dist\e626a42b\build\Data\Bits\Compat.o )
+[2 of 3] Compiling System.Random.SplitMix ( src\System\Random\SplitMix.hs, .stack-work\dist\e626a42b\build\System\Random\SplitMix.o )
+[3 of 3] Compiling System.Random.SplitMix32 ( src\System\Random\SplitMix32.hs, .stack-work\dist\e626a42b\build\System\Random\SplitMix32.o )
+Installing library in C:\sr\snapshots\c7566c25\lib\x86_64-windows-ghc-8.6.5\splitmix-0.0.3-BieKXhsPr5JADQFNGU6dLm
+Registering library for splitmix-0.0.3..

@@ -1,0 +1,21 @@
+Configuring QuickCheck-2.13.2...
+Preprocessing library for QuickCheck-2.13.2..
+Building library for QuickCheck-2.13.2..
+[ 1 of 16] Compiling Test.QuickCheck.Exception ( Test\QuickCheck\Exception.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Exception.o )
+[ 2 of 16] Compiling Test.QuickCheck.Random ( Test\QuickCheck\Random.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Random.o )
+[ 3 of 16] Compiling Test.QuickCheck.Gen ( Test\QuickCheck\Gen.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Gen.o )
+[ 4 of 16] Compiling Test.QuickCheck.Gen.Unsafe ( Test\QuickCheck\Gen\Unsafe.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Gen\Unsafe.o )
+[ 5 of 16] Compiling Test.QuickCheck.Arbitrary ( Test\QuickCheck\Arbitrary.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Arbitrary.o )
+[ 6 of 16] Compiling Test.QuickCheck.Poly ( Test\QuickCheck\Poly.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Poly.o )
+[ 7 of 16] Compiling Test.QuickCheck.Modifiers ( Test\QuickCheck\Modifiers.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Modifiers.o )
+[ 8 of 16] Compiling Test.QuickCheck.Function ( Test\QuickCheck\Function.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Function.o )
+[ 9 of 16] Compiling Test.QuickCheck.Text ( Test\QuickCheck\Text.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Text.o )
+[10 of 16] Compiling Test.QuickCheck.State ( Test\QuickCheck\State.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\State.o )
+[11 of 16] Compiling Test.QuickCheck.Property ( Test\QuickCheck\Property.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Property.o )
+[12 of 16] Compiling Test.QuickCheck.Test ( Test\QuickCheck\Test.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Test.o )
+[13 of 16] Compiling Test.QuickCheck.Monadic ( Test\QuickCheck\Monadic.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Monadic.o )
+[14 of 16] Compiling Test.QuickCheck.All ( Test\QuickCheck\All.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\All.o )
+[15 of 16] Compiling Test.QuickCheck.Features ( Test\QuickCheck\Features.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck\Features.o )
+[16 of 16] Compiling Test.QuickCheck  ( Test\QuickCheck.hs, .stack-work\dist\e626a42b\build\Test\QuickCheck.o )
+Installing library in C:\sr\snapshots\c7566c25\lib\x86_64-windows-ghc-8.6.5\QuickCheck-2.13.2-ELw76TsVduo6OXHYodvTIH
+Registering library for QuickCheck-2.13.2..

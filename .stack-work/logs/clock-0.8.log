@@ -1,0 +1,6 @@
+Configuring clock-0.8...
+Preprocessing library for clock-0.8..
+Building library for clock-0.8..
+[1 of 1] Compiling System.Clock     ( .stack-work\dist\e626a42b\build\System\Clock.hs, .stack-work\dist\e626a42b\build\System\Clock.o )
+Installing library in C:\sr\snapshots\c7566c25\lib\x86_64-windows-ghc-8.6.5\clock-0.8-KQdRNfSnPL2Kq3p84TuxcV
+Registering library for clock-0.8..

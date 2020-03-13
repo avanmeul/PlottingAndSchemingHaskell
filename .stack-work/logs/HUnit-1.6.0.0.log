@@ -1,0 +1,11 @@
+Configuring HUnit-1.6.0.0...
+Preprocessing library for HUnit-1.6.0.0..
+Building library for HUnit-1.6.0.0..
+[1 of 6] Compiling Paths_HUnit      ( .stack-work\dist\e626a42b\build\autogen\Paths_HUnit.hs, .stack-work\dist\e626a42b\build\Paths_HUnit.o )
+[2 of 6] Compiling Test.HUnit.Lang  ( src\Test\HUnit\Lang.hs, .stack-work\dist\e626a42b\build\Test\HUnit\Lang.o )
+[3 of 6] Compiling Test.HUnit.Base  ( src\Test\HUnit\Base.hs, .stack-work\dist\e626a42b\build\Test\HUnit\Base.o )
+[4 of 6] Compiling Test.HUnit.Terminal ( src\Test\HUnit\Terminal.hs, .stack-work\dist\e626a42b\build\Test\HUnit\Terminal.o )
+[5 of 6] Compiling Test.HUnit.Text  ( src\Test\HUnit\Text.hs, .stack-work\dist\e626a42b\build\Test\HUnit\Text.o )
+[6 of 6] Compiling Test.HUnit       ( src\Test\HUnit.hs, .stack-work\dist\e626a42b\build\Test\HUnit.o )
+Installing library in C:\sr\snapshots\c7566c25\lib\x86_64-windows-ghc-8.6.5\HUnit-1.6.0.0-C6N9GX1vz2Z4nPL5JbE3ac
+Registering library for HUnit-1.6.0.0..
