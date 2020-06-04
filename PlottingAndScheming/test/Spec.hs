@@ -57,8 +57,6 @@ t5 = parseString "\"thishey\"dsdds"
 t6 = decode "true" :: Maybe Bool
 t7 = encode True
 
-
-
 bString :: B.ByteString
 bString = "This is a byte string"
 
@@ -88,8 +86,17 @@ txtTail = T.tail "First"
 
 t8 = decode "[1,2,3]" :: Maybe [Int]
 
+tokTest = 
+    [ Comment "hey"
+    , LeftParen 
+    , RightParen ]
+
+tokTest1 = getToken tokTest
+
 main :: IO ()
 main = do
+    putStrLn $ show $ fac 5
+    putStrLn $ show tokTest1
     putStrLn "(car '(234324fsdfds-sdfdsfsdf3.5))"
     putStrLn $ show t1
     putStrLn $ show t1'

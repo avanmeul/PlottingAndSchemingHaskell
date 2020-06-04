@@ -3,11 +3,13 @@ André van Meulebrouck
 scheme.hs
 -}
 
+--this file has is not currently in use
+
 import Text.Regex.Posix
 import Control.Applicative
 
 data Token =
-	Comment String |
+	TokComment String |
 	LeftParen |
 	RightParen |
 	Dot |
@@ -114,7 +116,7 @@ parseComment [] = (Nothing, [])
 parseComment s = 
 	if head s == ';' then
 		let tok = takeWhile (\x -> x /= '\n') (tail s) in
-		(Just (Comment tok), drop ((length tok) + 1) s)
+		(Just (TokComment tok), drop ((length tok) + 1) s)
 	else
 		(Nothing, s)
 
