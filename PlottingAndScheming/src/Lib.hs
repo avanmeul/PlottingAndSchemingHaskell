@@ -7,6 +7,7 @@ scheme.hs
 module Lib where
 
 import Text.Regex.Posix
+import Text.Read
 import Test.HUnit
 import Data.List
 -- import Data.Aeson
@@ -359,11 +360,6 @@ scmEnv = (++)
 --     static member create () =
 --         { car = None; cdr = None; }
 
-data ScmCons = ScmCons --done
-    { scmCar :: Maybe ScmObject
-    , scmCdr :: Maybe ScmObject }
-    deriving (Eq, Show)
-
 -- and scmBlock = {
 --     block : scmCons;
 --     blockType : scmBlockType;
@@ -482,10 +478,12 @@ data ScmBlock = ScmBlock
 --     | Cons of scmCons
 --     | Thunk of scmThunk
 
+
 data ScmObject =
     ObjAtom ScmAtom |
     ObjBlock ScmBlock |
     ObjCons ScmCons |
+    ObjError String |
     ObjThunk ScmThunk
     deriving (Eq, Show)
 
@@ -572,19 +570,79 @@ getToken ((TokComment _) : t) = getToken t
 getToken ((TokWhitespace _) : t) = getToken t
 getToken (h : t) = (Just h, t)
 
-foo :: [Token] -> Either String ScmObject
-foo = undefined
+--below:  how to have a nested recursive function (as will be needed in walking a list in buildHeap)
+{-
+tokParse :: String -> Either String [Token]
+tokParse [] = Right []
+tokParse s = parse' tokParseFunctions s [] where
+    parse' :: [String -> Either String (Maybe Token, String)] -> String -> [Token] -> Either String [Token]
+    parse' [] s tokens = Left $ "tokParse:  unparsable expression:  " ++ s --should this just return tokens?
+    parse' parsers [] tokens = Right $ reverse tokens
+    parse' parsers s tokens = --undefined
+        let res = (head parsers) s in
+            case res of
+                Right (Nothing, y) -> parse' (tail parsers) y tokens
+                Right (Just x, y) -> parse' tokParseFunctions y (x : tokens)
+                Left x -> Left x
+-}
 
-buildHeap :: [Token] -> Either String ScmObject
-buildHeap [] = Left "out of tokens"
--- buildHeap Comment x = Nothing --this should never happen
+data ScmCons = ScmCons
+    { scmCar :: ScmObject
+    , scmCdr :: ScmObject }
+    deriving (Eq, Show)
+
+listToCons :: [ScmObject] -> Maybe ScmCons -> Maybe ScmCons
+listToCons [] c = c
+listToCons (h : t) c = --simplify this
+    case c of
+        Nothing ->
+            let cons = ScmCons { scmCar = h, scmCdr = ObjAtom $ AtmSymbol "()" } in
+                listToCons t $ Just cons
+        Just x ->
+            let cons = ScmCons { scmCar = h, scmCdr = ObjCons x } in
+                listToCons t $ Just cons
+
+buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
+buildHeap [] = Left ("out of tokens", [])
+-- buildHeap Comment x = Nothing --this should never happen since the caller should have removed comments and whitespace
+buildHeap ((TokSymbol x) : t) =
+    Right (ObjAtom $ AtmSymbol x, t)
 buildHeap ((TokString x) : t) =
-    Right $ ObjAtom $ AtmString x
+    Right (ObjAtom $ AtmString x, t)
 buildHeap ((TokInteger x) : t) =
-    Right $ ObjAtom $ AtmInt 3 --need to convert x to int
--- buildHeap _ = undefined
-
-buildHeap tokens = undefined
+    case (readMaybe x :: Maybe Int) of
+        Just i -> Right (ObjAtom $ AtmInt i, t)
+        Nothing -> Right (ObjError $ "buildHeap:  parse fail on int:  " ++ x, t)
+buildHeap ((TokFloat x) : t) =
+    case (readMaybe x :: Maybe Float) of
+        Just f -> Right (ObjAtom $ AtmFloat f, t)
+        Nothing -> Right (ObjError $ "buildHeap:  parse fail on float:  " ++ x, t)
+buildHeap (TokLeftParen : TokRightParen : t) =
+    --this should go into the symbol table, searching for "()"
+    Right (ObjAtom $ AtmSymbol "()", t)
+buildHeap (TokLeftParen : t) = --walk across top level list until a right paren is discovered
+    let res = iter t [] where
+        iter :: [Token] -> [ScmObject] -> Either (String, [Token]) (ScmCons, [Token])
+        iter [] lst =
+            Left ("out of tokens", [])
+        iter (TokRightParen : t) lst =
+            let res = listToCons lst Nothing in
+                case (res) of
+                    Nothing -> Left ("buildHeap:  failure to create cons cells", t)
+                    Just x -> Right (x, t)
+        iter toks lst =
+            case (buildHeap toks) of
+                Left x -> Left x
+                Right (o, t) ->
+                    iter t (o : lst)
+    in
+        case (res) of
+            Left (e, t) -> Left ("buildHeap:  failed to create cons cells", t)
+            Right (x, t) -> Right (ObjCons x, t)
+buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occurred without a prior left, i.e. )(
+    Left ("buildHeap:  right paren before left", t)
+buildHeap tokens = --this should never happen
+    Left ("not implemented", tokens)
 
 fac :: Int -> Int
 fac 0 = 1
@@ -1141,6 +1199,9 @@ someFunc = do
     putStrLn $ show $ fac 5
     putStrLn $ show $ parseTest' parseTests
     putStrLn $ show $ getToken tokTest
+    putStrLn $ show $ buildHeap [TokString "hey"]
+    -- let x = readMaybe "3" :: Integer
+    -- putStrLn $ show $ readMaybe "3" :: Integer
     putStrLn ("done")
 
 {--
