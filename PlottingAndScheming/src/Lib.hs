@@ -586,6 +586,16 @@ tokParse s = parse' tokParseFunctions s [] where
                 Left x -> Left x
 -}
 
+symTable :: [String]
+symTable = ["()", "#t", "#f"]
+
+nil :: String
+nil = 
+    let res = find (=="()") symTable in
+        case res of
+            Nothing -> error "nil not found in symbol table"
+            Just x -> x
+
 data ScmCons = ScmCons
     { scmCar :: ScmObject
     , scmCdr :: ScmObject }
@@ -621,15 +631,14 @@ buildHeap ((TokFloat x) : t) =
         Just f -> Right (ObjAtom $ AtmFloat f, t)
         Nothing -> Right (ObjError $ "buildHeap:  parse fail on float:  " ++ x, t)
 buildHeap (TokLeftParen : TokRightParen : t) =
-    --this should go into the symbol table, searching for "()"
-    Right (ObjAtom $ AtmSymbol "()", t)
+    Right (ObjAtom $ AtmSymbol nil, t)
 buildHeap (TokLeftParen : t) = --walk across top level list until a right paren is discovered
     let res = iter t [] where
         iter :: [Token] -> [ScmObject] -> Either (String, [Token]) (ScmCons, [Token])
         iter [] lst =
             Left ("out of tokens", [])
         iter (TokRightParen : t) lst =
-            let res = listToCons lst (ObjAtom $ AtmSymbol "()") in
+            let res = listToCons lst (ObjAtom $ AtmSymbol nil) in
                 case (res) of
                     Nothing -> Left ("buildHeap:  failure to create cons cells", t)
                     Just x -> Right (x, t)
@@ -736,7 +745,7 @@ printHeap x =
                 iter :: ScmObject -> [String] -> [String]
                 iter obj lst = 
                     case (obj) of
-                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjAtom (AtmSymbol "()")) }) ->
+                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjAtom (AtmSymbol nil)) }) ->
                             ")" : printHeap h : lst
                         ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) }) -> --cdr has more list elements
                             iter (ObjCons t) (" " : (printHeap h) : lst)
@@ -1314,7 +1323,8 @@ someFunc = do
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokDot, TokSymbol "c", TokRightParen] in
         putStrLn $ show $ printHeap x        
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokLeftParen, TokSymbol "b", TokSymbol "c", TokRightParen, TokSymbol "d", TokRightParen] in
-        putStrLn $ show $ printHeap x      
+        putStrLn $ show $ printHeap x
+    putStrLn (nil)  
     putStrLn ("done")
 
 {--
