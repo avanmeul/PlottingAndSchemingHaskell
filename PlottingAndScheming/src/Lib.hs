@@ -591,19 +591,19 @@ data ScmCons = ScmCons
     , scmCdr :: ScmObject }
     deriving (Eq, Show)
 
---to do:  take in parameter for last cdr, generalizes for () vs dotted
-
-
-listToConsWithCdr :: [ScmObject] -> Maybe ScmCons -> ScmObject -> Maybe ScmCons
-listToConsWithCdr [] c _ = c
-listToConsWithCdr (h : t) c cdr = --simplify this
-    case c of
-        Nothing ->
-            let cons = ScmCons { scmCar = h, scmCdr = cdr } in
-                listToConsWithCdr t (Just cons) cdr
-        Just x ->
-            let cons = ScmCons { scmCar = h, scmCdr = ObjCons x } in
-                listToConsWithCdr t (Just cons) cdr
+listToCons :: [ScmObject] -> ScmObject -> Maybe ScmCons
+listToCons [] _ = Nothing
+listToCons x cdr = 
+    iter x Nothing where
+        iter :: [ScmObject] -> Maybe ScmCons -> Maybe ScmCons
+        iter [] cells = cells
+        iter (h : t) cells = 
+            let prev = 
+                    case cells of
+                            Nothing -> cdr
+                            Just x -> ObjCons x 
+            in
+                iter t $ Just ScmCons { scmCar = h, scmCdr = prev }
 
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
@@ -629,7 +629,7 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
         iter [] lst =
             Left ("out of tokens", [])
         iter (TokRightParen : t) lst =
-            let res = listToConsWithCdr lst Nothing (ObjAtom $ AtmSymbol "()") in
+            let res = listToCons lst (ObjAtom $ AtmSymbol "()") in
                 case (res) of
                     Nothing -> Left ("buildHeap:  failure to create cons cells", t)
                     Just x -> Right (x, t)
@@ -637,7 +637,7 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
             let cdr = buildHeap t in
                 case (cdr) of 
                     Right (o, TokRightParen : rst) -> 
-                        let res = listToConsWithCdr lst Nothing o in
+                        let res = listToCons lst o in
                             case (res) of 
                                 Nothing -> Left ("buildHeap:  failure to create dotted pair", rst)
                                 Just x -> Right (x, rst)
@@ -1311,7 +1311,10 @@ someFunc = do
         putStrLn $ show $ printHeap x
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokSymbol "b", TokSymbol "c", TokRightParen] in
         putStrLn $ show $ printHeap x
-    --to do:  test dotted pairs      
+    let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokDot, TokSymbol "c", TokRightParen] in
+        putStrLn $ show $ printHeap x        
+    let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokLeftParen, TokSymbol "b", TokSymbol "c", TokRightParen, TokSymbol "d", TokRightParen] in
+        putStrLn $ show $ printHeap x      
     putStrLn ("done")
 
 {--
