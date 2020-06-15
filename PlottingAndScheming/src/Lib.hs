@@ -644,6 +644,94 @@ buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occ
 buildHeap tokens = --this should never happen
     Left ("not implemented", tokens)
 
+--     static member printHeap (heap : scmObject) : string =
+--         let rec iter heap =
+--             match heap with
+--             | scmObject.Atom a ->
+--                 match a with
+--                 | scmAtom.Symbol s ->
+--                     s
+--                 | scmAtom.Float f ->
+--                     f.ToString ()
+--                 | scmAtom.Int i ->
+--                     i.ToString ()
+--                 | scmAtom.Complex c ->
+--                     c.ToString ()
+--                 | scmAtom.String s ->
+--                     s
+--                 | scmAtom.Sharp s ->
+--                     "#" + s
+--                 | scmAtom.Primitive p ->
+--                     "primitive function:  " + p.ToString ()
+--             | scmObject.Thunk t ->
+--                 let t = t.value
+--                 iter t
+--             | scmObject.Block b ->
+--                 match b.blockType with
+--                 | scmBlockType.Lambda ->
+--                     "lambda"
+--                 | scmBlockType.Let ->
+--                     "let"
+--             | scmObject.Cons c ->
+--                 //walk across a list
+--                 let mutable s = "("
+--                 let mutable cell = c
+--                 let mutable keepGoing = true
+--                 let mutable firstCell = true
+--                 while keepGoing do
+--                     match cell.car, cell.cdr with
+--                     | None, None ->
+--                         s <- s + ")"
+--                         keepGoing <- false
+--                     | Some h, Some t ->
+--                         match t with
+--                         | scmObject.Atom _ ->
+--                             s <- s + (iter h) + " . " + (iter t) + ")"
+--                             keepGoing <- false
+--                         | scmObject.Block b ->
+--                             failwith "not implemented yet"
+--                         | scmObject.Cons c ->
+--                             if not firstCell then
+--                                 s <- s + " "
+--                             s <- s + (iter h) //+ " "
+--                             cell <- c
+--                         | scmObject.Thunk t ->
+--                             let t = t.value
+--                             s <- s + (iter t)
+--                     | Some h, None ->
+--                         if not firstCell then
+--                             s <- s + " "
+--                         s <- s + (iter h) + ")"
+--                         keepGoing <- false
+--                     | None, _ ->
+--                         failwith "this should never happen:  bad list"
+--                     firstCell <- false
+--                 s
+--         iter heap
+
+--to do:  dotted pairs inj buildHeap, printHeap handles them okay (probably)
+
+printHeap :: ScmObject -> String
+printHeap x = 
+    case x of 
+        ObjAtom x -> 
+            case x of
+                AtmSymbol x -> x
+                otherwise -> undefined
+        ObjCons x -> 
+            let res = iter (ObjCons x) ["("] where
+                iter :: ScmObject -> [String] -> [String]
+                iter obj lst = 
+                    case (obj) of
+                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjAtom (AtmSymbol "()")) }) ->
+                            ")" : printHeap h : lst
+                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) }) -> --cdr has more list elements
+                            iter (ObjCons t) (" " : (printHeap h) : lst)
+                        ObjCons (ScmCons { scmCar = h, scmCdr = t }) -> --cdr isn't cons and isn't ()
+                            ")" : (printHeap t) : " . " : (printHeap h) : lst                                        
+            in 
+                concat (reverse res)
+
 fac :: Int -> Int
 fac 0 = 1
 fac n = n * (fac $ n - 1)
@@ -1200,8 +1288,17 @@ someFunc = do
     putStrLn $ show $ parseTest' parseTests
     putStrLn $ show $ getToken tokTest
     putStrLn $ show $ buildHeap [TokString "hey"]
+    -- putStrLn $ show $ buildHeap [TokLeftParen, TokSymbol "a", TokSymbol "b", TokSymbol "c", TokRightParen]
+    putStrLn $ show $ buildHeap [TokLeftParen, TokSymbol "a", TokLeftParen, TokSymbol "b", TokRightParen, TokSymbol "c", TokRightParen]
     -- let x = readMaybe "3" :: Integer
     -- putStrLn $ show $ readMaybe "3" :: Integer
+    -- putStrLn $ show $ printHeap $ ObjAtom $ AtmSymbol "hey"
+    -- putStrLn $ show $ printHeap $ buildHeap [TokLeftParen, TokSymbol "a", TokLeftParen, TokSymbol "b", TokRightParen, TokSymbol "c", TokRightParen]
+    let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokLeftParen, TokSymbol "b", TokRightParen, TokSymbol "c", TokRightParen] in
+        putStrLn $ show $ printHeap x
+    let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokSymbol "b", TokSymbol "c", TokRightParen] in
+        putStrLn $ show $ printHeap x
+    --dotted pairs      
     putStrLn ("done")
 
 {--
