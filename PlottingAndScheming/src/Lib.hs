@@ -591,16 +591,19 @@ data ScmCons = ScmCons
     , scmCdr :: ScmObject }
     deriving (Eq, Show)
 
-listToCons :: [ScmObject] -> Maybe ScmCons -> Maybe ScmCons
-listToCons [] c = c
-listToCons (h : t) c = --simplify this
+--to do:  take in parameter for last cdr, generalizes for () vs dotted
+
+
+listToConsWithCdr :: [ScmObject] -> Maybe ScmCons -> ScmObject -> Maybe ScmCons
+listToConsWithCdr [] c _ = c
+listToConsWithCdr (h : t) c cdr = --simplify this
     case c of
         Nothing ->
-            let cons = ScmCons { scmCar = h, scmCdr = ObjAtom $ AtmSymbol "()" } in
-                listToCons t $ Just cons
+            let cons = ScmCons { scmCar = h, scmCdr = cdr } in
+                listToConsWithCdr t (Just cons) cdr
         Just x ->
             let cons = ScmCons { scmCar = h, scmCdr = ObjCons x } in
-                listToCons t $ Just cons
+                listToConsWithCdr t (Just cons) cdr
 
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
@@ -626,10 +629,20 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
         iter [] lst =
             Left ("out of tokens", [])
         iter (TokRightParen : t) lst =
-            let res = listToCons lst Nothing in
+            let res = listToConsWithCdr lst Nothing (ObjAtom $ AtmSymbol "()") in
                 case (res) of
                     Nothing -> Left ("buildHeap:  failure to create cons cells", t)
                     Just x -> Right (x, t)
+        iter (TokDot : t) lst = 
+            let cdr = buildHeap t in
+                case (cdr) of 
+                    Right (o, TokRightParen : rst) -> 
+                        let res = listToConsWithCdr lst Nothing o in
+                            case (res) of 
+                                Nothing -> Left ("buildHeap:  failure to create dotted pair", rst)
+                                Just x -> Right (x, rst)
+                    otherwise ->
+                        Left ("buildHeap:  bad tail in dotted pair", t)
         iter toks lst =
             case (buildHeap toks) of
                 Left x -> Left x
@@ -1298,7 +1311,7 @@ someFunc = do
         putStrLn $ show $ printHeap x
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokSymbol "b", TokSymbol "c", TokRightParen] in
         putStrLn $ show $ printHeap x
-    --dotted pairs      
+    --to do:  test dotted pairs      
     putStrLn ("done")
 
 {--
