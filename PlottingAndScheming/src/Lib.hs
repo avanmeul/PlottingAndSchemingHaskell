@@ -589,6 +589,9 @@ tokParse s = parse' tokParseFunctions s [] where
 symTable :: [String]
 symTable = ["()", "#t", "#f"]
 
+--to do:  search symbol table for symbol
+--to do:  return symbol if found, add it if not found (then return newly added symbol)
+
 symNil :: String
 symNil = 
     let res = find (=="()") symTable in
@@ -601,31 +604,36 @@ data ScmCons = ScmCons
     , scmCdr :: ScmObject }
     deriving (Eq, Show)
 
-listToCons :: [ScmObject] -> ScmObject -> Maybe ScmCons
-listToCons [] _ = Nothing
-listToCons x cdr = 
-    iter x Nothing where
-        iter :: [ScmObject] -> Maybe ScmCons -> Maybe ScmCons
-        iter [] cells = cells
-        iter (h : t) cells = 
-            let prev = 
-                    case cells of
-                            Nothing -> cdr
-                            Just x -> ObjCons x 
-            in
-                iter t $ Just ScmCons { scmCar = h, scmCdr = prev }
+addToCons :: ScmCons -> [ScmObject] -> Maybe ScmCons
+addToCons cons [] = Just cons
+addToCons cons (h : t) = 
+    let next =  ScmCons { scmCar = h, scmCdr = ObjCons cons } 
+    in addToCons next t
+
+createCons :: [ScmObject] -> Maybe ScmCons
+createCons [] = Nothing
+createCons (h : t) = 
+    let cons = ScmCons { scmCar = h, scmCdr = ObjAtom $ AtmSymbol symNil } 
+    in addToCons cons t
+
+createPair :: [ScmObject] -> Maybe ScmCons
+createPair [] = Nothing
+createPair (h : []) = Nothing
+createPair (h1 : h2 : t) = 
+    let cons = ScmCons { scmCar = h2, scmCdr = h1 } 
+    in addToCons cons t
 
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
 -- buildHeap Comment x = Nothing --this should never happen since the caller should have removed comments and whitespace
-buildHeap ((TokSymbol x) : t) =
+buildHeap ((TokSymbol x) : t) = --need to add symbol to symbol table (to do)
     Right (ObjAtom $ AtmSymbol x, t)
 buildHeap (TokSingleQuote : t) =
     let res = buildHeap t in
         case res of 
             Left (m, t) -> Left (m, t)
             Right (x, t) -> 
-                case (listToCons [x, ObjAtom $ AtmSymbol "quote"] (ObjAtom $ AtmSymbol symNil)) of
+                case (createCons [x, ObjAtom $ AtmSymbol "quote"]) of
                     Nothing -> Left ("buildHeap:  failed to create object of a quote", t)
                     Just x -> Right (ObjCons x, t)
 buildHeap ((TokString x) : t) =
@@ -646,7 +654,7 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
         iter [] lst =
             Left ("out of tokens", [])
         iter (TokRightParen : t) lst =
-            let res = listToCons lst (ObjAtom $ AtmSymbol symNil) in
+            let res = createCons lst in
                 case (res) of
                     Nothing -> Left ("buildHeap:  failure to create cons cells", t)
                     Just x -> Right (x, t)
@@ -654,10 +662,11 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
             let cdr = buildHeap t in
                 case (cdr) of 
                     Right (o, TokRightParen : rst) -> 
-                        let res = listToCons lst o in
+                        let res = createPair (o : lst) in
                             case (res) of 
                                 Nothing -> Left ("buildHeap:  failure to create dotted pair", rst)
-                                Just x -> Right (x, rst)
+                                Just x -> 
+                                    Right (x, rst)
                     otherwise ->
                         Left ("buildHeap:  bad tail in dotted pair", t)
         iter toks lst =
@@ -753,7 +762,7 @@ printHeap x =
                 iter :: ScmObject -> [String] -> [String]
                 iter obj lst = 
                     case (obj) of
-                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjAtom (AtmSymbol symNil)) }) ->
+                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjAtom (AtmSymbol "()")) }) ->
                             ")" : printHeap h : lst
                         ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) }) -> --cdr has more list elements
                             iter (ObjCons t) (" " : (printHeap h) : lst)
@@ -1328,8 +1337,14 @@ someFunc = do
         putStrLn $ show $ printHeap x
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokSymbol "b", TokSymbol "c", TokRightParen] in
         putStrLn $ show $ printHeap x
+    putStrLn ("(a . c) = ")
+    let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokDot, TokSymbol "c", TokRightParen] in
+        putStrLn $ show x
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokDot, TokSymbol "c", TokRightParen] in
         putStrLn $ show $ printHeap x        
+    putStrLn ("(a b . c) = ")
+    let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokSymbol "b", TokDot, TokSymbol "c", TokRightParen] in
+        putStrLn $ show $ printHeap x               
     let Right (x, _) = buildHeap [TokLeftParen, TokSymbol "a", TokLeftParen, TokSymbol "b", TokSymbol "c", TokRightParen, TokSymbol "d", TokRightParen] in
         putStrLn $ show $ printHeap x
     -- putStrLn (symNil)
