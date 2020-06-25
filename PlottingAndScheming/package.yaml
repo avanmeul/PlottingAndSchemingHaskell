@@ -26,7 +26,14 @@ dependencies:
 - HUnit
 - aeson
 - bytestring
+- mtl
+# - state
+# - control
 # - HSpec
+
+extra-deps:
+# - control-monad
+# - mtl-2.2.2
 
 library:
   source-dirs: src

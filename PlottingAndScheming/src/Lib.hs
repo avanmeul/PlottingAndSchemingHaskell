@@ -8,8 +8,11 @@ module Lib where
 
 import Text.Regex.Posix
 import Text.Read
-import Test.HUnit
+-- import Test.HUnit
 import Data.List
+-- import Control.Monad.State.Lazy
+import Control.Monad.State
+import Data.IORef
 -- import Data.Aeson
 -- import Test.HSpec
 
@@ -276,19 +279,32 @@ and scmStack = {
 --     | Int of int
 --     //| Bool of bool
 
-data ScmAtom =
-    AtmString String |
-    AtmSymbol String |
-    --Primitive :: scmCons -> Maybe scmBlock -> scmObject
-    AtmFloat Float |
-    -- AtmComplex complex
-    AtmSharp String |
-    AtmInt Int
+data ScmImm = 
+    ImmSym String |
+    ImmRat (Int, Int) |
+    ImmInt Int |
+    ImmFloat Float |
+    ImmComplex (Float, Float) |
+    ImmString String
     deriving (Eq, Show)
+
+-- data ScmAtom =
+--     AtmString String | --imm
+--     AtmSymbol String | --obju    --Primitive :: scmCons -> Maybe scmBlock -> scmObject
+--     AtmFloat Float | --imm
+--     -- AtmComplex complex
+--     AtmSharp String | --imm
+--     AtmInt Int --imm
+--     deriving (Eq, Show)
 
 -- and scmBlockType =
 --     | Lambda
 --     | Let
+
+-- data ScmBlock = 
+--     let
+--     let*
+--     letrec
 
 data ScmBlockType =
     SbtLet |
@@ -303,7 +319,7 @@ data ScmBlockType =
 --         xml
 
 data BindingNew = BindingNew
-    { bndSymbol :: ScmAtom
+    { bndSymbol :: ScmImm
     , bndThunk :: ScmThunk }
     deriving (Eq, Show)
 
@@ -478,13 +494,29 @@ data ScmBlock = ScmBlock
 --     | Cons of scmCons
 --     | Thunk of scmThunk
 
+--to do:  maybe get rid of ObjAtom and replace it with ObjImmediate, ObjSymbol; that way buildHeap does first level of evaluation
+
+--to do:  nil should be '() because (cdr '(a)) => '()
+
+--to do:  #t, #f, '() are immediates
+
+data ScmOb = 
+    ObImm ScmImm |
+    ObBlock ScmBlock |
+    ObSym String |
+    ObCons ScmCons |
+    ObError String |
+    ObThunk ScmThunk 
+    deriving (Eq, Show)
 
 data ScmObject =
-    ObjAtom ScmAtom |
+    ObjSymbol String | --to do:  switch all atom symbols to here
+    ObjImmediate ScmImm | --to do:  switch all atoms over to this
+    -- ObjAtom ScmAtom | --to do:  get rid of this
     ObjBlock ScmBlock |
     ObjCons ScmCons |
     ObjError String |
-    ObjThunk ScmThunk
+    ObjThunk ScmThunk --has value and evaled flag
     deriving (Eq, Show)
 
 -- and symTable = { mutable symbols : scmAtom list } with
@@ -586,6 +618,14 @@ tokParse s = parse' tokParseFunctions s [] where
                 Left x -> Left x
 -}
 
+-- type Stack = [Int]  
+  
+-- test :: State Int Int
+-- test = do
+--   put 3
+--   modify (+1)
+--   Control.Monad.State.get
+
 symTable :: [String]
 symTable = ["()", "#t", "#f"]
 
@@ -613,7 +653,7 @@ addToCons cons (h : t) =
 createCons :: [ScmObject] -> Maybe ScmCons
 createCons [] = Nothing
 createCons (h : t) = 
-    let cons = ScmCons { scmCar = h, scmCdr = ObjAtom $ AtmSymbol symNil } 
+    let cons = ScmCons { scmCar = h, scmCdr = ObjImmediate $ ImmSym symNil } 
     in addToCons cons t
 
 createPair :: [ScmObject] -> Maybe ScmCons
@@ -622,32 +662,32 @@ createPair (h : []) = Nothing
 createPair (h1 : h2 : t) = 
     let cons = ScmCons { scmCar = h2, scmCdr = h1 } 
     in addToCons cons t
-
+  
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
 -- buildHeap Comment x = Nothing --this should never happen since the caller should have removed comments and whitespace
 buildHeap ((TokSymbol x) : t) = --need to add symbol to symbol table (to do)
-    Right (ObjAtom $ AtmSymbol x, t)
+    Right (ObjSymbol x, t)
 buildHeap (TokSingleQuote : t) =
     let res = buildHeap t in
         case res of 
             Left (m, t) -> Left (m, t)
             Right (x, t) -> 
-                case (createCons [x, ObjAtom $ AtmSymbol "quote"]) of
+                case (createCons [x, ObjSymbol "quote"]) of
                     Nothing -> Left ("buildHeap:  failed to create object of a quote", t)
                     Just x -> Right (ObjCons x, t)
 buildHeap ((TokString x) : t) =
-    Right (ObjAtom $ AtmString x, t)
+    Right (ObjImmediate $ ImmString x, t)
 buildHeap ((TokInteger x) : t) =
     case (readMaybe x :: Maybe Int) of
-        Just i -> Right (ObjAtom $ AtmInt i, t)
+        Just i -> Right (ObjImmediate $ ImmInt i, t)
         Nothing -> Right (ObjError $ "buildHeap:  parse fail on int:  " ++ x, t)
 buildHeap ((TokFloat x) : t) =
     case (readMaybe x :: Maybe Float) of
-        Just f -> Right (ObjAtom $ AtmFloat f, t)
+        Just f -> Right (ObjImmediate $ ImmFloat f, t)
         Nothing -> Right (ObjError $ "buildHeap:  parse fail on float:  " ++ x, t)
 buildHeap (TokLeftParen : TokRightParen : t) =
-    Right (ObjAtom $ AtmSymbol symNil, t)
+    Right (ObjImmediate $ ImmSym "()", t)
 buildHeap (TokLeftParen : t) = --walk across top level list until a right paren is discovered
     let res = iter t [] where
         iter :: [Token] -> [ScmObject] -> Either (String, [Token]) (ScmCons, [Token])
@@ -665,15 +705,13 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
                         let res = createPair (o : lst) in
                             case (res) of 
                                 Nothing -> Left ("buildHeap:  failure to create dotted pair", rst)
-                                Just x -> 
-                                    Right (x, rst)
+                                Just x -> Right (x, rst)
                     otherwise ->
                         Left ("buildHeap:  bad tail in dotted pair", t)
         iter toks lst =
             case (buildHeap toks) of
                 Left x -> Left x
-                Right (o, t) ->
-                    iter t (o : lst)
+                Right (o, t) -> iter t (o : lst)
     in
         case (res) of
             Left (e, t) -> Left ("buildHeap:  failed to create cons cells", t)
@@ -748,21 +786,31 @@ buildHeap tokens = --this should never happen
 --                 s
 --         iter heap
 
---to do:  dotted pairs inj buildHeap, printHeap handles them okay (probably)
+--to do:  add ints and flots to printHeap
 
 printHeap :: ScmObject -> String
 printHeap x = 
     case x of 
-        ObjAtom x -> 
+        -- ObjAtom x -> --to do:  remove this
+        --     case x of
+        --         AtmSymbol x -> x
+        --         AtmInt x -> show x
+        --         -- ImmInt x -> show x
+        --         AtmFloat x -> show x
+        --         otherwise -> "unknown atom"
+        ObjSymbol x -> x
+        ObjImmediate x ->
             case x of
-                AtmSymbol x -> x
-                otherwise -> undefined
+                ImmSym x -> x
+                ImmInt x -> show x
+                ImmFloat x -> show x
+                otherwise -> "unknown immediate"
         ObjCons x -> 
             let res = iter (ObjCons x) ["("] where
                 iter :: ScmObject -> [String] -> [String]
                 iter obj lst = 
                     case (obj) of
-                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjAtom (AtmSymbol "()")) }) ->
+                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjImmediate (ImmSym "()")) }) ->
                             ")" : printHeap h : lst
                         ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) }) -> --cdr has more list elements
                             iter (ObjCons t) (" " : (printHeap h) : lst)
@@ -770,80 +818,7 @@ printHeap x =
                             ")" : (printHeap t) : " . " : (printHeap h) : lst                                        
             in 
                 concat (reverse res)
-
-fac :: Int -> Int
-fac 0 = 1
-fac n = n * (fac $ n - 1)
-
--- let buildHeap (tokens : scmTokens) =
---     //to do:  strip comments and whitespace
---     let rec recur () =
---         let rec getToken () =
---             let tok = tokens.get
---             match tok with
---             | scmToken.Comment _
---             | scmToken.Whitespace _ ->
---                 getToken ()
---             | _ -> tok
---         let rec peekToken () =
---             let tok = tokens.peek
---             match tok with
---             | scmToken.Comment _ | scmToken.Whitespace _ ->
---                 tokens.get |> ignore
---                 peekToken ()
---             | _ -> tok
---         let tok = getToken ()
---         match tok with
---         | scmToken.String s ->
---             scmObject.Atom (scmAtom.String s)
---         | scmToken.Float f -> scmObject.Atom (scmAtom.Float f)
---         | scmToken.Int i -> scmObject.Atom (scmAtom.Int i)
---         | scmToken.Symbol s -> scmObject.Atom (scmAtom.Symbol s)
--- //        | scmToken.Sharp s ->
--- //            scmObject.Atom (scmAtom.Sharp s)
---         | scmToken.SingleQuote ->
---             let cell = scmCons.create ()
---             let sym = symbolTable.getSymbol "quote"
---             cell.car <- Some (scmObject.Atom sym)
---             let next = scmCons.create ()
---             cell.cdr <- Some (scmObject.Cons next)
---             let node = recur ()
---             next.car <- Some node
---             scmObject.Cons cell
---         | scmToken.LeftParen ->
---             let tok = tokens.peek
---             if tok = scmToken.RightParen then
---                 getToken () |> ignore
---                 scmObject.Cons nil
---             else
---                 let mutable cell = scmCons.create ()
---                 let firstCell = cell
---                 //to do:  use recursion and get rid of mutation
---                 let mutable keepGoing = true
---                 while tokens.tokensExist && keepGoing do
---                     cell.car <- Some (recur ())
---                     let tok = peekToken ()
---                     match tok with
---                     | scmToken.RightParen ->
---                         getToken () |> ignore
---                         keepGoing <- false
---                     | scmToken.Dot ->
---                         getToken () |> ignore
---                         cell.cdr <- Some (recur ())
---                         let tok = getToken ()
---                         if tok <> scmToken.RightParen then
---                             failwith "dot expression not properly ended"
---                         keepGoing <- false
---                     | _ ->
---                         let newCell = scmCons.create ()
---                         cell.cdr <- Some (scmObject.Cons newCell)
---                         cell <- newCell
---                 scmObject.Cons firstCell
---         | scmToken.Bool b ->
---             if b = 't' then scmTrue else scmFalse
---         | _ ->
---             failwith "not implemented yet"
---     recur ()
+        otherwise -> ""
 
 -- let rec eval
 --     (heap : scmObject)
@@ -1032,6 +1007,120 @@ fac n = n * (fac $ n - 1)
 --             failwith "bad block body"
 --     iter body None
 
+-- fac :: Int -> Int
+-- fac 0 = 1
+-- fac n = n * (fac $ n - 1)
+
+--to do:  use Haskell for stack, environment (not ScmCons)
+
+{-
+Replace thunks with result objects (which are built from ScmObject but are evaluated to a result; hence like hidden quote functions).
+
+Haskell LISP equivalents of LISP:
+
+cnsCons
+cnsHead
+cnsTail
+cnsNil
+-}
+
+data ScmContext = ScmContext
+    { stk :: String --scmStack  scmStack
+    , env :: String --scmEnv 
+    , sym :: String } --SymTable }
+
+eval :: ScmObject -> ScmContext -> Either String ScmObject
+eval obj ctx =
+    case obj of
+        n@(ObjImmediate (ImmFloat _)) -> Right n
+        n@(ObjImmediate (ImmInt _)) -> Right n
+        --to do:  symbol
+        --need to look up symbol in environment, call with thunkified args
+        ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) -> 
+            let hd = eval h 
+            in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
+                undefined
+        otherwise -> undefined
+
+--to do:  apply takes in func (ScmObject) and a list of thunks
+
+--to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
+
+--thunks must preserve EoD (environment of definition), maybe they need to be so lazy they don't even determine immediates versus non-immediates?
+
+-- fac :: Int -> Int
+-- fac 0 = 1
+-- fac n = n * (fac $ n - 1)
+
+-- let buildHeap (tokens : scmTokens) =
+--     //to do:  strip comments and whitespace
+--     let rec recur () =
+--         let rec getToken () =
+--             let tok = tokens.get
+--             match tok with
+--             | scmToken.Comment _
+--             | scmToken.Whitespace _ ->
+--                 getToken ()
+--             | _ -> tok
+--         let rec peekToken () =
+--             let tok = tokens.peek
+--             match tok with
+--             | scmToken.Comment _ | scmToken.Whitespace _ ->
+--                 tokens.get |> ignore
+--                 peekToken ()
+--             | _ -> tok
+--         let tok = getToken ()
+--         match tok with
+--         | scmToken.String s ->
+--             scmObject.Atom (scmAtom.String s)
+--         | scmToken.Float f -> scmObject.Atom (scmAtom.Float f)
+--         | scmToken.Int i -> scmObject.Atom (scmAtom.Int i)
+--         | scmToken.Symbol s -> scmObject.Atom (scmAtom.Symbol s)
+-- //        | scmToken.Sharp s ->
+-- //            scmObject.Atom (scmAtom.Sharp s)
+--         | scmToken.SingleQuote ->
+--             let cell = scmCons.create ()
+--             let sym = symbolTable.getSymbol "quote"
+--             cell.car <- Some (scmObject.Atom sym)
+--             let next = scmCons.create ()
+--             cell.cdr <- Some (scmObject.Cons next)
+--             let node = recur ()
+--             next.car <- Some node
+--             scmObject.Cons cell
+--         | scmToken.LeftParen ->
+--             let tok = tokens.peek
+--             if tok = scmToken.RightParen then
+--                 getToken () |> ignore
+--                 scmObject.Cons nil
+--             else
+--                 let mutable cell = scmCons.create ()
+--                 let firstCell = cell
+--                 //to do:  use recursion and get rid of mutation
+--                 let mutable keepGoing = true
+--                 while tokens.tokensExist && keepGoing do
+--                     cell.car <- Some (recur ())
+--                     let tok = peekToken ()
+--                     match tok with
+--                     | scmToken.RightParen ->
+--                         getToken () |> ignore
+--                         keepGoing <- false
+--                     | scmToken.Dot ->
+--                         getToken () |> ignore
+--                         cell.cdr <- Some (recur ())
+--                         let tok = getToken ()
+--                         if tok <> scmToken.RightParen then
+--                             failwith "dot expression not properly ended"
+--                         keepGoing <- false
+--                     | _ ->
+--                         let newCell = scmCons.create ()
+--                         cell.cdr <- Some (scmObject.Cons newCell)
+--                         cell <- newCell
+--                 scmObject.Cons firstCell
+--         | scmToken.Bool b ->
+--             if b = 't' then scmTrue else scmFalse
+--         | _ ->
+--             failwith "not implemented yet"
+--     recur ()
 
 symbolChars :: String
 symbolChars =
@@ -1267,8 +1356,8 @@ parseTests =
 -- assertBool :: String -> Bool -> Assertion
 -- assertBool msg b = unless b (assertFailure msg)
 
-testEmpty = TestCase $ assertEqual
-  "Should get Nothing from an empty string" Nothing ( Just "5" )
+-- testEmpty = TestCase $ assertEqual
+--   "Should get Nothing from an empty string" Nothing ( Just "5" )
 
 -- parseTest :: [(String, [Token])] -> [((String, [Token]), [Token])]
 -- parseTest [] = []
@@ -1291,6 +1380,7 @@ tokTest =
 
 someFunc :: IO ()
 someFunc = do
+    -- print $ execState test 0
     -- putStrLn $ show $ tokParse "(define foo'(sdfsdf.sdfsdfds sdfds\"dsfdsf\" 3 -3 \"fdsf'dsf()dfssdf)\" abc(sd sd d)))"
     -- putStrLn $ show $ elemIndex 'a' "cat"
     -- putStrLn $ show $ parseFloat "-3."
@@ -1323,7 +1413,7 @@ someFunc = do
     -- -- assertBool "test0" $ p0 == [Symbol "car"]
     -- -- assertBool "test11" $ p11 == [LeftParen,Symbol "car",Whitespace " ",SingleQuote,LeftParen,Symbol "234324fsdfds-sdfdsfsdf3.5",RightParen,RightParen]
     -- putStrLn $ show $ parseTest parseTests
-    putStrLn $ show $ fac 5
+    -- putStrLn $ show $ fac 5
     putStrLn $ show $ parseTest' parseTests
     putStrLn $ show $ getToken tokTest
     putStrLn $ show $ buildHeap [TokString "hey"]
@@ -1350,6 +1440,9 @@ someFunc = do
     -- putStrLn (symNil)
     let Right (x, _) = buildHeap [TokSingleQuote, TokSymbol "a"] in 
         putStrLn $ show $ printHeap x
+    let Right (x, _) = buildHeap [TokFloat "3.5"] in 
+        let Right y = eval x ScmContext { stk = "", env = "", sym = ""} in 
+            putStrLn $ show $ printHeap y
     putStrLn ("done")
 
 {--
