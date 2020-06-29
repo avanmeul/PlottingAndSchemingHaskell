@@ -653,6 +653,13 @@ createPair (h : []) = Nothing
 createPair (h1 : h2 : t) = 
     let cons = ScmCons { scmCar = h2, scmCdr = h1 } 
     in addToCons cons t
+
+tokIsWhitespace :: Token -> Bool
+tokIsWhitespace (TokWhitespace x) = True
+tokIsWhitespace _ = False
+
+toksNoWhitespace :: [Token] -> [Token]
+toksNoWhitespace x = filter (\x -> not $ tokIsWhitespace x) x
   
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
@@ -687,7 +694,7 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
         iter (TokRightParen : t) lst =
             let res = createCons lst in
                 case (res) of
-                    Nothing -> Left ("buildHeap:  failure to create cons cells", t)
+                    Nothing -> Left ("buildHeap:  failure to create cons cells, site 1", t)
                     Just x -> Right (x, t)
         iter (TokDot : t) lst = 
             let cdr = buildHeap t in
@@ -705,7 +712,7 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
                 Right (o, t) -> iter t (o : lst)
     in
         case (res) of
-            Left (e, t) -> Left ("buildHeap:  failed to create cons cells", t)
+            Left (e, t) -> Left ("buildHeap:  failed to create cons cells, site 2", t)
             Right (x, t) -> Right (ObjCons x, t)
 buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occurred without a prior left, i.e. )(
     Left ("buildHeap:  right paren before left", t)
