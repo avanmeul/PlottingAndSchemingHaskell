@@ -30,10 +30,11 @@ dependencies:
 # - state
 # - control
 # - HSpec
+- threepenny-gui
 
-extra-deps:
-# - control-monad
-# - mtl-2.2.2
+# extra-deps:
+# # - control-monad
+# # - mtl-2.2.2
 
 library:
   source-dirs: src

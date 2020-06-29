@@ -288,15 +288,6 @@ data ScmImm =
     ImmString String
     deriving (Eq, Show)
 
--- data ScmAtom =
---     AtmString String | --imm
---     AtmSymbol String | --obju    --Primitive :: scmCons -> Maybe scmBlock -> scmObject
---     AtmFloat Float | --imm
---     -- AtmComplex complex
---     AtmSharp String | --imm
---     AtmInt Int --imm
---     deriving (Eq, Show)
-
 -- and scmBlockType =
 --     | Lambda
 --     | Let
@@ -791,13 +782,6 @@ buildHeap tokens = --this should never happen
 printHeap :: ScmObject -> String
 printHeap x = 
     case x of 
-        -- ObjAtom x -> --to do:  remove this
-        --     case x of
-        --         AtmSymbol x -> x
-        --         AtmInt x -> show x
-        --         -- ImmInt x -> show x
-        --         AtmFloat x -> show x
-        --         otherwise -> "unknown atom"
         ObjSymbol x -> x
         ObjImmediate x ->
             case x of
