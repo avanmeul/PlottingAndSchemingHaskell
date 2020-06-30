@@ -1,14 +1,7 @@
 module Main where
 
 import Lib
-
--- main :: IO ()
--- main = do
---     putStrLn "hery"
---     -- someFunc
-
 import Control.Monad
--- import Paths
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
@@ -17,7 +10,7 @@ import Graphics.UI.Threepenny.Core
 ------------------------------------------------------------------------------}
 main :: IO ()
 main = do
-    -- static <- getStaticDir
+    -- putStrLn $ show (tokParse "3")
     startGUI defaultConfig setup
 
 canvasSize = 400
@@ -30,18 +23,38 @@ strToTok s =
             Left x -> "error:  " ++ x
             Right x -> "success:  " ++ (show x)
 
-strToAst :: String -> Either String String
-strToAst x = 
+strToHeap :: String -> Either (String, [Token]) (ScmObject, [Token])
+strToHeap x = 
     let toks = tokParse x 
     in 
         case toks of
-            Right x -> 
-                let ast = buildHeap $ toksNoWhitespace x in 
-                    case ast of
-                        Right (x, []) -> Right $ printHeap x
-                        Right (x, t) -> Left "unconsumed tokens"
-                        Left (x, _) -> Left x
-            Left x -> Left x
+            Right x -> buildHeap $ toksNoWhitespace x 
+            Left x -> Left (x, [])
+
+strToAst :: String -> Either String String
+strToAst x = 
+    let hp = strToHeap x
+    in
+        case hp of
+            Right (x, []) -> Right $ printHeap x
+            Right (x, t) -> Left "unconsumed tokens"
+            Left (x, _) -> Left x
+
+strToEval :: String -> Either String ScmObject
+strToEval x = 
+    let hp = strToHeap x
+    in
+        case hp of
+            Right (e, []) -> 
+                eval e $ ScmContext { stk = "", env = "", sym = ""} 
+            Right (x, t) -> Left "unconsumed tokens"
+            Left (x, _) -> Left x
+
+strToEvalStr :: String -> String
+strToEvalStr x =
+    case (strToEval x) of
+        Right x -> "success:  " ++ (printHeap x)
+        Left x -> "failure:  " ++ x
 
 setup :: Window -> UI ()
 setup window = do
@@ -58,6 +71,8 @@ setup window = do
     --to do:  research how to do a tab control
     --to do:  add table
     --to do:  add scrolling to text boxes for expression and result
+    --to do:  parse failures should return Left (string, [Token])
+    --to do:  implement eval (even though only some things eval right now)
 
     --to do:  change this from input box into text box?
     userNameInput <- UI.input --to do:  change the name of this
@@ -86,4 +101,5 @@ setup window = do
         element elResult # set UI.text (show $ strToAst userName)
 
     on UI.click btnEval $ const $ do
-        element elResult # set UI.text "not implemented yet"
+        userName <- get value userNameInput
+        element elResult # set UI.text (strToEvalStr userName)

@@ -716,6 +716,7 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
             Right (x, t) -> Right (ObjCons x, t)
 buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occurred without a prior left, i.e. )(
     Left ("buildHeap:  right paren before left", t)
+buildHeap (TokWhitespace x : t) = buildHeap t --this is just in case these aren't filtered out before calling buildHeap
 buildHeap tokens = --this should never happen
     Left ("not implemented", tokens)
 
@@ -1196,14 +1197,15 @@ parseAtom' parsers s =
     case parsers of
         [] -> parseSymbol s
         (h:t) ->
-            let tok = h s in
-            case fst tok of
-                Nothing -> parseAtom' t s
-                Just x ->
-                    if elem (head (snd tok)) symbolChars then
-                        parseSymbol s --to do:  don't parse from start
-                    else
-                        tok
+            let tok = h s 
+            in
+                case fst tok of
+                    Nothing -> parseAtom' t s
+                    Just x ->
+                        if not (null (snd tok)) && elem (head (snd tok)) symbolChars then
+                            parseSymbol s --to do:  don't parse from start
+                        else
+                            tok
 
 tokParseAtom :: String -> Either String (Maybe Token, String)
 tokParseAtom s = Right $ parseAtom s
@@ -1298,8 +1300,7 @@ tokParse s = parse' tokParseFunctions s [] where
 
 {-
 need test for unterminated string
-need to source control on my github account
-need to create function for paren checking using fold and returns a tuple (current, highest, lefts, rights, errorMaybe)
+need to create function for paren checking using fold and returns a tuple (current, highest, lefts, rights, errorMaybe); maybe already done a different way
 need backup
 -}
 
