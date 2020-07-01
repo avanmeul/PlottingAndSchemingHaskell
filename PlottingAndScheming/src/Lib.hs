@@ -64,10 +64,6 @@ data ScmBlock = ScmBlock
     , blkEnv :: Maybe [BindingNew] --possibly use empty list rather than Maybe
     } deriving (Show) --to do:  ad Eq
 
---to do:  maybe get rid of ObjAtom and replace it with ObjImmediate, ObjSymbol; that way buildHeap does first level of evaluation
-
---to do:  nil should be '() because (cdr '(a)) => '()
-
 --to do:  #t, #f, '() are immediates
 
 data ScmPrimitive = ScmPrimitive
@@ -99,8 +95,6 @@ data ScmThunk = ScmThunk
 --     AstCommentLine String |
 --     AstCommentBlock String
 --     deriving (Eq, Show)
-
---to do:  convert tokens.get and tokens.peek
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -229,6 +223,8 @@ printHeap x =
                 ImmInt x -> show x
                 ImmFloat x -> show x
                 otherwise -> "unknown immediate"
+        ObjPrimitive (ScmPrimitive { name = nm, function = _ }) ->
+            "#<primitive " ++ nm ++ ">"
         ObjCons x -> 
             let res = iter (ObjCons x) ["("] where
                 iter :: ScmObject -> [String] -> [String]
@@ -270,7 +266,7 @@ structure has:  name, function, context, type (ObjPrimitive)
 scmQuote :: ScmObject -> ScmContext -> Either String ScmObject
 scmQuote args ctx =
     case args of 
-        ObjCons (ScmCons { scmCar = h, scmCdr = _}) -> Right h
+        ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> Right h
         otherwise -> Left "quote:  bad arg"
 
 scmHead :: ScmObject -> ScmContext -> Either String ScmObject
@@ -282,6 +278,30 @@ scmHead args ctx =
             Left x -> Left $ "head:  bad argument " ++ (show x)
             otherwise -> Left "head:  bad argument"
 
+globalEnv :: [(ScmObject, ScmObject)]
+globalEnv = 
+    [ (ObjSymbol "quote", ObjPrimitive ScmPrimitive { name = "quote", function = scmQuote }) 
+    , (ObjSymbol "head", ObjPrimitive ScmPrimitive { name = "head", function = scmHead }) ]
+
+--to do:  function to search globalEnv
+
+matchSymbol :: ScmObject -> String -> Bool
+matchSymbol x tgt =
+    case x of
+        ObjSymbol s -> s == tgt
+        otherwise -> False
+
+findGlobal :: ScmObject -> Maybe ScmObject
+findGlobal sym =
+    let search = 
+            case sym of 
+                ObjSymbol x -> find (\ (symbol, value) -> matchSymbol symbol x) globalEnv
+                otherwise -> Nothing
+    in
+        case search of 
+            Just (_, x) -> Just x
+            otherwise -> Nothing
+
 data ScmContext = ScmContext
     { stk :: String --scmStack  scmStack
     , env :: String --scmEnv 
@@ -291,9 +311,14 @@ eval :: ScmObject -> ScmContext -> Either String ScmObject
 eval obj ctx =
     case obj of
         n@(ObjImmediate _) -> Right n
-        ObjSymbol x ->
+        s@(ObjSymbol x) ->
             -- undefined --to do:  look up symbol in environment
-            Right $ ObjSymbol "quote"
+            let tgt = findGlobal s
+            in 
+                case tgt of 
+                    Just o -> Right o
+                    otherwise -> Left "symbol lookup failed"
+            -- Right $ ObjSymbol "quote"
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) -> 
             let f = eval h ctx
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
@@ -306,7 +331,10 @@ eval obj ctx =
 
 apply :: ScmObject -> ScmContext -> ScmObject -> Either String ScmObject
 apply f ctx args = 
-    scmQuote args ctx
+    case f of
+        ObjPrimitive ScmPrimitive { name = _, function = fct } -> 
+            fct args ctx
+        otherwise -> Left "apply:  bad function"
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
 
