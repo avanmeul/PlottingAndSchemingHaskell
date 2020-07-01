@@ -271,19 +271,22 @@ scmQuote args ctx =
 
 scmHead :: ScmObject -> ScmContext -> Either String ScmObject
 scmHead args ctx =
-    let evaledArgs = eval args ctx
-    in
-        case evaledArgs of
-            Right (ObjCons (ScmCons { scmCar = x, scmCdr = _ })) -> Right x
-            Left x -> Left $ "head:  bad argument " ++ (show x)
-            otherwise -> Left "head:  bad argument"
+    case args of 
+        ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
+            let evaledArgs = eval h ctx 
+            in
+                case evaledArgs of
+                    Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) ->
+                        Right h
+                    otherwise -> Left "head:  bad arg (site 1)"
+        otherwise -> Left "head:  bad arg (site 2)"
+
+--to do:  scmTail
 
 globalEnv :: [(ScmObject, ScmObject)]
 globalEnv = 
     [ (ObjSymbol "quote", ObjPrimitive ScmPrimitive { name = "quote", function = scmQuote }) 
     , (ObjSymbol "head", ObjPrimitive ScmPrimitive { name = "head", function = scmHead }) ]
-
---to do:  function to search globalEnv
 
 matchSymbol :: ScmObject -> String -> Bool
 matchSymbol x tgt =
