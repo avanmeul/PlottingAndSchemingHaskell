@@ -15,6 +15,7 @@ import Control.Monad.State
 import Data.IORef
 -- import Data.Aeson
 -- import Test.HSpec
+import Text.Show.Functions
 
 -- to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
 
@@ -32,253 +33,6 @@ data Token =
     TokString String
     deriving (Eq, Show)
 
-{-
-type scmToken =
-    | LeftParen
-    | RightParen
-    | SingleQuote
-    | Comment of string
-    | Symbol of string
-    //| Complex of complex
-    | Float of float
-    | Int of int
-    | Whitespace of string
-    | Dot
-    | String of string
-    | Bool of char
-    //| Sharp of string //to do
-    //| BlockComment of string
--}
-
-{-
-type scmAtom =
-    | String of string
-    | Symbol of string
-    | Primitive of (scmCons -> scmBlock option -> scmObject)
-    | Complex of complex
-    | Float of float
-    | Sharp of string
-    | Int of int
-    //| Bool of bool
-and scmBlockType =
-    | Lambda
-    | Let
-and scmBlock = {
-    block : scmCons;
-    blockType : scmBlockType;
-    mutable parent : scmBlock option; //to do:  discriminated union block + env
-    mutable env : scmEnv option; } with
-    static member create block blockType = {
-        block = block;
-        blockType = blockType;
-        parent = None;
-        env = None; }
-    member x.clone () = {
-        block = x.block;
-        blockType = x.blockType;
-        parent = x.parent;
-        env = None; }
-    member x.toXml () =
-        //to do:  block (call printheap), parent
-        let xml = new XElement (xname "scmBlock")
-        xml.Add (new XElement ((xname "block"), scmObject.printHeap (scmObject.Cons x.block)))
-        let xmlBlockType =
-            match x.blockType with
-            | scmBlockType.Lambda -> "lambda"
-            | scmBlockType.Let -> "let"
-        xml.Add (new XElement ((xname "blockType"), xmlBlockType))
-        let xmlEnv =
-            match x.env with
-            | None -> new XElement (xname "env")
-            | Some x -> x.toXml ()
-        xml.Add (new XElement ((xname "env"), xmlEnv))
-        let xmlParent =
-            match x.parent with
-            | None -> new XElement (xname "parent")
-            | Some x -> x.toXml ()
-        xml.Add (new XElement ((xname "parent"), xmlParent))
-        xml
-and scmThunk = {
-    mutable parent : scmBlock option;
-    mutable evaled : bool;
-    mutable value : scmObject; } with
-    static member create parent value = {
-        parent = parent;
-        evaled = false;
-        value = value; }
-and scmObject =
-    | Atom of scmAtom
-    | Block of scmBlock
-    | Cons of scmCons
-    | Thunk of scmThunk
-    static member printHeap (heap : scmObject) : string =
-        let rec iter heap =
-            match heap with
-            | scmObject.Atom a ->
-                match a with
-                | scmAtom.Symbol s ->
-                    s
-                | scmAtom.Float f ->
-                    f.ToString ()
-                | scmAtom.Int i ->
-                    i.ToString ()
-                | scmAtom.Complex c ->
-                    c.ToString ()
-                | scmAtom.String s ->
-                    s
-                | scmAtom.Sharp s ->
-                    "#" + s
-                | scmAtom.Primitive p ->
-                    "primitive function:  " + p.ToString ()
-            | scmObject.Thunk t ->
-                let t = t.value
-                iter t
-            | scmObject.Block b ->
-                match b.blockType with
-                | scmBlockType.Lambda ->
-                    "lambda"
-                | scmBlockType.Let ->
-                    "let"
-            | scmObject.Cons c ->
-                //walk across a list
-                let mutable s = "("
-                let mutable cell = c
-                let mutable keepGoing = true
-                let mutable firstCell = true
-                while keepGoing do
-                    match cell.car, cell.cdr with
-                    | None, None ->
-                        s <- s + ")"
-                        keepGoing <- false
-                    | Some h, Some t ->
-                        match t with
-                        | scmObject.Atom _ ->
-                            s <- s + (iter h) + " . " + (iter t) + ")"
-                            keepGoing <- false
-                        | scmObject.Block b ->
-                            failwith "not implemented yet"
-                        | scmObject.Cons c ->
-                            if not firstCell then
-                                s <- s + " "
-                            s <- s + (iter h) //+ " "
-                            cell <- c
-                        | scmObject.Thunk t ->
-                            let t = t.value
-                            s <- s + (iter t)
-                    | Some h, None ->
-                        if not firstCell then
-                            s <- s + " "
-                        s <- s + (iter h) + ")"
-                        keepGoing <- false
-                    | None, _ ->
-                        failwith "this should never happen:  bad list"
-                    firstCell <- false
-                s
-        iter heap
-and scmCons = {
-    mutable car : scmObject option;
-    mutable cdr : scmObject option; } with
-    static member create () =
-        { car = None; cdr = None; }
-and bindingNew = {
-    symbol : scmAtom;
-    mutable thunk : scmThunk; } with
-    member x.toXml () =
-        let xml = new XElement ((xname "symbol"), x.symbol)
-        xml
-and scmEnv =
-    { mutable bindings : bindingNew list } with
-    static member create () : scmEnv = { bindings = [] }
-    member x.print () =
-        x.bindings.Length
-    member x.toXml () = //to do
-        let root = new XElement (xname "env")
-        let rec iter (lst : bindingNew list) =
-            match lst with
-            | [] -> root
-            | h::t ->
-                let sym =
-                    match h.symbol with
-                    | scmAtom.Symbol x | scmAtom.String x -> x
-                    | scmAtom.Complex x -> x.ToString ()
-                    | scmAtom.Int x -> x.ToString ()
-                    | scmAtom.Float x -> x.ToString ()
-                    | scmAtom.Primitive x -> x.ToString ()
-                    | scmAtom.Sharp x -> x.ToString ()
-                let el = new XElement ((xname "symbol"), sym)
-                root.Add el
-                iter t
-        let xml = iter x.bindings
-        xml
-    member x.add symbol value evaled (stack : scmStack) =
-        let parent = stack.head
-        let thunk = scmThunk.create parent value
-        let bindingNew = { symbol = symbol; thunk = thunk }
-        x.bindings <- bindingNew :: x.bindings
-        ()
-    member x.tryFind sym =
-        List.tryFind
-            (fun b ->
-                match b with
-                | {symbol = s; thunk = v} ->
-                    match s with
-                    | scmAtom.Symbol s ->
-                        s = sym
-                    | _ -> failwith "bad symbol in binding")
-            x.bindings
-and symTable = { mutable symbols : scmAtom list } with
-    static member create = { symbols = [] }
-    member x.getSymbol name =
-        let res =
-            List.tryFind
-                (fun n ->
-                    match n with
-                    | scmAtom.Symbol s -> s = name
-                    | _ -> false)
-                x.symbols
-        match res with
-        | None ->
-            let sym = scmAtom.Symbol name
-            x.symbols <- sym :: x.symbols
-            sym
-        | Some s ->
-            s
-    member x.tryFind name =
-        List.tryFind
-            (fun n ->
-                match n with
-                | scmAtom.Symbol s -> s = name
-                | _ -> false)
-            x.symbols
-and scmStack = {
-    mutable frames : scmBlock list; } with
-    static member create () = {
-        frames = []; }
-    member x.head =
-        match x.frames with
-        | [] -> None
-        | h :: t -> Some h
-    member x.add frame =
-        x.frames <- frame :: x.frames
-    member x.drop =
-        x.frames <- (List.tail x.frames)
-    member x.pop n =
-        for i = 1 to n do
-            x.frames <- (List.tail x.frames)
-    member x.toXml () = //to do
-        ()
--}
-
--- type scmAtom =
---     | String of string
---     | Symbol of string
---     | Primitive of (scmCons -> scmBlock option -> scmObject)
---     | Complex of complex
---     | Float of float
---     | Sharp of string
---     | Int of int
---     //| Bool of bool
-
 data ScmImm = 
     ImmSym String |
     ImmRat (Int, Int) |
@@ -288,202 +42,27 @@ data ScmImm =
     ImmString String
     deriving (Eq, Show)
 
--- and scmBlockType =
---     | Lambda
---     | Let
-
--- data ScmBlock = 
---     let
---     let*
---     letrec
-
+--not currently used
 data ScmBlockType =
     SbtLet |
     SbtLambda
     deriving (Eq, Show)
 
--- and bindingNew = {
---     symbol : scmAtom;
---     mutable thunk : scmThunk; } with
---     member x.toXml () =
---         let xml = new XElement ((xname "symbol"), x.symbol)
---         xml
-
+--not currently used
 data BindingNew = BindingNew
     { bndSymbol :: ScmImm
     , bndThunk :: ScmThunk }
-    deriving (Eq, Show)
-
--- and scmEnv =
---     { mutable bindings : bindingNew list } with
---     static member create () : scmEnv = { bindings = [] }
---     member x.print () =
---         x.bindings.Length
---     member x.toXml () = //to do
---         let root = new XElement (xname "env")
---         let rec iter (lst : bindingNew list) =
---             match lst with
---             | [] -> root
---             | h::t ->
---                 let sym =
---                     match h.symbol with
---                     | scmAtom.Symbol x | scmAtom.String x -> x
---                     | scmAtom.Complex x -> x.ToString ()
---                     | scmAtom.Int x -> x.ToString ()
---                     | scmAtom.Float x -> x.ToString ()
---                     | scmAtom.Primitive x -> x.ToString ()
---                     | scmAtom.Sharp x -> x.ToString ()
---                 let el = new XElement ((xname "symbol"), sym)
---                 root.Add el
---                 iter t
---         let xml = iter x.bindings
---         xml
---     member x.add symbol value evaled (stack : scmStack) =
---         let parent = stack.head
---         let thunk = scmThunk.create parent value
---         let bindingNew = { symbol = symbol; thunk = thunk }
---         x.bindings <- bindingNew :: x.bindings
---         ()
---     member x.tryFind sym =
---         List.tryFind
---             (fun b ->
---                 match b with
---                 | {symbol = s; thunk = v} ->
---                     match s with
---                     | scmAtom.Symbol s ->
---                         s = sym
---                     | _ -> failwith "bad symbol in binding")
---             x.bindings
-
--- data ScmEnv = ScmEnv
---     { envBindings :: [] }
+    deriving (Show) --to do:  ad Eq
 
 scmEnv :: [BindingNew] -> [BindingNew] -> [BindingNew]
 scmEnv = (++)
-
--- and scmCons = {
---     mutable car : scmObject option;
---     mutable cdr : scmObject option; } with
---     static member create () =
---         { car = None; cdr = None; }
-
--- and scmBlock = {
---     block : scmCons;
---     blockType : scmBlockType;
---     mutable parent : scmBlock option; //to do:  discriminated union block + env
---     mutable env : scmEnv option; } with
---     static member create block blockType = {
---         block = block;
---         blockType = blockType;
---         parent = None;
---         env = None; }
---     member x.clone () = {
---         block = x.block;
---         blockType = x.blockType;
---         parent = x.parent;
---         env = None; }
---     member x.toXml () =
---         //to do:  block (call printheap), parent
---         let xml = new XElement (xname "scmBlock")
---         xml.Add (new XElement ((xname "block"), scmObject.printHeap (scmObject.Cons x.block)))
---         let xmlBlockType =
---             match x.blockType with
---             | scmBlockType.Lambda -> "lambda"
---             | scmBlockType.Let -> "let"
---         xml.Add (new XElement ((xname "blockType"), xmlBlockType))
---         let xmlEnv =
---             match x.env with
---             | None -> new XElement (xname "env")
---             | Some x -> x.toXml ()
---         xml.Add (new XElement ((xname "env"), xmlEnv))
---         let xmlParent =
---             match x.parent with
---             | None -> new XElement (xname "parent")
---             | Some x -> x.toXml ()
---         xml.Add (new XElement ((xname "parent"), xmlParent))
---         xml
 
 data ScmBlock = ScmBlock
     { blkCons :: ScmCons
     , blkType :: ScmBlockType
     , blkParent :: Maybe ScmBlock
     , blkEnv :: Maybe [BindingNew] --possibly use empty list rather than Maybe
-    } deriving (Eq, Show)
-
--- and scmObject =
---     | Atom of scmAtom
---     | Block of scmBlock
---     | Cons of scmCons
---     | Thunk of scmThunk
---     static member printHeap (heap : scmObject) : string =
---         let rec iter heap =
---             match heap with
---             | scmObject.Atom a ->
---                 match a with
---                 | scmAtom.Symbol s ->
---                     s
---                 | scmAtom.Float f ->
---                     f.ToString ()
---                 | scmAtom.Int i ->
---                     i.ToString ()
---                 | scmAtom.Complex c ->
---                     c.ToString ()
---                 | scmAtom.String s ->
---                     s
---                 | scmAtom.Sharp s ->
---                     "#" + s
---                 | scmAtom.Primitive p ->
---                     "primitive function:  " + p.ToString ()
---             | scmObject.Thunk t ->
---                 let t = t.value
---                 iter t
---             | scmObject.Block b ->
---                 match b.blockType with
---                 | scmBlockType.Lambda ->
---                     "lambda"
---                 | scmBlockType.Let ->
---                     "let"
---             | scmObject.Cons c ->
---                 //walk across a list
---                 let mutable s = "("
---                 let mutable cell = c
---                 let mutable keepGoing = true
---                 let mutable firstCell = true
---                 while keepGoing do
---                     match cell.car, cell.cdr with
---                     | None, None ->
---                         s <- s + ")"
---                         keepGoing <- false
---                     | Some h, Some t ->
---                         match t with
---                         | scmObject.Atom _ ->
---                             s <- s + (iter h) + " . " + (iter t) + ")"
---                             keepGoing <- false
---                         | scmObject.Block b ->
---                             failwith "not implemented yet"
---                         | scmObject.Cons c ->
---                             if not firstCell then
---                                 s <- s + " "
---                             s <- s + (iter h) //+ " "
---                             cell <- c
---                         | scmObject.Thunk t ->
---                             let t = t.value
---                             s <- s + (iter t)
---                     | Some h, None ->
---                         if not firstCell then
---                             s <- s + " "
---                         s <- s + (iter h) + ")"
---                         keepGoing <- false
---                     | None, _ ->
---                         failwith "this should never happen:  bad list"
---                     firstCell <- false
---                 s
---         iter heap
-
---     | Atom of scmAtom
---     | Block of scmBlock
---     | Cons of scmCons
---     | Thunk of scmThunk
+    } deriving (Show) --to do:  ad Eq
 
 --to do:  maybe get rid of ObjAtom and replace it with ObjImmediate, ObjSymbol; that way buildHeap does first level of evaluation
 
@@ -491,93 +70,29 @@ data ScmBlock = ScmBlock
 
 --to do:  #t, #f, '() are immediates
 
-data ScmOb = 
-    ObImm ScmImm |
-    ObBlock ScmBlock |
-    ObSym String |
-    ObCons ScmCons |
-    ObError String |
-    ObThunk ScmThunk 
-    deriving (Eq, Show)
+data ScmPrimitive = ScmPrimitive
+    { name :: String
+    , function :: ScmObject -> ScmContext -> Either String ScmObject }
+    deriving (Show) --to do:  ad Eq
 
 data ScmObject =
     ObjSymbol String | --to do:  switch all atom symbols to here
     ObjImmediate ScmImm | --to do:  switch all atoms over to this
-    -- ObjAtom ScmAtom | --to do:  get rid of this
     ObjBlock ScmBlock |
     ObjCons ScmCons |
     ObjError String |
-    ObjThunk ScmThunk --has value and evaled flag
-    deriving (Eq, Show)
-
--- and symTable = { mutable symbols : scmAtom list } with
---     static member create = { symbols = [] }
---     member x.getSymbol name =
---         let res =
---             List.tryFind
---                 (fun n ->
---                     match n with
---                     | scmAtom.Symbol s -> s = name
---                     | _ -> false)
---                 x.symbols
---         match res with
---         | None ->
---             let sym = scmAtom.Symbol name
---             x.symbols <- sym :: x.symbols
---             sym
---         | Some s ->
---             s
---     member x.tryFind name =
---         List.tryFind
---             (fun n ->
---                 match n with
---                 | scmAtom.Symbol s -> s = name
---                 | _ -> false)
---             x.symbols
-
--- data SymTable =
-
--- and scmStack = {
---     mutable frames : scmBlock list; } with
---     static member create () = {
---         frames = []; }
---     member x.head =
---         match x.frames with
---         | [] -> None
---         | h :: t -> Some h
---     member x.add frame =
---         x.frames <- frame :: x.frames
---     member x.drop =
---         x.frames <- (List.tail x.frames)
---     member x.pop n =
---         for i = 1 to n do
---             x.frames <- (List.tail x.frames)
---     member x.toXml () = //to do
---         ()
+    ObjThunk ScmThunk |
+    ObjPrimitive ScmPrimitive
+    deriving (Show) --to do:  ad Eq
 
 --one item records vs function?
-
--- data ScmStack = ScmStack
---     { stkFrames :: [ScmBlock] }
 
 scmStack :: ScmBlock -> [ScmBlock] -> [ScmBlock]
 scmStack = (:)
 
--- data ScmStack :: [ScmBlock]
--- ScmStack = []
-
--- and scmThunk = {
---     mutable parent : scmBlock option;
---     mutable evaled : bool;
---     mutable value : scmObject; } with
---     static member create parent value = {
---         parent = parent;
---         evaled = false;
---         value = value; }
-
 data ScmThunk = ScmThunk
     { thkParent :: Maybe ScmBlock }
-    deriving (Eq, Show)
+    deriving (Show) --to do:  ad Eq
 
 -- data Ast =
 --     AstString String |
@@ -593,22 +108,6 @@ getToken ((TokComment _) : t) = getToken t
 getToken ((TokWhitespace _) : t) = getToken t
 getToken (h : t) = (Just h, t)
 
---below:  how to have a nested recursive function (as will be needed in walking a list in buildHeap)
-{-
-tokParse :: String -> Either String [Token]
-tokParse [] = Right []
-tokParse s = parse' tokParseFunctions s [] where
-    parse' :: [String -> Either String (Maybe Token, String)] -> String -> [Token] -> Either String [Token]
-    parse' [] s tokens = Left $ "tokParse:  unparsable expression:  " ++ s --should this just return tokens?
-    parse' parsers [] tokens = Right $ reverse tokens
-    parse' parsers s tokens = --undefined
-        let res = (head parsers) s in
-            case res of
-                Right (Nothing, y) -> parse' (tail parsers) y tokens
-                Right (Just x, y) -> parse' tokParseFunctions y (x : tokens)
-                Left x -> Left x
--}
-
 -- type Stack = [Int]  
   
 -- test :: State Int Int
@@ -618,7 +117,7 @@ tokParse s = parse' tokParseFunctions s [] where
 --   Control.Monad.State.get
 
 symTable :: [String]
-symTable = ["()", "#t", "#f"]
+symTable = ["()", "#t", "#f"] --to do:  remove all immediates from symbol table; only bindings should go in symbol table
 
 --to do:  search symbol table for symbol
 --to do:  return symbol if found, add it if not found (then return newly added symbol)
@@ -633,7 +132,7 @@ symNil =
 data ScmCons = ScmCons
     { scmCar :: ScmObject
     , scmCdr :: ScmObject }
-    deriving (Eq, Show)
+    deriving (Show) --to do:  ad Eq
 
 addToCons :: ScmCons -> [ScmObject] -> Maybe ScmCons
 addToCons cons [] = Just cons
@@ -720,73 +219,6 @@ buildHeap (TokWhitespace x : t) = buildHeap t --this is just in case these aren'
 buildHeap tokens = --this should never happen
     Left ("not implemented", tokens)
 
---     static member printHeap (heap : scmObject) : string =
---         let rec iter heap =
---             match heap with
---             | scmObject.Atom a ->
---                 match a with
---                 | scmAtom.Symbol s ->
---                     s
---                 | scmAtom.Float f ->
---                     f.ToString ()
---                 | scmAtom.Int i ->
---                     i.ToString ()
---                 | scmAtom.Complex c ->
---                     c.ToString ()
---                 | scmAtom.String s ->
---                     s
---                 | scmAtom.Sharp s ->
---                     "#" + s
---                 | scmAtom.Primitive p ->
---                     "primitive function:  " + p.ToString ()
---             | scmObject.Thunk t ->
---                 let t = t.value
---                 iter t
---             | scmObject.Block b ->
---                 match b.blockType with
---                 | scmBlockType.Lambda ->
---                     "lambda"
---                 | scmBlockType.Let ->
---                     "let"
---             | scmObject.Cons c ->
---                 //walk across a list
---                 let mutable s = "("
---                 let mutable cell = c
---                 let mutable keepGoing = true
---                 let mutable firstCell = true
---                 while keepGoing do
---                     match cell.car, cell.cdr with
---                     | None, None ->
---                         s <- s + ")"
---                         keepGoing <- false
---                     | Some h, Some t ->
---                         match t with
---                         | scmObject.Atom _ ->
---                             s <- s + (iter h) + " . " + (iter t) + ")"
---                             keepGoing <- false
---                         | scmObject.Block b ->
---                             failwith "not implemented yet"
---                         | scmObject.Cons c ->
---                             if not firstCell then
---                                 s <- s + " "
---                             s <- s + (iter h) //+ " "
---                             cell <- c
---                         | scmObject.Thunk t ->
---                             let t = t.value
---                             s <- s + (iter t)
---                     | Some h, None ->
---                         if not firstCell then
---                             s <- s + " "
---                         s <- s + (iter h) + ")"
---                         keepGoing <- false
---                     | None, _ ->
---                         failwith "this should never happen:  bad list"
---                     firstCell <- false
---                 s
---         iter heap
-
---to do:  add ints and flots to printHeap
-
 printHeap :: ScmObject -> String
 printHeap x = 
     case x of 
@@ -812,193 +244,6 @@ printHeap x =
                 concat (reverse res)
         otherwise -> ""
 
--- let rec eval
---     (heap : scmObject)
---     (block : scmBlock option) =
---     match heap with
---     | scmObject.Atom a ->
---         //atoms are self-evaluating, except for symbols (which get looked up)
---         match a with
---         | scmAtom.Symbol s ->
---                 if s = "x" || s = "y" then
---                     let foo = 3
---                     ()
---                 let res = topLevel.tryFind s block
--- //                let xmlBlock =
--- //                    match block with
--- //                    | None -> ""
--- //                    | Some x -> (x.toXml ()).ToString ()
--- //                Debug.WriteLine xmlBlock
---                 match res with
---                 | None ->
---                     //to do:  check parent environment
---                     Debug.WriteLine ("lookup failure on symbol " + s)
---                     topLevel.toXml () |> ignore
---                     failwith ("lookup failure on symbol " + s)
---                 | Some {symbol = s; thunk = t} ->
---                     if t.evaled then
---                         t.value
---                     else
---                         let parent = t.parent
---                         let v = eval t.value parent
---                         res.Value.thunk.value <- v
---                         res.Value.thunk.evaled <- true
---                         v
---         | scmAtom.Sharp s ->
---             match s with
---             | "t" -> scmTrue
---             | "f" -> scmFalse
---             | _ -> failwith "bad sharp element"
---         | _ ->
---             scmObject.Atom a
---     | scmObject.Thunk t ->
---         if t.evaled then
---             t.value
---         else
---             let parent = t.parent
---             let v = eval t.value parent
---             t.value <- v
---             t.evaled <- true
---             v
---     | scmObject.Block b ->
---         scmObject.Block b
---     | scmObject.Cons c -> //function call
---         match c.car, c.cdr with
---         | None, None ->
---             scmObject.Cons nil
---         | Some func, Some args ->
---             let evaledFunc = eval func block
---             match evaledFunc, args with
---             | scmObject.Atom a, scmObject.Cons c ->
---                 match a with
---                 | scmAtom.Primitive p ->
---                     p c block
---                 | scmAtom.Symbol s ->
---                     failwith ("bad function :  " + s)
---                 | _ ->
---                     failwith "bad function"
---             | scmObject.Block f, scmObject.Cons a -> //closure or block
---                 match f.blockType with
---                 | scmBlockType.Lambda ->
---                     let lambda = f.block
---                     match lambda.car with
---                     | Some (scmObject.Cons c) ->
---                         let env = scmEnv.create ()
---                         //populate the environment
---                         let rec popEnv paramList argList =
---                             match
---                                 (paramList : scmObject option),
---                                 (argList : scmObject option) with
---                                 | None, None ->
---                                     ()
---                                 |   Some (scmObject.Cons { car = Some (scmObject.Atom (scmAtom.Symbol hp)); cdr = tp }),
---                                     Some (scmObject.Cons { car = Some ha; cdr = ta }) ->
---                                     //I caught this trying to bind parameter len to symbol x instead of a thunk
---                                     //let t = scmThunk.create (Some f) ha
---                                     env.add
---                                         (symbolTable.getSymbol hp)
---                                         ha
---                                         //(scmObject.Thunk t)
---                                         false //evaled?
---                                         stack //to do:  why pass this if not passing a frame?
---                                     |> ignore
---                                     popEnv tp ta
---                                 | Some (scmObject.Cons { car = h; cdr = t }), None ->
---                                     failwith "not enough arguments provided"
---                                 | None, Some (scmObject.Cons {car = h; cdr = t}) ->
---                                     failwith "too many arguments provided"
---                                 | _, _ ->
---                                     failwith "bad arguments to a function"
---                         popEnv lambda.car (Some args)
---                         let frame = f.clone ()
---                         frame.env <- Some env
---                         stack.add frame
---                         let body = evalBody lambda.cdr frame
---                         stack.drop
---                         body
---                     | _ -> failwith "bad lambda parameter list"
---                 | scmBlockType.Let ->
---                     failwith "let block type not implemented yet"
---             | scmObject.Cons f, scmObject.Cons a ->
---                 failwith "non-function in function position"
---             | _, scmObject.Atom a ->
---                 failwith "bad argument to a function"
---             | _, scmObject.Thunk t ->
---                 failwith "thunk not implemented yet 2"
---             | scmObject.Thunk t, scmObject.Cons c ->
---                 failwith "thunk not implemented yet 3"
---             | _, scmObject.Block b ->
---                 failwith "block as arg to block:  not implemented yet"
---         | Some func, None -> //lambda with no arguments
---             let evaledFunc = eval func block
---             match evaledFunc with
---             | scmObject.Atom a ->
---                 match a with
---                 | scmAtom.Primitive p ->
---                     p nil None
---                 | scmAtom.Symbol s ->
---                     failwith ("bad function :  " + s)
---                 | _ ->
---                     failwith "bad function"
---             | scmObject.Block f ->
---                 match f.blockType with
---                 | scmBlockType.Lambda ->
---                     let lambda = f.block
---                     match lambda.car with
---                     | Some (scmObject.Cons c) ->
---                         let env = scmEnv.create ()
---                         let rec popEnv paramList argList =
---                             match
---                                 (paramList : scmObject option),
---                                 (argList : scmObject option) with
---                                 | None, None ->
---                                     ()
---                                 |   Some (scmObject.Cons { car = Some (scmObject.Atom (scmAtom.Symbol hp)); cdr = tp }),
---                                     Some (scmObject.Cons { car = Some ha; cdr = ta }) ->
---                                     env.add
---                                         (symbolTable.getSymbol hp)
---                                         ha
---                                         false
---                                         stack
---                                     |> ignore
---                                     popEnv tp ta
---                                 | Some (scmObject.Cons { car = h; cdr = t }), None ->
---                                     ()
---                                 | None, Some (scmObject.Cons {car = h; cdr = t}) ->
---                                     failwith "too many arguments provided"
---                                 | _, _ ->
---                                     failwith "bad arguments to a function"
---                         popEnv lambda.car None
---                         f.env <- Some env
---                         let frame = f.clone ()
---                         stack.add frame
---                         let body = evalBody lambda.cdr f
---                         stack.drop
---                         body
---                     | _ -> failwith "bad lambda parameter list"
---                 | scmBlockType.Let ->
---                     failwith "let block type not implemented yet"
---             | scmObject.Cons f ->
---                 failwith "non-function in function position"
---             | scmObject.Thunk t ->
---                 failwith "thunk not implemented yet 1"
---         | _ -> failwith "not implemented yet"
--- and evalBody body block =
---     let rec iter body lastVal =
---         match body with
---         | None ->
---             match lastVal with
---             | None ->
---                 failwith "nothing found in block body"
---             | Some v ->
---                 v
---         | Some (scmObject.Cons { car = Some h; cdr = t } )->
---             //to do:  make sure block is really Some thing
---             iter t (Some (eval h (Some block)))
---         | _ ->
---             failwith "bad block body"
---     iter body None
-
 -- fac :: Int -> Int
 -- fac 0 = 1
 -- fac n = n * (fac $ n - 1)
@@ -1016,6 +261,27 @@ cnsTail
 cnsNil
 -}
 
+--to do:  create globalEnv, a list of tuples (namme, function)
+
+{-
+structure has:  name, function, context, type (ObjPrimitive)
+-}
+
+scmQuote :: ScmObject -> ScmContext -> Either String ScmObject
+scmQuote args ctx =
+    case args of 
+        ObjCons (ScmCons { scmCar = h, scmCdr = _}) -> Right h
+        otherwise -> Left "quote:  bad arg"
+
+scmHead :: ScmObject -> ScmContext -> Either String ScmObject
+scmHead args ctx =
+    let evaledArgs = eval args ctx
+    in
+        case evaledArgs of
+            Right (ObjCons (ScmCons { scmCar = x, scmCdr = _ })) -> Right x
+            Left x -> Left $ "head:  bad argument " ++ (show x)
+            otherwise -> Left "head:  bad argument"
+
 data ScmContext = ScmContext
     { stk :: String --scmStack  scmStack
     , env :: String --scmEnv 
@@ -1024,17 +290,23 @@ data ScmContext = ScmContext
 eval :: ScmObject -> ScmContext -> Either String ScmObject
 eval obj ctx =
     case obj of
-        n@(ObjImmediate (ImmFloat _)) -> Right n
-        n@(ObjImmediate (ImmInt _)) -> Right n
-        --to do:  symbol
-        --need to look up symbol in environment, call with thunkified args
+        n@(ObjImmediate _) -> Right n
+        ObjSymbol x ->
+            -- undefined --to do:  look up symbol in environment
+            Right $ ObjSymbol "quote"
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) -> 
-            let hd = eval h 
+            let f = eval h ctx
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
-                undefined
+                case f of
+                    Left x -> Left $ "eval:  bad function " ++ (show x)
+                    Right x -> apply x ctx t
         otherwise -> undefined
 
 --to do:  apply takes in func (ScmObject) and a list of thunks
+
+apply :: ScmObject -> ScmContext -> ScmObject -> Either String ScmObject
+apply f ctx args = 
+    scmQuote args ctx
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
 
@@ -1043,76 +315,6 @@ eval obj ctx =
 -- fac :: Int -> Int
 -- fac 0 = 1
 -- fac n = n * (fac $ n - 1)
-
--- let buildHeap (tokens : scmTokens) =
---     //to do:  strip comments and whitespace
---     let rec recur () =
---         let rec getToken () =
---             let tok = tokens.get
---             match tok with
---             | scmToken.Comment _
---             | scmToken.Whitespace _ ->
---                 getToken ()
---             | _ -> tok
---         let rec peekToken () =
---             let tok = tokens.peek
---             match tok with
---             | scmToken.Comment _ | scmToken.Whitespace _ ->
---                 tokens.get |> ignore
---                 peekToken ()
---             | _ -> tok
---         let tok = getToken ()
---         match tok with
---         | scmToken.String s ->
---             scmObject.Atom (scmAtom.String s)
---         | scmToken.Float f -> scmObject.Atom (scmAtom.Float f)
---         | scmToken.Int i -> scmObject.Atom (scmAtom.Int i)
---         | scmToken.Symbol s -> scmObject.Atom (scmAtom.Symbol s)
--- //        | scmToken.Sharp s ->
--- //            scmObject.Atom (scmAtom.Sharp s)
---         | scmToken.SingleQuote ->
---             let cell = scmCons.create ()
---             let sym = symbolTable.getSymbol "quote"
---             cell.car <- Some (scmObject.Atom sym)
---             let next = scmCons.create ()
---             cell.cdr <- Some (scmObject.Cons next)
---             let node = recur ()
---             next.car <- Some node
---             scmObject.Cons cell
---         | scmToken.LeftParen ->
---             let tok = tokens.peek
---             if tok = scmToken.RightParen then
---                 getToken () |> ignore
---                 scmObject.Cons nil
---             else
---                 let mutable cell = scmCons.create ()
---                 let firstCell = cell
---                 //to do:  use recursion and get rid of mutation
---                 let mutable keepGoing = true
---                 while tokens.tokensExist && keepGoing do
---                     cell.car <- Some (recur ())
---                     let tok = peekToken ()
---                     match tok with
---                     | scmToken.RightParen ->
---                         getToken () |> ignore
---                         keepGoing <- false
---                     | scmToken.Dot ->
---                         getToken () |> ignore
---                         cell.cdr <- Some (recur ())
---                         let tok = getToken ()
---                         if tok <> scmToken.RightParen then
---                             failwith "dot expression not properly ended"
---                         keepGoing <- false
---                     | _ ->
---                         let newCell = scmCons.create ()
---                         cell.cdr <- Some (scmObject.Cons newCell)
---                         cell <- newCell
---                 scmObject.Cons firstCell
---         | scmToken.Bool b ->
---             if b = 't' then scmTrue else scmFalse
---         | _ ->
---             failwith "not implemented yet"
---     recur ()
 
 symbolChars :: String
 symbolChars =
@@ -1196,14 +398,15 @@ parseAtom' :: [String -> (Maybe Token, String)] -> String -> (Maybe Token, Strin
 parseAtom' parsers s =
     case parsers of
         [] -> parseSymbol s
-        (h:t) ->
+        (h : t) ->
             let tok = h s 
+                toks = snd tok
             in
                 case fst tok of
                     Nothing -> parseAtom' t s
                     Just x ->
-                        if not (null (snd tok)) && elem (head (snd tok)) symbolChars then
-                            parseSymbol s --to do:  don't parse from start
+                        if not (null toks) && elem (head toks) symbolChars then
+                            parseSymbol s --to do:  don't parse from start, just parse from beyond this point?
                         else
                             tok
 
@@ -1272,18 +475,6 @@ tokParseFunctions =
     , tokParseWhitespace
     , tokParseAtom
     , parseString ]
-
--- parse :: String -> [Token]
--- parse [] = []
--- parse s = parse' parseFunctions s [] where
---     parse' :: [String -> (Maybe Token, String)] -> String -> [Token] -> [Token]
---     parse' [] s tokens = error $ "parse:  unparsable expression:  " ++ s
---     parse' parsers [] tokens = reverse tokens
---     parse' parsers s tokens =
---         let tup = (head parsers) s in
---         case (fst tup) of
---             Nothing -> parse' (tail parsers) s tokens
---             Just x -> parse' parseFunctions (snd tup) (x : tokens)
 
 tokParse :: String -> Either String [Token]
 tokParse [] = Right []

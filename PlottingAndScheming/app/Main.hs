@@ -72,7 +72,10 @@ setup window = do
     --to do:  add table
     --to do:  add scrolling to text boxes for expression and result
     --to do:  parse failures should return Left (string, [Token])
-    --to do:  implement eval (even though only some things eval right now)
+    --to do:  possibly add untokenize button?
+    --to do:  put all debug buttons in a debug tab
+    --to do:  get rid of all self-evaluating symbols out of the symbol table
+    --to do:  Left [scmError] for errors where scmError is a record with caller name and error description
 
     --to do:  change this from input box into text box?
     userNameInput <- UI.input --to do:  change the name of this
