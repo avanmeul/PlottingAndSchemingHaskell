@@ -68,7 +68,7 @@ data ScmBlock = ScmBlock
 
 data ScmPrimitive = ScmPrimitive
     { name :: String
-    , function :: ScmObject -> ScmContext -> Either String ScmObject }
+    , function :: ScmObject -> ScmContext -> Either [ScmError] ScmObject }
     deriving (Show) --to do:  ad Eq
 
 data ScmObject =
@@ -263,13 +263,13 @@ cnsNil
 structure has:  name, function, context, type (ObjPrimitive)
 -}
 
-scmQuote :: ScmObject -> ScmContext -> Either String ScmObject
+scmQuote :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 scmQuote args ctx =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> Right h
-        otherwise -> Left "quote:  bad arg"
+        otherwise -> Left [ ScmError { errCaller = "scmQuote", errMessage = "bad arg" } ]
 
-scmHead :: ScmObject -> ScmContext -> Either String ScmObject
+scmHead :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 scmHead args ctx =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
@@ -278,10 +278,10 @@ scmHead args ctx =
                 case evaledArgs of
                     Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) ->
                         Right h
-                    otherwise -> Left "head:  bad arg (site 1)"
-        otherwise -> Left "head:  bad arg (site 2)"
+                    otherwise -> Left [ ScmError { errCaller = "head (site 1)", errMessage = "bad arg" } ]
+        otherwise -> Left [ ScmError { errCaller = "head (site 2)", errMessage = "bad arg" } ]
 
-scmTail :: ScmObject -> ScmContext -> Either String ScmObject
+scmTail :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 scmTail args ctx =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
@@ -290,10 +290,10 @@ scmTail args ctx =
                 case evaledArgs of
                     Right (ObjCons (ScmCons { scmCar = _, scmCdr = t })) ->
                         Right t
-                    otherwise -> Left "tail:  bad arg (site 1)"
-        otherwise -> Left "tail:  bad arg (site 2)"        
+                    otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
+        otherwise -> Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ] 
 
---to do:  scmCons, +, -, /, etc..
+--to do:  scmCons, +, -, *, /, if, etc..
 
 globalEnv :: [(ScmObject, ScmObject)]
 globalEnv = 
@@ -323,7 +323,12 @@ data ScmContext = ScmContext
     , env :: String --scmEnv 
     , sym :: String } --SymTable }
 
-eval :: ScmObject -> ScmContext -> Either String ScmObject
+data ScmError = ScmError 
+    { errCaller :: String
+    , errMessage :: String }
+    deriving (Eq, Show)
+
+eval :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 eval obj ctx =
     case obj of
         n@(ObjImmediate _) -> Right n
@@ -333,24 +338,24 @@ eval obj ctx =
             in 
                 case tgt of 
                     Just o -> Right o
-                    otherwise -> Left "symbol lookup failed"
+                    otherwise -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
             -- Right $ ObjSymbol "quote"
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) -> 
             let f = eval h ctx
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
                 case f of
-                    Left x -> Left $ "eval:  bad function " ++ (show x)
+                    Left x -> Left $ ScmError { errCaller = "eval", errMessage = "bad function " } : x
                     Right x -> apply x ctx t
         otherwise -> undefined
 
 --to do:  apply takes in func (ScmObject) and a list of thunks
 
-apply :: ScmObject -> ScmContext -> ScmObject -> Either String ScmObject
+apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
     case f of
         ObjPrimitive ScmPrimitive { name = _, function = fct } -> 
             fct args ctx
-        otherwise -> Left "apply:  bad function"
+        otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
 

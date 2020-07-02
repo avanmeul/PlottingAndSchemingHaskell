@@ -40,21 +40,21 @@ strToAst x =
             Right (x, t) -> Left "unconsumed tokens"
             Left (x, _) -> Left x
 
-strToEval :: String -> Either String ScmObject
+strToEval :: String -> Either [ScmError] ScmObject
 strToEval x = 
     let hp = strToHeap x
     in
         case hp of
             Right (e, []) -> 
                 eval e $ ScmContext { stk = "", env = "", sym = ""} 
-            Right (x, t) -> Left "unconsumed tokens"
-            Left (x, _) -> Left x
+            Right (x, t) -> Left [ ScmError { errCaller = "strToEval", errMessage = "unconsumed tokens" } ]
+            Left (x, _) -> Left [ ScmError { errCaller = "strToEval", errMessage = x } ]
 
 strToEvalStr :: String -> String
 strToEvalStr x =
     case (strToEval x) of
         Right x -> "success:  " ++ (printHeap x)
-        Left x -> "failure:  " ++ x
+        Left x -> "failure:  " ++ (show x)
 
 setup :: Window -> UI ()
 setup window = do
