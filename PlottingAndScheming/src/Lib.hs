@@ -42,27 +42,38 @@ data ScmImm =
     ImmString String
     deriving (Eq, Show)
 
---not currently used
 data ScmBlockType =
     SbtLet |
-    SbtLambda
+    SbtLetStar |
+    SbtLetRec
     deriving (Eq, Show)
 
 --not currently used
-data BindingNew = BindingNew
-    { bndSymbol :: ScmImm
-    , bndThunk :: ScmThunk }
-    deriving (Show) --to do:  ad Eq
+-- data BindingNew = BindingNew
+--     { bndSymbol :: ScmImm
+--     , bndThunk :: ScmThunk }
+--     deriving (Show) --to do:  ad Eq
 
-scmEnv :: [BindingNew] -> [BindingNew] -> [BindingNew]
-scmEnv = (++)
+-- scmEnv :: [BindingNew] -> [BindingNew] -> [BindingNew]
+-- scmEnv = (++)
 
-data ScmBlock = ScmBlock
-    { blkCons :: ScmCons
+-- data ScmBlock = ScmBlock
+--     { blkCons :: ScmCons
+--     , blkType :: ScmBlockType
+--     , blkParent :: Maybe ScmBlock
+--     , blkEnv :: Maybe [BindingNew] --possibly use empty list rather than Maybe
+--     } deriving (Show) --to do:  ad Eq
+
+-- data ScmBinding = ScmBinding
+--     { bndSymbol :: String 
+--     , bndObj :: ScmObject }
+--     deriving (Show)
+
+data ScmBlock = ScmBlock 
+    { blkParent :: [ScmBlock]
     , blkType :: ScmBlockType
-    , blkParent :: Maybe ScmBlock
-    , blkEnv :: Maybe [BindingNew] --possibly use empty list rather than Maybe
-    } deriving (Show) --to do:  ad Eq
+    , blkBindings :: [(String, ScmObject)] }
+    deriving (Show)
 
 --to do:  #t, #f, '() are immediates
 
@@ -83,8 +94,8 @@ data ScmObject =
 
 --one item records vs function?
 
-scmStack :: ScmBlock -> [ScmBlock] -> [ScmBlock]
-scmStack = (:)
+-- scmStack :: ScmBlock -> [ScmBlock] -> [ScmBlock]
+-- scmStack = (:)
 
 data ScmThunk = ScmThunk
     { thkParent :: Maybe ScmBlock }
@@ -110,13 +121,13 @@ getToken (h : t) = (Just h, t)
 --   modify (+1)
 --   Control.Monad.State.get
 
-symTable :: [String]
+symTable :: [String] --to do:  remove this
 symTable = ["()", "#t", "#f"] --to do:  remove all immediates from symbol table; only bindings should go in symbol table
 
 --to do:  search symbol table for symbol
 --to do:  return symbol if found, add it if not found (then return newly added symbol)
 
-symNil :: String
+symNil :: String --to do:  get rid of this
 symNil = 
     let res = find (=="()") symTable in
         case res of
@@ -291,37 +302,35 @@ scmTail args ctx =
                     Right (ObjCons (ScmCons { scmCar = _, scmCdr = t })) ->
                         Right t
                     otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
-        otherwise -> Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ] 
+        otherwise -> Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
+
+scmLambda :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
+scmLambda obj ctx =
+    --gather up args, thunkify (if arg isn't immediate)
+    --create block
+    undefined
 
 --to do:  scmCons, +, -, *, /, if, etc..
 
-globalEnv :: [(ScmObject, ScmObject)]
+globalEnv :: [(String, ScmObject)]
 globalEnv = 
-    [ (ObjSymbol "quote", ObjPrimitive ScmPrimitive { name = "quote", function = scmQuote }) 
-    , (ObjSymbol "head", ObjPrimitive ScmPrimitive { name = "head", function = scmHead }) 
-    , (ObjSymbol "tail", ObjPrimitive ScmPrimitive { name = "tail", function = scmTail }) ]
+    [ ("quote", ObjPrimitive ScmPrimitive { name = "quote", function = scmQuote }) 
+    , ("head", ObjPrimitive ScmPrimitive { name = "head", function = scmHead }) 
+    , ("tail", ObjPrimitive ScmPrimitive { name = "tail", function = scmTail }) 
+    , ("lambda", ObjPrimitive ScmPrimitive { name = "lambda", function = scmLambda }) 
+    ]
 
-matchSymbol :: ScmObject -> String -> Bool
-matchSymbol x tgt =
-    case x of
-        ObjSymbol s -> s == tgt
-        otherwise -> False
-
-findGlobal :: ScmObject -> Maybe ScmObject
+findGlobal :: String -> Maybe ScmObject
 findGlobal sym =
-    let search = 
-            case sym of 
-                ObjSymbol x -> find (\ (symbol, value) -> matchSymbol symbol x) globalEnv
-                otherwise -> Nothing
-    in
-        case search of 
+    let tgt = find (\ (lbl, value) -> lbl == sym) globalEnv
+    in 
+        case tgt of
             Just (_, x) -> Just x
-            otherwise -> Nothing
+            Nothing -> Nothing
 
 data ScmContext = ScmContext
-    { stk :: String --scmStack  scmStack
-    , env :: String --scmEnv 
-    , sym :: String } --SymTable }
+    { stk :: [ScmBlock]
+    , env :: [(String, ScmObject)] }
 
 data ScmError = ScmError 
     { errCaller :: String
@@ -332,14 +341,12 @@ eval :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 eval obj ctx =
     case obj of
         n@(ObjImmediate _) -> Right n
-        s@(ObjSymbol x) ->
-            -- undefined --to do:  look up symbol in environment
-            let tgt = findGlobal s
+        (ObjSymbol x) ->
+            let tgt = findGlobal x --once blocks are implemented, this will look in global env only as a last resort
             in 
                 case tgt of 
                     Just o -> Right o
-                    otherwise -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
-            -- Right $ ObjSymbol "quote"
+                    Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) -> 
             let f = eval h ctx
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
@@ -348,13 +355,17 @@ eval obj ctx =
                     Right x -> apply x ctx t
         otherwise -> undefined
 
---to do:  apply takes in func (ScmObject) and a list of thunks
+
 
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
     case f of
-        ObjPrimitive ScmPrimitive { name = _, function = fct } -> 
-            fct args ctx
+        ObjPrimitive ScmPrimitive { name = nm, function = fct } ->
+            if nm == "lambda" then
+                --add block to stack, gather up args
+                undefined
+            else
+                fct args ctx
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
@@ -673,7 +684,7 @@ someFunc = do
     let Right (x, _) = buildHeap [TokSingleQuote, TokSymbol "a"] in 
         putStrLn $ show $ printHeap x
     let Right (x, _) = buildHeap [TokFloat "3.5"] in 
-        let Right y = eval x ScmContext { stk = "", env = "", sym = ""} in 
+        let Right y = eval x ScmContext { stk = [], env = []} in 
             putStrLn $ show $ printHeap y
     putStrLn ("done")
 
