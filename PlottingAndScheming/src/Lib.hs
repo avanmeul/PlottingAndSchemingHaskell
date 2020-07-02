@@ -42,39 +42,6 @@ data ScmImm =
     ImmString String
     deriving (Eq, Show)
 
-data ScmBlockType =
-    SbtLet |
-    SbtLetStar |
-    SbtLetRec
-    deriving (Eq, Show)
-
---not currently used
--- data BindingNew = BindingNew
---     { bndSymbol :: ScmImm
---     , bndThunk :: ScmThunk }
---     deriving (Show) --to do:  ad Eq
-
--- scmEnv :: [BindingNew] -> [BindingNew] -> [BindingNew]
--- scmEnv = (++)
-
--- data ScmBlock = ScmBlock
---     { blkCons :: ScmCons
---     , blkType :: ScmBlockType
---     , blkParent :: Maybe ScmBlock
---     , blkEnv :: Maybe [BindingNew] --possibly use empty list rather than Maybe
---     } deriving (Show) --to do:  ad Eq
-
--- data ScmBinding = ScmBinding
---     { bndSymbol :: String 
---     , bndObj :: ScmObject }
---     deriving (Show)
-
-data ScmBlock = ScmBlock 
-    { blkParent :: [ScmBlock]
-    , blkType :: ScmBlockType
-    , blkBindings :: [(String, ScmObject)] }
-    deriving (Show)
-
 --to do:  #t, #f, '() are immediates
 
 data ScmPrimitive = ScmPrimitive
@@ -92,20 +59,9 @@ data ScmObject =
     ObjPrimitive ScmPrimitive
     deriving (Show) --to do:  ad Eq
 
---one item records vs function?
-
--- scmStack :: ScmBlock -> [ScmBlock] -> [ScmBlock]
--- scmStack = (:)
-
 data ScmThunk = ScmThunk
     { thkParent :: Maybe ScmBlock }
     deriving (Show) --to do:  ad Eq
-
--- data Ast =
---     AstString String |
---     AstCommentLine String |
---     AstCommentBlock String
---     deriving (Eq, Show)
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -121,18 +77,8 @@ getToken (h : t) = (Just h, t)
 --   modify (+1)
 --   Control.Monad.State.get
 
-symTable :: [String] --to do:  remove this
-symTable = ["()", "#t", "#f"] --to do:  remove all immediates from symbol table; only bindings should go in symbol table
-
---to do:  search symbol table for symbol
---to do:  return symbol if found, add it if not found (then return newly added symbol)
-
-symNil :: String --to do:  get rid of this
-symNil = 
-    let res = find (=="()") symTable in
-        case res of
-            Nothing -> error "nil not found in symbol table"
-            Just x -> x
+symNil :: ScmObject
+symNil = ObjImmediate $ ImmSym "()"
 
 data ScmCons = ScmCons
     { scmCar :: ScmObject
@@ -148,7 +94,7 @@ addToCons cons (h : t) =
 createCons :: [ScmObject] -> Maybe ScmCons
 createCons [] = Nothing
 createCons (h : t) = 
-    let cons = ScmCons { scmCar = h, scmCdr = ObjImmediate $ ImmSym symNil } 
+    let cons = ScmCons { scmCar = h, scmCdr = symNil } 
     in addToCons cons t
 
 createPair :: [ScmObject] -> Maybe ScmCons
@@ -306,8 +252,7 @@ scmTail args ctx =
 
 scmLambda :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 scmLambda obj ctx =
-    --gather up args, thunkify (if arg isn't immediate)
-    --create block
+    --evaluate lambda based on the ctx (which was pushed onto the environment stack by apply)
     undefined
 
 --to do:  scmCons, +, -, *, /, if, etc..
@@ -328,14 +273,26 @@ findGlobal sym =
             Just (_, x) -> Just x
             Nothing -> Nothing
 
-data ScmContext = ScmContext
-    { stk :: [ScmBlock]
-    , env :: [(String, ScmObject)] }
-
 data ScmError = ScmError 
     { errCaller :: String
     , errMessage :: String }
     deriving (Eq, Show)
+
+data ScmBlockType =
+    SbtLet |
+    SbtLetStar |
+    SbtLetRec
+    deriving (Eq, Show)
+
+data ScmBlock = ScmBlock 
+    { blkParent :: [ScmBlock]
+    , blkType :: ScmBlockType
+    , blkBindings :: [(String, ScmObject)] }
+    deriving (Show)
+
+data ScmContext = ScmContext
+    { stk :: [ScmBlock]
+    , env :: [(String, ScmObject)] }
 
 eval :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 eval obj ctx =
@@ -355,17 +312,21 @@ eval obj ctx =
                     Right x -> apply x ctx t
         otherwise -> undefined
 
-
-
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
     case f of
         ObjPrimitive ScmPrimitive { name = nm, function = fct } ->
-            if nm == "lambda" then
-                --add block to stack, gather up args
-                undefined
-            else
-                fct args ctx
+            case nm of
+                "lambda" ->
+                    --gather up args
+                    --create block
+                    --add block to context
+                    --call function as usual
+                    undefined
+                "let" -> undefined
+                "letrec" -> undefined
+                otherwise ->
+                    fct args ctx
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
