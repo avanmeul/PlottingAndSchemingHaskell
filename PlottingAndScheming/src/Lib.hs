@@ -49,6 +49,13 @@ data ScmPrimitive = ScmPrimitive
     , function :: ScmObject -> ScmContext -> Either [ScmError] ScmObject }
     deriving (Show) --to do:  ad Eq
 
+data ScmClosure = ScmClosure
+    { clsEnv :: [(String, ScmObject)]
+    --to do:  put in stack here
+    , clsArgs :: ScmObject
+    , clsBody :: ScmObject }
+    deriving (Show)
+
 data ScmObject =
     ObjSymbol String | --to do:  switch all atom symbols to here
     ObjImmediate ScmImm | --to do:  switch all atoms over to this
@@ -56,6 +63,7 @@ data ScmObject =
     ObjCons ScmCons |
     ObjError String |
     ObjThunk ScmThunk |
+    ObjClosure ScmClosure |
     ObjPrimitive ScmPrimitive
     deriving (Show) --to do:  ad Eq
 
@@ -182,6 +190,8 @@ printHeap x =
                 otherwise -> "unknown immediate"
         ObjPrimitive (ScmPrimitive { name = nm, function = _ }) ->
             "#<primitive " ++ nm ++ ">"
+        ObjClosure x ->
+            "#<closure>"
         ObjCons x -> 
             let res = iter (ObjCons x) ["("] where
                 iter :: ScmObject -> [String] -> [String]
@@ -200,8 +210,6 @@ printHeap x =
 -- fac :: Int -> Int
 -- fac 0 = 1
 -- fac n = n * (fac $ n - 1)
-
---to do:  use Haskell for stack, environment (not ScmCons)
 
 {-
 Replace thunks with result objects (which are built from ScmObject but are evaluated to a result; hence like hidden quote functions).
@@ -290,9 +298,25 @@ data ScmBlock = ScmBlock
     , blkBindings :: [(String, ScmObject)] }
     deriving (Show)
 
-data ScmContext = ScmContext
+data ScmContext = ScmContext --to do:  ctx prefix
     { stk :: [ScmBlock]
     , env :: [(String, ScmObject)] }
+
+--to do:  create a show-internals that will show internals of a closure (etc.)
+
+safeCar :: Maybe ScmObject -> Maybe ScmObject
+safeCar x =
+    case x of
+        Just (ObjCons ScmCons { scmCar = h, scmCdr = t}) ->
+            Just h
+        otherwise -> Nothing
+
+safeCdr :: Maybe ScmObject -> Maybe ScmObject
+safeCdr x =
+    case x of
+        Just (ObjCons ScmCons { scmCar = h, scmCdr = t}) ->
+            Just t
+        otherwise -> Nothing        
 
 eval :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 eval obj ctx =
@@ -304,7 +328,17 @@ eval obj ctx =
                 case tgt of 
                     Just o -> Right o
                     Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
-        ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) -> 
+        ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
+            let args = safeCar $ Just t
+                body = safeCar $ safeCdr $ Just t
+                (ScmContext { env = e, stk = s }) = ctx
+            in 
+                case (args, body) of
+                    (Just b, Just a) -> 
+                        Right (ObjClosure (ScmClosure { clsEnv = [], clsArgs = a, clsBody = b }))
+                    otherwise ->
+                        Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }]              
+        ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) ->
             let f = eval h ctx
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
                 case f of
@@ -312,17 +346,22 @@ eval obj ctx =
                     Right x -> apply x ctx t
         otherwise -> undefined
 
+cnsToList :: ScmObject -> Maybe [ScmObject]
+cnsToList x = cnsToList' x [] where
+    cnsToList' :: ScmObject -> [ScmObject] -> Maybe [ScmObject]
+    cnsToList' (ObjImmediate (ImmSym "()")) result = Just $ reverse result
+    cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList t (h : result) 
+    cnsToList _ _ = Nothing
+
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
     case f of
         ObjPrimitive ScmPrimitive { name = nm, function = fct } ->
-            case nm of
+            case nm of --this is in the wrong place!
                 "lambda" ->
-                    --gather up args
-                    --create block
-                    --add block to context
-                    --call function as usual
-                    undefined
+                    let lst = cnsToList args
+                    in  
+                        Left [ScmError { errCaller = "apply", errMessage = show lst }]
                 "let" -> undefined
                 "letrec" -> undefined
                 otherwise ->
@@ -476,16 +515,6 @@ parseString s =
         --     if rst == [] then Left "unterminated string"
         --     else Right (Just $ TokString str, tail rst)
     else Right (Nothing, s)
-
-parseFunctions :: [String -> (Maybe Token, String)]
-parseFunctions =
-    [parseComment
-    ,parseLeftParen
-    ,parseRightParen
-    ,parseSingleQuote
-    ,parseWhitespace
-    ,parseAtom
-    ]
 
 tokParseFunctions :: [String -> Either String (Maybe Token, String)]
 tokParseFunctions =
