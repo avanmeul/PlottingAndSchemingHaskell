@@ -48,8 +48,7 @@ data ScmPrimitive = ScmPrimitive
     deriving (Show) --to do:  ad Eq
 
 data ScmClosure = ScmClosure
-    { clsStack :: [ScmBlock]
-    , clsEnv :: [(String, ScmObject)]
+    { clsCtx :: ScmContext
     , clsParameters :: ScmObject
     , clsBody :: ScmObject }
     deriving (Show)
@@ -66,8 +65,7 @@ data ScmObject =
     deriving (Show) --to do:  ad Eq
 
 data ScmThunk = ScmThunk
-    { thkStack :: [ScmBlock]
-    , thkEnv :: [(String, ScmObject)]
+    { thkCtx :: ScmContext
     , thkValue :: ScmObject
     , thkEvaled :: Bool }
     deriving (Show) --to do:  ad Eq
@@ -130,8 +128,7 @@ toksNoWhitespace x = filter (\x -> not $ tokIsWhitespace x) x
 
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
--- buildHeap Comment x = Nothing --this should never happen since the caller should have removed comments and whitespace
-buildHeap ((TokSymbol x) : t) = --need to add symbol to symbol table (to do)
+buildHeap ((TokSymbol x) : t) =
     Right (ObjSymbol x, t)
 buildHeap (TokSingleQuote : t) =
     let res = buildHeap t in
@@ -277,7 +274,8 @@ scmLambda obj ctx =
     --evaluate lambda based on the ctx (which was pushed onto the environment stack by apply)
     undefined
 
---to do:  scmCons, +, -, *, /, if, etc..
+--to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
+--to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
 
 globalEnv :: [(String, ScmObject)]
 globalEnv = 
@@ -287,13 +285,19 @@ globalEnv =
     , ("lambda", ObjPrimitive ScmPrimitive { priName = "lambda", priFunction = scmLambda }) 
     ]
 
-findGlobal :: String -> Maybe ScmObject
-findGlobal sym =
-    let tgt = find (\ (lbl, value) -> lbl == sym) globalEnv
-    in 
+--to do:  generalize to findSymbol, pass in symbol
+
+findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
+findLabel env sym =
+    let tgt = find (\ (lbl, value) -> lbl == sym) env in
         case tgt of
             Just (_, x) -> Just x
             Nothing -> Nothing
+
+findGlobal :: String -> Maybe ScmObject
+findGlobal = findLabel globalEnv
+
+--to do:  have a function that takes 2 contexts and does complete searches
 
 data ScmError = ScmError 
     { errCaller :: String
@@ -313,8 +317,9 @@ data ScmBlock = ScmBlock
     deriving (Show)
 
 data ScmContext = ScmContext --to do:  ctx prefix
-    { stk :: [ScmBlock]
-    , env :: [(String, ScmObject)] }
+    { ctxStk :: [ScmBlock]
+    , ctxEnv :: [(String, ScmObject)] }
+    deriving (Show)
 
 --to do:  create a show-internals that will show internals of a closure (etc.)
 
@@ -345,11 +350,11 @@ eval obj ctx =
         ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
             let args = safeCar $ Just t
                 body = safeCar $ safeCdr $ Just t
-                (ScmContext { env = e, stk = s }) = ctx
+                (ScmContext { ctxEnv = e, ctxStk = s }) = ctx
             in 
                 case (args, body) of
                     (Just b, Just a) -> 
-                        Right (ObjClosure (ScmClosure { clsEnv = [], clsStack = s, clsParameters = a, clsBody = b }))
+                        Right (ObjClosure (ScmClosure { clsCtx = ctx, clsParameters = a, clsBody = b }))
                     otherwise ->
                         Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }]              
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) ->
@@ -375,7 +380,7 @@ apply f ctx args =
     case f of
         ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
             fct args ctx
-        ObjClosure ScmClosure { clsBody = body, clsStack = stk, clsParameters = params } ->
+        ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params } ->
             --thunkify args
             --create bindings
             --create block
@@ -689,7 +694,7 @@ someFunc = do
     let Right (x, _) = buildHeap [TokSingleQuote, TokSymbol "a"] in 
         putStrLn $ show $ printHeap x
     let Right (x, _) = buildHeap [TokFloat "3.5"] in 
-        let Right y = eval x ScmContext { stk = [], env = []} in 
+        let Right y = eval x ScmContext { ctxStk = [], ctxEnv = []} in 
             putStrLn $ show $ printHeap y
     putStrLn ("done")
 

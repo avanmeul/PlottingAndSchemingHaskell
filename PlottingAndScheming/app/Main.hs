@@ -46,7 +46,7 @@ strToEval x =
     in
         case hp of
             Right (e, []) -> 
-                eval e $ ScmContext { stk = [], env = [] } 
+                eval e $ ScmContext { ctxStk = [], ctxEnv = [] } 
             Right (x, t) -> Left [ ScmError { errCaller = "strToEval", errMessage = "unconsumed tokens" } ]
             Left (x, _) -> Left [ ScmError { errCaller = "strToEval", errMessage = x } ]
 
