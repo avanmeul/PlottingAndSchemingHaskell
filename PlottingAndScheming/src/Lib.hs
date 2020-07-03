@@ -277,15 +277,13 @@ scmLambda obj ctx =
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
 --to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
 
-globalEnv :: [(String, ScmObject)]
+globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
     , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
     , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
     , ("lambda", ObjPrimitive ScmPrimitive { priName = "lambda", priFunction = scmLambda }) 
     ]
-
---to do:  generalize to findSymbol, pass in symbol
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
 findLabel env sym =
@@ -368,12 +366,12 @@ eval obj ctx =
             Left [ ScmError { errCaller = "eval", errMessage = e }]   
         otherwise -> undefined
 
-cnsToList :: ScmObject -> Maybe [ScmObject]
+cnsToList :: ScmObject -> Maybe [ScmObject] --lesson learned:  calling without the prime can result in a curried result (not intended!)
 cnsToList x = cnsToList' x [] where
     cnsToList' :: ScmObject -> [ScmObject] -> Maybe [ScmObject]
     cnsToList' (ObjImmediate (ImmSym "()")) result = Just $ reverse result
-    cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList t (h : result) 
-    cnsToList _ _ = Nothing
+    cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList' t (h : result) 
+    cnsToList' _ _ = Nothing
 
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
@@ -385,6 +383,7 @@ apply f ctx args =
             --create bindings
             --create block
             --put block on stack
+            --call eval with new ctx
             Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet" } ]
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
 
