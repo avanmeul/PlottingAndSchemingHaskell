@@ -42,17 +42,15 @@ data ScmImm =
     ImmString String
     deriving (Eq, Show)
 
---to do:  #t, #f, '() are immediates
-
 data ScmPrimitive = ScmPrimitive
-    { name :: String
-    , function :: ScmObject -> ScmContext -> Either [ScmError] ScmObject }
+    { priName :: String
+    , priFunction :: ScmObject -> ScmContext -> Either [ScmError] ScmObject }
     deriving (Show) --to do:  ad Eq
 
 data ScmClosure = ScmClosure
-    { clsEnv :: [(String, ScmObject)]
-    --to do:  put in stack here
-    , clsArgs :: ScmObject
+    { clsStack :: [ScmBlock]
+    , clsEnv :: [(String, ScmObject)]
+    , clsParameters :: ScmObject
     , clsBody :: ScmObject }
     deriving (Show)
 
@@ -68,7 +66,10 @@ data ScmObject =
     deriving (Show) --to do:  ad Eq
 
 data ScmThunk = ScmThunk
-    { thkParent :: Maybe ScmBlock }
+    { thkStack :: [ScmBlock]
+    , thkEnv :: [(String, ScmObject)]
+    , thkValue :: ScmObject
+    , thkEvaled :: Bool }
     deriving (Show) --to do:  ad Eq
 
 getToken :: [Token] -> (Maybe Token, [Token])
@@ -87,6 +88,12 @@ getToken (h : t) = (Just h, t)
 
 symNil :: ScmObject
 symNil = ObjImmediate $ ImmSym "()"
+
+symTrue :: ScmObject
+symTrue = ObjImmediate $ ImmSym "#t"
+
+symFalse :: ScmObject
+symFalse = ObjImmediate $ ImmSym "#f"
 
 data ScmCons = ScmCons
     { scmCar :: ScmObject
@@ -119,6 +126,8 @@ tokIsWhitespace _ = False
 toksNoWhitespace :: [Token] -> [Token]
 toksNoWhitespace x = filter (\x -> not $ tokIsWhitespace x) x
   
+--to do:  tokenize sharp symbols
+
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
 buildHeap [] = Left ("out of tokens", [])
 -- buildHeap Comment x = Nothing --this should never happen since the caller should have removed comments and whitespace
@@ -132,6 +141,7 @@ buildHeap (TokSingleQuote : t) =
                 case (createCons [x, ObjSymbol "quote"]) of
                     Nothing -> Left ("buildHeap:  failed to create object of a quote", t)
                     Just x -> Right (ObjCons x, t)
+-- buildHeap ((Toksh)) --to do:  tokSharp
 buildHeap ((TokString x) : t) =
     Right (ObjImmediate $ ImmString x, t)
 buildHeap ((TokInteger x) : t) =
@@ -188,10 +198,14 @@ printHeap x =
                 ImmInt x -> show x
                 ImmFloat x -> show x
                 otherwise -> "unknown immediate"
-        ObjPrimitive (ScmPrimitive { name = nm, function = _ }) ->
+        ObjPrimitive (ScmPrimitive { priName = nm, priFunction = _ }) ->
             "#<primitive " ++ nm ++ ">"
         ObjClosure x ->
             "#<closure>"
+        ObjThunk x ->
+            "#<thunk>"
+        ObjError x ->
+            "#<error>"
         ObjCons x -> 
             let res = iter (ObjCons x) ["("] where
                 iter :: ScmObject -> [String] -> [String]
@@ -267,10 +281,10 @@ scmLambda obj ctx =
 
 globalEnv :: [(String, ScmObject)]
 globalEnv = 
-    [ ("quote", ObjPrimitive ScmPrimitive { name = "quote", function = scmQuote }) 
-    , ("head", ObjPrimitive ScmPrimitive { name = "head", function = scmHead }) 
-    , ("tail", ObjPrimitive ScmPrimitive { name = "tail", function = scmTail }) 
-    , ("lambda", ObjPrimitive ScmPrimitive { name = "lambda", function = scmLambda }) 
+    [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
+    , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
+    , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
+    , ("lambda", ObjPrimitive ScmPrimitive { priName = "lambda", priFunction = scmLambda }) 
     ]
 
 findGlobal :: String -> Maybe ScmObject
@@ -335,15 +349,18 @@ eval obj ctx =
             in 
                 case (args, body) of
                     (Just b, Just a) -> 
-                        Right (ObjClosure (ScmClosure { clsEnv = [], clsArgs = a, clsBody = b }))
+                        Right (ObjClosure (ScmClosure { clsEnv = [], clsStack = s, clsParameters = a, clsBody = b }))
                     otherwise ->
                         Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }]              
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) ->
             let f = eval h ctx
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
                 case f of
-                    Left x -> Left $ ScmError { errCaller = "eval", errMessage = "bad function " } : x
+                    Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
                     Right x -> apply x ctx t
+        ObjThunk x -> undefined
+        ObjError e ->
+            Left [ ScmError { errCaller = "eval", errMessage = e }]   
         otherwise -> undefined
 
 cnsToList :: ScmObject -> Maybe [ScmObject]
@@ -356,16 +373,14 @@ cnsToList x = cnsToList' x [] where
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
     case f of
-        ObjPrimitive ScmPrimitive { name = nm, function = fct } ->
-            case nm of --this is in the wrong place!
-                "lambda" ->
-                    let lst = cnsToList args
-                    in  
-                        Left [ScmError { errCaller = "apply", errMessage = show lst }]
-                "let" -> undefined
-                "letrec" -> undefined
-                otherwise ->
-                    fct args ctx
+        ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
+            fct args ctx
+        ObjClosure ScmClosure { clsBody = body, clsStack = stk, clsParameters = params } ->
+            --thunkify args
+            --create bindings
+            --create block
+            --put block on stack
+            Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet" } ]
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
