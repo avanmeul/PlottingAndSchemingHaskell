@@ -277,7 +277,7 @@ scmLambda obj ctx =
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
 --to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
 
-globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, letrec are
+globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
     , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
@@ -373,18 +373,33 @@ cnsToList x = cnsToList' x [] where
     cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList' t (h : result) 
     cnsToList' _ _ = Nothing
 
+thunkifyArgList :: ScmContext -> [ScmObject] -> [ScmObject] --to do:  create partially applied function called on ctx, recur on resulting function
+thunkifyArgList ctx [] = []
+thunkifyArgList ctx (h : t) = 
+    case h of
+        i@(ObjImmediate x) -> i : (thunkifyArgList ctx t)
+        otherwise -> (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (thunkifyArgList ctx t)
+
+--to do:  research methods on Maybe to allow chaining
+
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
     case f of
         ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
             fct args ctx
         ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params } ->
+            let arglst = cnsToList args in
+                case arglst of
+                    Just x -> 
+                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, args = " ++ (show $ thunkifyArgList ctx x) } ]
+                    Nothing -> 
+                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, no args" } ]
             --thunkify args
             --create bindings
             --create block
             --put block on stack
             --call eval with new ctx
-            Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet" } ]
+                            -- Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, args = " ++ (show thunks) } ]
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
 
 --to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
