@@ -362,7 +362,7 @@ eval obj ctx =
                 (ScmContext { ctxEnv = e, ctxStk = s }) = ctx
             in 
                 case (args, body) of
-                    (Just b, Just a) -> 
+                    (Just a, Just b) -> 
                         Right (ObjClosure (ScmClosure { clsCtx = ctx, clsParameters = a, clsBody = b }))
                     otherwise ->
                         Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }]              
@@ -384,14 +384,14 @@ cnsToList x = cnsToList' x [] where
     cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList' t (h : result) 
     cnsToList' _ _ = Nothing
 
-thunkifyArgList :: ScmContext -> [ScmObject] -> [ScmObject] --to do:  create partially applied function called on ctx, recur on resulting function
-thunkifyArgList ctx [] = []
-thunkifyArgList ctx (h : t) = 
-    case h of
-        i@(ObjImmediate x) -> i : (thunkifyArgList ctx t)
-        otherwise -> (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (thunkifyArgList ctx t)
-
---to do:  research methods on Maybe to allow chaining
+thunkifyArgList :: ScmContext -> [ScmObject] -> [ScmObject] --thunkify anything that isn't immediate
+thunkifyArgList ctx args = recur args where
+    recur :: [ScmObject] -> [ScmObject]
+    recur [] = []
+    recur (h : t) = 
+        case h of
+            i@(ObjImmediate x) -> i : ( recur t)
+            otherwise -> (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (recur t)
 
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
 apply f ctx args = 
@@ -399,21 +399,23 @@ apply f ctx args =
         ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
             fct args ctx
         ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params } ->
-            let arglst = cnsToList args in
-                case arglst of
-                    Just x -> 
-                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, args = " ++ (show $ thunkifyArgList ctx x) } ]
-                    Nothing -> 
-                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, no args" } ]
             --thunkify args
-            --create bindings
-            --create block
-            --put block on stack
-            --call eval with new ctx
-                            -- Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, args = " ++ (show thunks) } ]
+            let arglst = cnsToList args 
+                paramlst = cnsToList params
+            in
+                case (arglst, paramlst) of
+                    (Just a, Just p) ->
+                        if (length a == length p) then
+                            let bindings = zip p $ thunkifyArgList ctx a in --create bindings, zip params with thunkified args
+                                --create block
+                                --put block on stack
+                                --call eval with new ctx
+                                Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, bindings = " ++ (show bindings) } ]
+                        else
+                            Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
+                    otherwise -> 
+                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, params = " ++ (show paramlst) ++ ", args = " ++ (show arglst) } ]
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
-
---to do:  thunkify:  checks for immediates; otherwise creates thunks (symbol look ups need to be thunkified, they aren't immediates)
 
 --thunks must preserve EoD (environment of definition), maybe they need to be so lazy they don't even determine immediates versus non-immediates?
 
