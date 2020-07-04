@@ -321,19 +321,30 @@ data ScmContext = ScmContext --to do:  ctx prefix
 
 --to do:  create a show-internals that will show internals of a closure (etc.)
 
+--to do:  use fmap to make these simpler
+
+{-
+Prelude> fmap (+1) (Just 3)
+Just 4
+-}
+
+--to do:  change scmCar to cnsCar and scmCdr to cnsCdr?
+
+car :: ScmObject -> Maybe ScmObject
+car (ObjCons ScmCons { scmCar = h, scmCdr = _ }) = Just h
+car _ = Nothing
+
+cdr :: ScmObject -> Maybe ScmObject
+cdr (ObjCons ScmCons { scmCar = _, scmCdr = t }) = Just t
+cdr _ = Nothing
+
 safeCar :: Maybe ScmObject -> Maybe ScmObject
-safeCar x =
-    case x of
-        Just (ObjCons ScmCons { scmCar = h, scmCdr = t}) ->
-            Just h
-        otherwise -> Nothing
+safeCar (Just x) = car x
+safeCar Nothing = Nothing
 
 safeCdr :: Maybe ScmObject -> Maybe ScmObject
-safeCdr x =
-    case x of
-        Just (ObjCons ScmCons { scmCar = h, scmCdr = t}) ->
-            Just t
-        otherwise -> Nothing        
+safeCdr (Just x) = cdr x
+safeCdr Nothing = Nothing
 
 eval :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 eval obj ctx =
