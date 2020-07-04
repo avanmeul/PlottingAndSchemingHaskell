@@ -292,10 +292,21 @@ findLabel env sym =
             Just (_, x) -> Just x
             Nothing -> Nothing
 
-findGlobal :: String -> Maybe ScmObject
-findGlobal = findLabel globalEnv
+findLabelInBlock :: [(String, ScmObject)] -> String -> Maybe ScmBlock -> Maybe ScmObject
+findLabelInBlock gbl lbl blk = iter blk where
+    iter :: Maybe ScmBlock -> Maybe ScmObject
+    iter Nothing = findLabel gbl lbl --find in the global env
+    iter (Just ScmBlock { blkParent = p, blkBindings = b, blkType = _} ) =
+        case (findLabel b lbl) of
+            o@(Just _) -> o
+            Nothing -> iter p --try my parent
 
---to do:  have a function that takes 2 contexts and does complete searches
+findLabelInContext :: ScmContext -> String -> Maybe ScmObject
+findLabelInContext (ScmContext { ctxStk = [], ctxEnv = e }) lbl = findLabel e lbl
+findLabelInContext (ScmContext { ctxStk = (h : _), ctxEnv = e }) lbl = findLabelInBlock e lbl $ Just h
+
+findGlobal :: String -> Maybe ScmObject --to do:  remove this
+findGlobal = findLabel globalEnv
 
 data ScmError = ScmError 
     { errCaller :: String
@@ -309,7 +320,7 @@ data ScmBlockType =
     deriving (Eq, Show)
 
 data ScmBlock = ScmBlock 
-    { blkParent :: [ScmBlock]
+    { blkParent :: Maybe ScmBlock
     , blkType :: ScmBlockType
     , blkBindings :: [(String, ScmObject)] }
     deriving (Show)
@@ -351,7 +362,7 @@ eval obj ctx =
     case obj of
         n@(ObjImmediate _) -> Right n
         (ObjSymbol x) ->
-            let tgt = findGlobal x --once blocks are implemented, this will look in global env only as a last resort
+            let tgt = findLabelInContext ctx x
             in 
                 case tgt of 
                     Just o -> Right o
@@ -372,7 +383,8 @@ eval obj ctx =
                 case f of
                     Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
                     Right x -> apply x ctx t
-        ObjThunk x -> undefined
+        ObjThunk x -> --to do:  this must be completed before testing lambdas
+            undefined
         ObjError e ->
             Left [ ScmError { errCaller = "eval", errMessage = e }]   
         otherwise -> undefined
@@ -409,7 +421,7 @@ apply f ctx args =
                             let bindings = zip p $ thunkifyArgList ctx a in --create bindings, zip params with thunkified args
                                 --create block
                                 --put block on stack
-                                --call eval with new ctx
+                                --call eval on body with new ctx
                                 Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, bindings = " ++ (show bindings) } ]
                         else
                             Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
