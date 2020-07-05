@@ -362,11 +362,10 @@ eval obj ctx =
     case obj of
         n@(ObjImmediate _) -> Right n
         (ObjSymbol x) ->
-            let tgt = findLabelInContext ctx x
-            in 
-                case tgt of 
-                    Just o -> Right o
-                    Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
+            case (findLabelInContext ctx x) of 
+                Just o -> eval o ctx
+                Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
+        p@(ObjPrimitive _) -> Right p
         ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
             let args = safeCar $ Just t
                 body = safeCar $ safeCdr $ Just t
@@ -383,11 +382,14 @@ eval obj ctx =
                 case f of
                     Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
                     Right x -> apply x ctx t
-        ObjThunk x -> --to do:  this must be completed before testing lambdas
-            undefined
+        ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v }) ->
+            eval v c
+            --to do:  this must be completed before testing lambdas
+            -- Left [ ScmError { errCaller = "eval", errMessage = "thunk not implemented yet" } ]
         ObjError e ->
             Left [ ScmError { errCaller = "eval", errMessage = e }]   
-        otherwise -> undefined
+        otherwise -> 
+            Left [ ScmError { errCaller = "eval", errMessage = "could not evaluate " ++ (show obj) }]
 
 cnsToList :: ScmObject -> Maybe [ScmObject] --lesson learned:  calling without the prime can result in a curried result (not intended!)
 cnsToList x = cnsToList' x [] where
@@ -405,31 +407,38 @@ thunkifyArgList ctx args = recur args where
             i@(ObjImmediate x) -> i : ( recur t)
             otherwise -> (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (recur t)
 
+symbolsToLabels :: [ScmObject] -> [String]
+symbolsToLabels lst = reverse (iter lst []) where
+    iter :: [ScmObject] -> [String] -> [String]
+    iter [] res = reverse res
+    iter ((ObjSymbol x) : t) res = iter t (x : res)
+    iter (_ : t) res = iter t res
+
 apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
-apply f ctx args = 
+apply f ctx args = --change the order of these parameters to match eval; should be ctx first
     case f of
         ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
             fct args ctx
         ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params } ->
-            --thunkify args
             let arglst = cnsToList args 
                 paramlst = cnsToList params
+                (ScmContext { ctxStk = parent, ctxEnv = env }) = ctx
             in
                 case (arglst, paramlst) of
                     (Just a, Just p) ->
-                        if (length a == length p) then
-                            let bindings = zip p $ thunkifyArgList ctx a in --create bindings, zip params with thunkified args
-                                --create block
-                                --put block on stack
-                                --call eval on body with new ctx
-                                Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, bindings = " ++ (show bindings) } ]
-                        else
-                            Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
+                        let labels = symbolsToLabels p
+                        in 
+                            if (length a == length labels) then
+                                let bindings = zip labels $ thunkifyArgList ctx a --create bindings, zip params with thunkified args
+                                    p = if (length parent) == 0 then Nothing else Just (head parent)
+                                    blk = ScmBlock { blkBindings = bindings, blkParent = p, blkType = SbtLet } --create block
+                                in 
+                                    eval body (ScmContext { ctxStk = blk : parent, ctxEnv = env })
+                            else
+                                Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
                     otherwise -> 
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, params = " ++ (show paramlst) ++ ", args = " ++ (show arglst) } ]
         otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
-
---thunks must preserve EoD (environment of definition), maybe they need to be so lazy they don't even determine immediates versus non-immediates?
 
 -- fac :: Int -> Int
 -- fac 0 = 1
