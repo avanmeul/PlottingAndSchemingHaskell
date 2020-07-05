@@ -4,13 +4,21 @@ import Lib
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
+-- import Data.List
 
+-- junk :: [(String, Int)]
+-- junk =  [("fido", 3), ("foo", 4), ("fifi", 5)]
+
+-- comp :: (String, Int) -> Bool
 {-----------------------------------------------------------------------------
     Main
 ------------------------------------------------------------------------------}
 main :: IO ()
 main = do
+    -- expression <- get value inputExpression
     -- putStrLn $ show (tokParse "3")
+    -- putStrLn $ show (filter ((\ x (l, v) -> l /= x) "foo") junk)
+    -- putStrLn $ show $ strToHeaps expression
     startGUI defaultConfig setup
 
 canvasSize = 400
@@ -40,6 +48,23 @@ strToAst x =
             Right (x, t) -> Left "unconsumed tokens"
             Left (x, _) -> Left x
 
+strToHeaps :: String -> Either ([ScmError], [Token]) [ScmObject]
+strToHeaps x = 
+    case (strToTokens x) of
+        Right x -> iter [] (toksNoWhitespace x) where
+            iter :: [ScmObject] -> [Token] -> Either ([ScmError], [Token]) [ScmObject]
+            iter res [] = Right $ reverse res
+            iter res toks = 
+                case (buildHeap toks) of
+                    Right (o, t) -> iter (o : res) t
+                    Left (s, t) -> Left ( [ScmError { errCaller = "strToHeaps", errMessage = s}], t)
+        Left (e, t) -> Left ((ScmError { errCaller = "strToHeaps", errMessage = "tokenization failed, can't build heaps" } : [e]), [])
+
+--to do:  evalHeaps
+
+evalHeaps :: [ScmObject] -> Either [ScmError] [(ScmObject, ScmObject)] --the tuple is (before, after) evaluations
+evalHeaps = undefined
+
 strToEval :: String -> Either [ScmError] ScmObject
 strToEval x = 
     let hp = strToHeap x
@@ -65,7 +90,6 @@ setup window = do
     btnAst <- UI.button #+ [string "create AST"]
     btnEval <- UI.button #+ [string "eval"]
     btnTest <- UI.button #+ [string "run test suite"]
-    --to do:  add button for clearing result
     --to do:  add text box for success/failure (or radio button)
     --to do:  add time stamp for latest run
     --to do:  add text box for transcript window
@@ -75,8 +99,6 @@ setup window = do
     --to do:  parse failures should return Left (string, [Token])
     --to do:  possibly add untokenize button?
     --to do:  put all debug buttons in a debug tab
-    --to do:  get rid of all self-evaluating symbols out of the symbol table
-    --to do:  Left [scmError] for errors where scmError is a record with caller name and error description
 
     --to do:  change this from input box into text box?
     inputExpression <- UI.input --to do:  change the name of this
@@ -103,7 +125,8 @@ setup window = do
 
     on UI.click btnAst $ const $ do
         expression <- get value inputExpression
-        element elResult # set UI.text (show $ strToAst expression)
+        -- element elResult # set UI.text (show $ strToAst expression)
+        element elResult # set UI.text (show $ strToHeaps expression)
 
     on UI.click btnEval $ const $ do
         expression <- get value inputExpression

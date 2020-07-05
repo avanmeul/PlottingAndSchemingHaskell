@@ -126,7 +126,7 @@ toksNoWhitespace x = filter (\x -> not $ tokIsWhitespace x) x
   
 --to do:  tokenize sharp symbols
 
-buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token])
+buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token]) --to do:  should be ScmError rather than String
 buildHeap [] = Left ("out of tokens", [])
 buildHeap ((TokSymbol x) : t) =
     Right (ObjSymbol x, t)
@@ -239,7 +239,7 @@ cnsNil
 structure has:  name, function, context, type (ObjPrimitive)
 -}
 
-scmQuote :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
+scmQuote :: ScmObject -> ScmContext -> Either [ScmError] ScmObject --to do:  context arg goes first for all primitives
 scmQuote args ctx =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> Right h
@@ -269,14 +269,31 @@ scmTail args ctx =
                     otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
         otherwise -> Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
 
+--to do:  remove first item before defining; use deleteBy
+
+scmDefine :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
+scmDefine ctx args = undefined
+
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
 --to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
+
+{- --the environments of ghci
+Prelude Data.List> tails $ reverse ["foo1", "foo2", "foo3"]
+[["foo3","foo2","foo1"],["foo2","foo1"],["foo1"],[]]
+Prelude Data.List> tail it
+[["foo2","foo1"],["foo1"],[]]
+--need to do one last reverse
+-}
+
+--to do:  define returns ctx
+--filter (\ (l, v) -> l /= "foo")
 
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
     , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
     , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
+    , ("define", ObjPrimitive ScmPrimitive { priName = "define", priFunction = scmDefine })
     ]
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
@@ -601,6 +618,18 @@ tokParse s = parse' tokParseFunctions s [] where
                 Right (Nothing, y) -> parse' (tail parsers) y tokens
                 Right (Just x, y) -> parse' tokParseFunctions y (x : tokens)
                 Left x -> Left x
+
+strToTokens :: String -> Either (ScmError, String) [Token]
+strToTokens [] = Right []
+strToTokens s = iter tokParseFunctions s [] where
+    iter :: [String -> Either String (Maybe Token, String)] -> String -> [Token] -> Either (ScmError, String) [Token]
+    iter [] s tokens = Left (ScmError { errCaller = "strToTokens", errMessage = "unparsable expression:  " ++ s }, s)
+    iter parsers [] tokens = Right $ reverse tokens
+    iter parsers s tokens = 
+        case ((head parsers) s) of
+            Right (Nothing, y) -> iter (tail parsers) y tokens
+            Right (Just x, y) -> iter tokParseFunctions y (x : tokens)
+            Left e -> Left (ScmError { errCaller = "strToTokens", errMessage = e }, s)
 
 {-
 need test for unterminated string
