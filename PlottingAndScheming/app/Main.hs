@@ -60,11 +60,12 @@ setup :: Window -> UI ()
 setup window = do
     return window # set title "Plotting and Scheming in Haskell"
 
-    clear     <- UI.button #+ [string "Clear the canvas."]
-    btnTokenize  <- UI.button #+ [string "tokenize"]
-    btnAst  <- UI.button #+ [string "create AST"]
-    btnEval  <- UI.button #+ [string "eval"]
-    btnTest  <- UI.button #+ [string "run test suite"]
+    btnClear <- UI.button #+ [string "clear result"]
+    btnTokenize <- UI.button #+ [string "tokenize"]
+    btnAst <- UI.button #+ [string "create AST"]
+    btnEval <- UI.button #+ [string "eval"]
+    btnTest <- UI.button #+ [string "run test suite"]
+    --to do:  add button for clearing result
     --to do:  add text box for success/failure (or radio button)
     --to do:  add time stamp for latest run
     --to do:  add text box for transcript window
@@ -78,31 +79,35 @@ setup window = do
     --to do:  Left [scmError] for errors where scmError is a record with caller name and error description
 
     --to do:  change this from input box into text box?
-    userNameInput <- UI.input --to do:  change the name of this
+    inputExpression <- UI.input --to do:  change the name of this
         # set (attr "placeholder") "expression to be evaluated"
 
     elResult <- UI.span
 
     getBody window #+
-        [ element userNameInput
+        [ element inputExpression
         , element btnTokenize
         , element btnAst
         , element btnEval
         , element btnTest
+        , element btnClear
         , element elResult
         ]
 
     on UI.click btnTokenize $ const $ do
-        userName <- get value userNameInput
-        element elResult # set UI.text (strToTok userName)
+        expression <- get value inputExpression
+        element elResult # set UI.text (strToTok expression)
 
     on UI.click btnTest $ const $ do
         element elResult # set UI.text (show $ parseTest' parseTests)
 
     on UI.click btnAst $ const $ do
-        userName <- get value userNameInput
-        element elResult # set UI.text (show $ strToAst userName)
+        expression <- get value inputExpression
+        element elResult # set UI.text (show $ strToAst expression)
 
     on UI.click btnEval $ const $ do
-        userName <- get value userNameInput
-        element elResult # set UI.text (strToEvalStr userName)
+        expression <- get value inputExpression
+        element elResult # set UI.text (strToEvalStr expression)
+
+    on UI.click btnClear $ const $ do
+        element elResult # set UI.text ""    

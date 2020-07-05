@@ -54,21 +54,21 @@ data ScmClosure = ScmClosure
     deriving (Show)
 
 data ScmObject =
-    ObjSymbol String | --to do:  switch all atom symbols to here
-    ObjImmediate ScmImm | --to do:  switch all atoms over to this
+    ObjSymbol String |
+    ObjImmediate ScmImm |
     ObjBlock ScmBlock |
     ObjCons ScmCons |
     ObjError String |
     ObjThunk ScmThunk |
     ObjClosure ScmClosure |
     ObjPrimitive ScmPrimitive
-    deriving (Show) --to do:  ad Eq
+    deriving (Show) --to do:  add Eq
 
 data ScmThunk = ScmThunk
     { thkCtx :: ScmContext
     , thkValue :: ScmObject
     , thkEvaled :: Bool }
-    deriving (Show) --to do:  ad Eq
+    deriving (Show) --to do:  add Eq
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -269,11 +269,6 @@ scmTail args ctx =
                     otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
         otherwise -> Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
 
-scmLambda :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
-scmLambda obj ctx =
-    --evaluate lambda based on the ctx (which was pushed onto the environment stack by apply)
-    undefined
-
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
 --to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
 
@@ -282,7 +277,6 @@ globalEnv =
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
     , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
     , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
-    , ("lambda", ObjPrimitive ScmPrimitive { priName = "lambda", priFunction = scmLambda })
     ]
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
@@ -364,7 +358,7 @@ eval ctx obj =
         (ObjSymbol x) ->
             case (findLabelInContext ctx x) of 
                 Just o -> eval ctx o
-                Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
+                Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
         p@(ObjPrimitive _) -> Right p
         ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
             let args = safeCar $ Just t
