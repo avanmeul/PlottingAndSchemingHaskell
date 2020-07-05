@@ -282,7 +282,7 @@ globalEnv =
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
     , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
     , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
-    , ("lambda", ObjPrimitive ScmPrimitive { priName = "lambda", priFunction = scmLambda }) 
+    , ("lambda", ObjPrimitive ScmPrimitive { priName = "lambda", priFunction = scmLambda })
     ]
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
@@ -408,7 +408,7 @@ thunkifyArgList ctx args = recur args where
             otherwise -> (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (recur t)
 
 symbolsToLabels :: [ScmObject] -> [String]
-symbolsToLabels lst = reverse (iter lst []) where
+symbolsToLabels lst = (iter lst []) where
     iter :: [ScmObject] -> [String] -> [String]
     iter [] res = reverse res
     iter ((ObjSymbol x) : t) res = iter t (x : res)
@@ -427,8 +427,9 @@ apply f ctx args = --change the order of these parameters to match eval; should 
                 case (arglst, paramlst) of
                     (Just a, Just p) ->
                         let labels = symbolsToLabels p
+                            len = length a
                         in 
-                            if (length a == length labels) then
+                            if (len == length labels && len == length p) then
                                 let bindings = zip labels $ thunkifyArgList ctx a --create bindings, zip params with thunkified args
                                     p = if (length parent) == 0 then Nothing else Just (head parent)
                                     blk = ScmBlock { blkBindings = bindings, blkParent = p, blkType = SbtLet } --create block
@@ -438,7 +439,7 @@ apply f ctx args = --change the order of these parameters to match eval; should 
                                 Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
                     otherwise -> 
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, params = " ++ (show paramlst) ++ ", args = " ++ (show arglst) } ]
-        otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function" } ]
+        otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
 
 -- fac :: Int -> Int
 -- fac 0 = 1
