@@ -249,7 +249,7 @@ scmHead :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 scmHead args ctx =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
-            let evaledArgs = eval h ctx 
+            let evaledArgs = eval ctx h 
             in
                 case evaledArgs of
                     Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) ->
@@ -261,7 +261,7 @@ scmTail :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
 scmTail args ctx =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
-            let evaledArgs = eval h ctx 
+            let evaledArgs = eval ctx h 
             in
                 case evaledArgs of
                     Right (ObjCons (ScmCons { scmCar = _, scmCdr = t })) ->
@@ -357,13 +357,13 @@ safeCdr :: Maybe ScmObject -> Maybe ScmObject
 safeCdr (Just x) = cdr x
 safeCdr Nothing = Nothing
 
-eval :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
-eval obj ctx =
+eval :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+eval ctx obj =
     case obj of
         n@(ObjImmediate _) -> Right n
         (ObjSymbol x) ->
             case (findLabelInContext ctx x) of 
-                Just o -> eval o ctx
+                Just o -> eval ctx o
                 Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed" } ]
         p@(ObjPrimitive _) -> Right p
         ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
@@ -377,13 +377,13 @@ eval obj ctx =
                     otherwise ->
                         Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }]              
         ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) ->
-            let f = eval h ctx
+            let f = eval ctx h
             in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
                 case f of
                     Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
-                    Right x -> apply x ctx t
+                    Right x -> apply ctx x t
         ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v }) ->
-            eval v c
+            eval c v
             --to do:  this must be completed before testing lambdas
             -- Left [ ScmError { errCaller = "eval", errMessage = "thunk not implemented yet" } ]
         ObjError e ->
@@ -414,8 +414,8 @@ symbolsToLabels lst = (iter lst []) where
     iter ((ObjSymbol x) : t) res = iter t (x : res)
     iter (_ : t) res = iter t res
 
-apply :: ScmObject -> ScmContext -> ScmObject -> Either [ScmError] ScmObject
-apply f ctx args = --change the order of these parameters to match eval; should be ctx first
+apply :: ScmContext -> ScmObject -> ScmObject -> Either [ScmError] ScmObject
+apply ctx f args =
     case f of
         ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
             fct args ctx
@@ -434,7 +434,7 @@ apply f ctx args = --change the order of these parameters to match eval; should 
                                     p = if (length parent) == 0 then Nothing else Just (head parent)
                                     blk = ScmBlock { blkBindings = bindings, blkParent = p, blkType = SbtLet } --create block
                                 in 
-                                    eval body (ScmContext { ctxStk = blk : parent, ctxEnv = env })
+                                    eval (ScmContext { ctxStk = blk : parent, ctxEnv = env }) body
                             else
                                 Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
                     otherwise -> 
@@ -743,7 +743,7 @@ someFunc = do
     let Right (x, _) = buildHeap [TokSingleQuote, TokSymbol "a"] in 
         putStrLn $ show $ printHeap x
     let Right (x, _) = buildHeap [TokFloat "3.5"] in 
-        let Right y = eval x ScmContext { ctxStk = [], ctxEnv = []} in 
+        let Right y = eval (ScmContext { ctxStk = [], ctxEnv = []}) x  in 
             putStrLn $ show $ printHeap y
     putStrLn ("done")
 
