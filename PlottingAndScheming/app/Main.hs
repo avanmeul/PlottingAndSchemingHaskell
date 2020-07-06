@@ -4,12 +4,8 @@ import Lib
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
--- import Data.List
+import Data.List
 
--- junk :: [(String, Int)]
--- junk =  [("fido", 3), ("foo", 4), ("fifi", 5)]
-
--- comp :: (String, Int) -> Bool
 {-----------------------------------------------------------------------------
     Main
 ------------------------------------------------------------------------------}
@@ -19,7 +15,6 @@ import Graphics.UI.Threepenny.Core
 main :: IO ()
 main = do
     -- putStrLn $ "caller is " ++ (errCaller testError)
-
     -- expression <- get value inputExpression
     -- putStrLn $ show (tokParse "3")
     -- putStrLn $ show (filter ((\ x (l, v) -> l /= x) "foo") junk)
@@ -69,17 +64,25 @@ strToHeaps x =
                     Left (s, t) -> Left ( [ScmError { errCaller = "strToHeaps", errMessage = s}], t)
         Left (e, t) -> Left ((ScmError { errCaller = "strToHeaps", errMessage = "tokenization failed, can't build heaps" } : [e]), [])
 
---to do:  evalHeaps will check for defines (which will return #<context>), these will be passed to next recursive call
-
 evalHeaps :: ScmContext -> [ScmObject] -> Either [ScmError] [(ScmObject, ScmObject)] --the tuple is (before, after) evaluations
 evalHeaps ctx lst = iter ctx lst [] where
     iter :: ScmContext -> [ScmObject] -> [(ScmObject, ScmObject)] -> Either [ScmError] [(ScmObject, ScmObject)]
-    iter ctx [] res = Right res
+    iter ctx [] res = Right $ reverse res
     iter ctx (h : t) res = 
-        --eval ctx h
-        --check left/right and check for #<context>
-        --add evaluated expression to results, and recur
-        undefined
+        case (eval ctx h) of 
+            Right x@(ObjClosure c) -> iter ctx t $ (h, x) : res
+            Right x -> iter ctx t $ (h, x) : res
+            Left x -> Left (ScmError { errCaller = "evalHeaps", errMessage = "failed in evaluating " ++ (show h) } : x)
+
+evalResults :: String -> String
+evalResults str =
+    case (strToHeaps str) of
+        Right x -> 
+            case (evalHeaps (ScmContext { ctxStk = [], ctxEnv = globalEnv }) x) of
+                Right x -> 
+                    concat $ intersperse "\r\n" $ fmap (\ (_, r) -> printHeap r) x
+                Left x -> show x
+        Left x -> show x
 
 --to do:  remove
 
@@ -144,14 +147,13 @@ setup window = do
     on UI.click btnTest $ const $ do
         element elResult # set UI.text (show $ parseTest' parseTests)
 
-    on UI.click btnAst $ const $ do
+    on UI.click btnAst $ const $ do --to do:  make this work for expressions
         expression <- get value inputExpression
-        -- element elResult # set UI.text (show $ strToAst expression)
-        element elResult # set UI.text (show $ strToHeaps expression)
+        element elResult # set UI.text (show $ strToAst expression)
 
     on UI.click btnEval $ const $ do
         expression <- get value inputExpression
-        element elResult # set UI.text (strToEvalStr expression)
+        element elResult # set UI.text (evalResults expression)
 
     on UI.click btnClear $ const $ do
         element elResult # set UI.text ""
