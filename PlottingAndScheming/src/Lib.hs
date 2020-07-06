@@ -358,7 +358,7 @@ eval ctx n@(ObjImmediate _) = Right n
 eval ctx (ObjSymbol x) =
     case (findLabelInContext ctx x) of 
         Just o -> eval ctx o
-        Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
+        Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x ++ ", global env = " ++ (show $ ctxEnv ctx) } ]
 eval ctx p@(ObjPrimitive _) = Right p
 eval ctx (ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t })) =
     let args = safeCar $ Just t

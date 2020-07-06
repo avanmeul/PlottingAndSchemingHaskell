@@ -70,7 +70,7 @@ evalHeaps ctx lst = iter ctx lst [] where
     iter ctx [] res = Right $ reverse res
     iter ctx (h : t) res = 
         case (eval ctx h) of 
-            Right x@(ObjClosure c) -> iter ctx t $ (h, x) : res
+            Right x@(ObjContext c) -> iter c t $ (h, x) : res
             Right x -> iter ctx t $ (h, x) : res
             Left x -> Left (ScmError { errCaller = "evalHeaps", errMessage = "failed in evaluating " ++ (show h) } : x)
 
