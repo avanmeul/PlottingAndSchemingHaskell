@@ -44,7 +44,7 @@ data ScmImm =
 
 data ScmPrimitive = ScmPrimitive
     { priName :: String
-    , priFunction :: ScmObject -> ScmContext -> Either [ScmError] ScmObject }
+    , priFunction :: ScmContext -> ScmObject -> Either [ScmError] ScmObject }
     deriving (Show) --to do:  ad Eq
 
 data ScmClosure = ScmClosure
@@ -54,6 +54,7 @@ data ScmClosure = ScmClosure
     deriving (Show)
 
 data ScmObject =
+    ObjContext ScmContext |
     ObjSymbol String |
     ObjImmediate ScmImm |
     ObjBlock ScmBlock |
@@ -186,37 +187,25 @@ buildHeap tokens = --this should never happen
     Left ("not implemented", tokens)
 
 printHeap :: ScmObject -> String
-printHeap x = 
-    case x of 
-        ObjSymbol x -> x
-        ObjImmediate x ->
-            case x of
-                ImmSym x -> x
-                ImmInt x -> show x
-                ImmFloat x -> show x
-                otherwise -> "unknown immediate"
-        ObjPrimitive (ScmPrimitive { priName = nm, priFunction = _ }) ->
-            "#<primitive " ++ nm ++ ">"
-        ObjClosure x ->
-            "#<closure>"
-        ObjThunk x ->
-            "#<thunk>"
-        ObjError x ->
-            "#<error>"
-        ObjCons x -> 
-            let res = iter (ObjCons x) ["("] where
-                iter :: ScmObject -> [String] -> [String]
-                iter obj lst = 
-                    case (obj) of
-                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjImmediate (ImmSym "()")) }) ->
-                            ")" : printHeap h : lst
-                        ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) }) -> --cdr has more list elements
-                            iter (ObjCons t) (" " : (printHeap h) : lst)
-                        ObjCons (ScmCons { scmCar = h, scmCdr = t }) -> --cdr isn't cons and isn't ()
-                            ")" : (printHeap t) : " . " : (printHeap h) : lst                                        
-            in 
-                concat (reverse res)
-        otherwise -> ""
+printHeap (ObjSymbol x) = x
+printHeap (ObjImmediate (ImmSym x)) = x
+printHeap (ObjImmediate (ImmInt x)) = show x
+printHeap (ObjImmediate (ImmFloat x)) = show x
+printHeap (ObjImmediate _) = "#<error:  unknown immediate>"
+printHeap (ObjPrimitive (ScmPrimitive { priName = nm, priFunction = _ })) = "#<primitive " ++ nm ++ ">"
+printHeap (ObjClosure x) = "#<closure>"
+printHeap (ObjThunk x) = "#<thunk>"
+printHeap (ObjError x) = "#<error>"
+printHeap (ObjCons x) = concat $ reverse $ iter ["("] $ ObjCons x where
+    iter :: [String] -> ScmObject -> [String]
+    iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = (ObjImmediate (ImmSym "()")) })) = 
+        ")" : printHeap h : lst
+    iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) })) = --cdr has more list elements
+        iter (" " : (printHeap h) : lst) (ObjCons t)
+    iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = t })) = --cdr isn't cons and isn't ()
+        ")" : (printHeap t) : " . " : (printHeap h) : lst                              
+printHeap (ObjContext x) = "#<context>"
+printHeap _ = "#<unknown object type>"
 
 -- fac :: Int -> Int
 -- fac 0 = 1
@@ -233,32 +222,20 @@ cnsTail
 cnsNil
 -}
 
---to do:  create globalEnv, a list of tuples (namme, function)
+scmQuote :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmQuote ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) = Right h
+scmQuote _ _ = Left [ ScmError { errCaller = "scmQuote", errMessage = "bad arg" } ]
 
-{-
-structure has:  name, function, context, type (ObjPrimitive)
--}
+scmHead :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmHead ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) =
+    case (eval ctx h) of
+        Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) ->
+            Right h
+        otherwise -> Left [ ScmError { errCaller = "head (site 1)", errMessage = "bad arg" } ]
+scmHead _ _ = Left [ ScmError { errCaller = "head (site 2)", errMessage = "bad arg" } ]
 
-scmQuote :: ScmObject -> ScmContext -> Either [ScmError] ScmObject --to do:  context arg goes first for all primitives
-scmQuote args ctx =
-    case args of 
-        ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> Right h
-        otherwise -> Left [ ScmError { errCaller = "scmQuote", errMessage = "bad arg" } ]
-
-scmHead :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
-scmHead args ctx =
-    case args of 
-        ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
-            let evaledArgs = eval ctx h 
-            in
-                case evaledArgs of
-                    Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) ->
-                        Right h
-                    otherwise -> Left [ ScmError { errCaller = "head (site 1)", errMessage = "bad arg" } ]
-        otherwise -> Left [ ScmError { errCaller = "head (site 2)", errMessage = "bad arg" } ]
-
-scmTail :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
-scmTail args ctx =
+scmTail :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmTail ctx args =
     case args of 
         ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
             let evaledArgs = eval ctx h 
@@ -271,7 +248,7 @@ scmTail args ctx =
 
 --to do:  remove first item before defining; use deleteBy
 
-scmDefine :: ScmObject -> ScmContext -> Either [ScmError] ScmObject
+scmDefine :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmDefine ctx args = undefined
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
@@ -369,14 +346,20 @@ safeCdr (Just x) = cdr x
 safeCdr Nothing = Nothing
 
 eval :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-eval ctx obj =
+eval ctx n@(ObjImmediate _) = Right n
+eval ctx (ObjSymbol x) =
+    case (findLabelInContext ctx x) of 
+        Just o -> eval ctx o
+        Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
+eval ctx p@(ObjPrimitive _) = Right p
+eval ctx obj = --to do:  make cases into equations (just as for printHeap)
     case obj of
-        n@(ObjImmediate _) -> Right n
-        (ObjSymbol x) ->
-            case (findLabelInContext ctx x) of 
-                Just o -> eval ctx o
-                Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
-        p@(ObjPrimitive _) -> Right p
+        -- n@(ObjImmediate _) -> Right n
+        -- (ObjSymbol x) ->
+        --     case (findLabelInContext ctx x) of 
+        --         Just o -> eval ctx o
+        --         Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
+        -- p@(ObjPrimitive _) -> Right p
         ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
             let args = safeCar $ Just t
                 body = safeCar $ safeCdr $ Just t
@@ -426,10 +409,10 @@ symbolsToLabels lst = (iter lst []) where
     iter (_ : t) res = iter t res
 
 apply :: ScmContext -> ScmObject -> ScmObject -> Either [ScmError] ScmObject
-apply ctx f args =
+apply ctx f args = --to do:  refactor cases into equations
     case f of
         ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
-            fct args ctx
+            fct ctx args --ctx
         ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params } ->
             let arglst = cnsToList args 
                 paramlst = cnsToList params

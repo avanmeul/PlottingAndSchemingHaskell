@@ -13,34 +13,43 @@ import Graphics.UI.Threepenny.Core
 {-----------------------------------------------------------------------------
     Main
 ------------------------------------------------------------------------------}
+
+-- testError = ScmError { errCaller = "fido", errMessage = "hey you" }
+
 main :: IO ()
 main = do
+    -- putStrLn $ "caller is " ++ (errCaller testError)
+
     -- expression <- get value inputExpression
     -- putStrLn $ show (tokParse "3")
     -- putStrLn $ show (filter ((\ x (l, v) -> l /= x) "foo") junk)
     -- putStrLn $ show $ strToHeaps expression
     startGUI defaultConfig setup
 
-canvasSize = 400
+--to do:  remove
 
 strToTok :: String -> String
 strToTok s =
     let res = tokParse s
     in
-        case res of 
+        case res of
             Left x -> "error:  " ++ x
             Right x -> "success:  " ++ (show x)
 
+--to do:  remove
+
 strToHeap :: String -> Either (String, [Token]) (ScmObject, [Token])
-strToHeap x = 
-    let toks = tokParse x 
-    in 
+strToHeap x =
+    let toks = tokParse x
+    in
         case toks of
-            Right x -> buildHeap $ toksNoWhitespace x 
+            Right x -> buildHeap $ toksNoWhitespace x
             Left x -> Left (x, [])
 
+--to do:  remove
+
 strToAst :: String -> Either String String
-strToAst x = 
+strToAst x =
     let hp = strToHeap x
     in
         case hp of
@@ -49,31 +58,42 @@ strToAst x =
             Left (x, _) -> Left x
 
 strToHeaps :: String -> Either ([ScmError], [Token]) [ScmObject]
-strToHeaps x = 
+strToHeaps x =
     case (strToTokens x) of
         Right x -> iter [] (toksNoWhitespace x) where
             iter :: [ScmObject] -> [Token] -> Either ([ScmError], [Token]) [ScmObject]
             iter res [] = Right $ reverse res
-            iter res toks = 
+            iter res toks =
                 case (buildHeap toks) of
                     Right (o, t) -> iter (o : res) t
                     Left (s, t) -> Left ( [ScmError { errCaller = "strToHeaps", errMessage = s}], t)
         Left (e, t) -> Left ((ScmError { errCaller = "strToHeaps", errMessage = "tokenization failed, can't build heaps" } : [e]), [])
 
---to do:  evalHeaps
+--to do:  evalHeaps will check for defines (which will return #<context>), these will be passed to next recursive call
 
-evalHeaps :: [ScmObject] -> Either [ScmError] [(ScmObject, ScmObject)] --the tuple is (before, after) evaluations
-evalHeaps = undefined
+evalHeaps :: ScmContext -> [ScmObject] -> Either [ScmError] [(ScmObject, ScmObject)] --the tuple is (before, after) evaluations
+evalHeaps ctx lst = iter ctx lst [] where
+    iter :: ScmContext -> [ScmObject] -> [(ScmObject, ScmObject)] -> Either [ScmError] [(ScmObject, ScmObject)]
+    iter ctx [] res = Right res
+    iter ctx (h : t) res = 
+        --eval ctx h
+        --check left/right and check for #<context>
+        --add evaluated expression to results, and recur
+        undefined
+
+--to do:  remove
 
 strToEval :: String -> Either [ScmError] ScmObject
-strToEval x = 
+strToEval x =
     let hp = strToHeap x
     in
         case hp of
-            Right (e, []) -> 
-                eval (ScmContext { ctxStk = [], ctxEnv = globalEnv }) e 
+            Right (e, []) ->
+                eval (ScmContext { ctxStk = [], ctxEnv = globalEnv }) e
             Right (x, t) -> Left [ ScmError { errCaller = "strToEval", errMessage = "unconsumed tokens" } ]
             Left (x, _) -> Left [ ScmError { errCaller = "strToEval", errMessage = x } ]
+
+--to do:  remove
 
 strToEvalStr :: String -> String
 strToEvalStr x =
@@ -99,6 +119,7 @@ setup window = do
     --to do:  parse failures should return Left (string, [Token])
     --to do:  possibly add untokenize button?
     --to do:  put all debug buttons in a debug tab
+    --to do:  test error message for insufficient closing parens
 
     --to do:  change this from input box into text box?
     inputExpression <- UI.input --to do:  change the name of this
@@ -133,4 +154,4 @@ setup window = do
         element elResult # set UI.text (strToEvalStr expression)
 
     on UI.click btnClear $ const $ do
-        element elResult # set UI.text ""    
+        element elResult # set UI.text ""
