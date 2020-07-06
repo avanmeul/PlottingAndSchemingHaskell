@@ -491,21 +491,19 @@ parseAtom :: String -> (Maybe Token, String)
 parseAtom [] = (Nothing, [])
 parseAtom s = parseAtom' [parseDot, parseFloat, parseInteger] s
 
-parseAtom' :: [String -> (Maybe Token, String)] -> String -> (Maybe Token, String)
-parseAtom' parsers s =
-    case parsers of
-        [] -> parseSymbol s
-        (h : t) ->
-            let tok = h s 
-                toks = snd tok
-            in
-                case fst tok of
-                    Nothing -> parseAtom' t s
-                    Just x ->
-                        if not (null toks) && elem (head toks) symbolChars then
-                            parseSymbol s --to do:  don't parse from start, just parse from beyond this point?
-                        else
-                            tok
+parseAtom' :: [String -> (Maybe Token, String)] -> String -> (Maybe Token, String) --to do:  refactor to equations
+parseAtom' [] s = parseSymbol s
+parseAtom' (h : t) s = 
+    let tok = h s 
+        toks = snd tok
+    in
+        case fst tok of
+            Nothing -> parseAtom' t s
+            Just x ->
+                if not (null toks) && elem (head toks) symbolChars then
+                    parseSymbol s --to do:  don't parse from start, just parse from beyond this point?
+                else
+                    tok
 
 tokParseAtom :: String -> Either String (Maybe Token, String)
 tokParseAtom s = Right $ parseAtom s
@@ -513,9 +511,10 @@ tokParseAtom s = Right $ parseAtom s
 parseWhitespace :: String -> (Maybe Token, String)
 parseWhitespace [] = (Nothing, [])
 parseWhitespace s =
-    let sym = takeWhile isWhitespace s in
-    if sym == "" then (Nothing, s)
-    else (Just (TokWhitespace sym), drop (length sym) s)
+    let sym = takeWhile isWhitespace s 
+    in
+        if sym == "" then (Nothing, s)
+        else (Just (TokWhitespace sym), drop (length sym) s)
 
 tokParseWhitespace :: String -> Either String (Maybe Token, String)
 tokParseWhitespace s = Right $ parseWhitespace s
