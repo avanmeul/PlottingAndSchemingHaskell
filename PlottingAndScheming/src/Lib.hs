@@ -226,25 +226,19 @@ scmQuote :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmQuote ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) = Right h
 scmQuote _ _ = Left [ ScmError { errCaller = "scmQuote", errMessage = "bad arg" } ]
 
-scmHead :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmHead :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --to do:  refactor case to equations
 scmHead ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) =
     case (eval ctx h) of
-        Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) ->
-            Right h
+        Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) -> Right h
         otherwise -> Left [ ScmError { errCaller = "head (site 1)", errMessage = "bad arg" } ]
 scmHead _ _ = Left [ ScmError { errCaller = "head (site 2)", errMessage = "bad arg" } ]
 
 scmTail :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-scmTail ctx args =
-    case args of 
-        ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) -> 
-            let evaledArgs = eval ctx h 
-            in
-                case evaledArgs of
-                    Right (ObjCons (ScmCons { scmCar = _, scmCdr = t })) ->
-                        Right t
-                    otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
-        otherwise -> Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
+scmTail ctx (ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") })) = 
+    case (eval ctx h) of
+        Right (ObjCons (ScmCons { scmCar = _, scmCdr = t })) -> Right t
+        otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
+scmTail _ _ = Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
 
 --to do:  remove first item before defining; use deleteBy
 
@@ -352,38 +346,23 @@ eval ctx (ObjSymbol x) =
         Just o -> eval ctx o
         Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
 eval ctx p@(ObjPrimitive _) = Right p
-eval ctx obj = --to do:  make cases into equations (just as for printHeap)
-    case obj of
-        -- n@(ObjImmediate _) -> Right n
-        -- (ObjSymbol x) ->
-        --     case (findLabelInContext ctx x) of 
-        --         Just o -> eval ctx o
-        --         Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x } ]
-        -- p@(ObjPrimitive _) -> Right p
-        ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t }) ->
-            let args = safeCar $ Just t
-                body = safeCar $ safeCdr $ Just t
-                (ScmContext { ctxEnv = e, ctxStk = s }) = ctx
-            in 
-                case (args, body) of
-                    (Just a, Just b) -> 
-                        Right (ObjClosure (ScmClosure { clsCtx = ctx, clsParameters = a, clsBody = b }))
-                    otherwise ->
-                        Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }]              
-        ObjCons n@(ScmCons { scmCar = h, scmCdr = t }) ->
-            let f = eval ctx h
-            in --call apply with evaluated head position, and thunkified args (but don't thunkify immediates?)
-                case f of
-                    Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
-                    Right x -> apply ctx x t
-        ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v }) ->
-            eval c v
-            --to do:  this must be completed before testing lambdas
-            -- Left [ ScmError { errCaller = "eval", errMessage = "thunk not implemented yet" } ]
-        ObjError e ->
-            Left [ ScmError { errCaller = "eval", errMessage = e }]   
-        otherwise -> 
-            Left [ ScmError { errCaller = "eval", errMessage = "could not evaluate " ++ (show obj) }]
+eval ctx (ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t })) =
+    let args = safeCar $ Just t
+        body = safeCar $ safeCdr $ Just t
+        (ScmContext { ctxEnv = e, ctxStk = s }) = ctx
+    in 
+        case (args, body) of
+            (Just a, Just b) -> 
+                Right (ObjClosure (ScmClosure { clsCtx = ctx, clsParameters = a, clsBody = b }))
+            otherwise ->
+                Left [ ScmError { errCaller = "eval", errMessage = "bad args or body" }] 
+eval ctx (ObjCons n@(ScmCons { scmCar = h, scmCdr = t })) =
+    case (eval ctx h) of
+        Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
+        Right x -> apply ctx x t
+eval ctx (ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v })) = eval c v
+eval ctx (ObjError e) = Left [ ScmError { errCaller = "eval", errMessage = e }]
+eval _ obj = Left [ ScmError { errCaller = "eval", errMessage = "could not evaluate " ++ (show obj) }]
 
 cnsToList :: ScmObject -> Maybe [ScmObject] --lesson learned:  calling without the prime can result in a curried result (not intended!)
 cnsToList x = cnsToList' x [] where
