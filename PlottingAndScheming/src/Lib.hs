@@ -191,6 +191,7 @@ printHeap (ObjSymbol x) = x
 printHeap (ObjImmediate (ImmSym x)) = x
 printHeap (ObjImmediate (ImmInt x)) = show x
 printHeap (ObjImmediate (ImmFloat x)) = show x
+printHeap (ObjImmediate (ImmString x)) = x
 printHeap (ObjImmediate _) = "#<error:  unknown immediate>"
 printHeap (ObjPrimitive (ScmPrimitive { priName = nm, priFunction = _ })) = "#<primitive " ++ nm ++ ">"
 printHeap (ObjClosure x) = "#<closure>"
@@ -240,10 +241,23 @@ scmTail ctx (ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") 
         otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
 scmTail _ _ = Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
 
---to do:  remove first item before defining; use deleteBy
-
 scmDefine :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-scmDefine ctx args = undefined
+scmDefine ctx args = 
+    let arg = Just args
+        sym = safeCar arg
+        obj = safeCar $ safeCdr arg
+    in 
+        case (sym, obj) of
+            (Just (ObjSymbol s), Just o) ->
+                let thunks = thunkifyArgList ctx [o]
+                    env = filter (\ (l, v) -> l /= s) $ ctxEnv ctx
+                in 
+                    if (length thunks == 1 && (null $ ctxStk ctx)) then
+                        Right $ ObjContext (ScmContext { ctxEnv = (s, (head thunks)) : env, ctxStk = [] })
+                    else 
+                        Left [ScmError { errCaller = "scmDefine", errMessage = "too many args or not at top level" }]
+            otherwise -> 
+                Left [ScmError { errCaller = "scmDefine", errMessage = "arguments to define were invalid" }]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
 --to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
