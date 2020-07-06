@@ -21,8 +21,6 @@ main = do
     -- putStrLn $ show $ strToHeaps expression
     startGUI defaultConfig setup
 
---to do:  remove
-
 strToTok :: String -> String
 strToTok s =
     let res = tokParse s
@@ -30,27 +28,6 @@ strToTok s =
         case res of
             Left x -> "error:  " ++ x
             Right x -> "success:  " ++ (show x)
-
---to do:  remove
-
-strToHeap :: String -> Either (String, [Token]) (ScmObject, [Token])
-strToHeap x =
-    let toks = tokParse x
-    in
-        case toks of
-            Right x -> buildHeap $ toksNoWhitespace x
-            Left x -> Left (x, [])
-
---to do:  remove
-
-strToAst :: String -> Either String String
-strToAst x =
-    let hp = strToHeap x
-    in
-        case hp of
-            Right (x, []) -> Right $ printHeap x
-            Right (x, t) -> Left "unconsumed tokens"
-            Left (x, _) -> Left x
 
 strToHeaps :: String -> Either ([ScmError], [Token]) [ScmObject]
 strToHeaps x =
@@ -84,25 +61,11 @@ evalResults str =
                 Left x -> show x
         Left x -> show x
 
---to do:  remove
-
-strToEval :: String -> Either [ScmError] ScmObject
-strToEval x =
-    let hp = strToHeap x
-    in
-        case hp of
-            Right (e, []) ->
-                eval (ScmContext { ctxStk = [], ctxEnv = globalEnv }) e
-            Right (x, t) -> Left [ ScmError { errCaller = "strToEval", errMessage = "unconsumed tokens" } ]
-            Left (x, _) -> Left [ ScmError { errCaller = "strToEval", errMessage = x } ]
-
---to do:  remove
-
-strToEvalStr :: String -> String
-strToEvalStr x =
-    case (strToEval x) of
-        Right x -> "success:  " ++ (printHeap x)
-        Left x -> "failure:  " ++ (show x)
+heapifyResults :: String -> String
+heapifyResults str =
+    case (strToHeaps str) of
+        Right x -> concat $ intersperse "\r\n" $ fmap printHeap x
+        Left x -> show x        
 
 setup :: Window -> UI ()
 setup window = do
@@ -122,7 +85,6 @@ setup window = do
     --to do:  parse failures should return Left (string, [Token])
     --to do:  possibly add untokenize button?
     --to do:  put all debug buttons in a debug tab
-    --to do:  test error message for insufficient closing parens
 
     --to do:  change this from input box into text box?
     inputExpression <- UI.input --to do:  change the name of this
@@ -149,7 +111,7 @@ setup window = do
 
     on UI.click btnAst $ const $ do --to do:  make this work for expressions
         expression <- get value inputExpression
-        element elResult # set UI.text (show $ strToAst expression)
+        element elResult # set UI.text (heapifyResults expression)
 
     on UI.click btnEval $ const $ do
         expression <- get value inputExpression

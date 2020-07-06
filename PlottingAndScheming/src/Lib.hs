@@ -1,7 +1,7 @@
 {-
 André van Meulebrouck
 scheme.hs
-2018-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
+2019-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
 -}
 
 module Lib where
@@ -16,6 +16,8 @@ import Data.IORef
 -- import Data.Aeson
 -- import Test.HSpec
 import Text.Show.Functions
+
+--to do:  #t, #f, if, zero?, null?
 
 -- to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
 
@@ -191,7 +193,7 @@ printHeap (ObjSymbol x) = x
 printHeap (ObjImmediate (ImmSym x)) = x
 printHeap (ObjImmediate (ImmInt x)) = show x
 printHeap (ObjImmediate (ImmFloat x)) = show x
-printHeap (ObjImmediate (ImmString x)) = x
+printHeap (ObjImmediate (ImmString x)) = "\"" ++ x ++ "\""
 printHeap (ObjImmediate _) = "#<error:  unknown immediate>"
 printHeap (ObjPrimitive (ScmPrimitive { priName = nm, priFunction = _ })) = "#<primitive " ++ nm ++ ">"
 printHeap (ObjClosure x) = "#<closure>"
