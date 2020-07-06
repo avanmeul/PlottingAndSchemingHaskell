@@ -388,31 +388,26 @@ symbolsToLabels lst = (iter lst []) where
     iter (_ : t) res = iter t res
 
 apply :: ScmContext -> ScmObject -> ScmObject -> Either [ScmError] ScmObject
-apply ctx f args = --to do:  refactor cases into equations
-    case f of
-        ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct } ->
-            fct ctx args --ctx
-        ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params } ->
-            let arglst = cnsToList args 
-                paramlst = cnsToList params
-                (ScmContext { ctxStk = parent, ctxEnv = env }) = ctx
-            in
-                case (arglst, paramlst) of
-                    (Just a, Just p) ->
-                        let labels = symbolsToLabels p
-                            len = length a
+apply ctx (ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct }) args = fct ctx args
+apply _ (ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params }) args =
+    let arglst = cnsToList args 
+        paramlst = cnsToList params
+        (ScmContext { ctxStk = parent, ctxEnv = env }) = ctx
+    in
+        case (arglst, paramlst) of
+            (Just a, Just p) ->
+                let labels = symbolsToLabels p
+                    len = length a
+                in 
+                    if (len == length labels && len == length p) then
+                        let bindings = zip labels $ thunkifyArgList ctx a --create bindings, zip params with thunkified args
+                            p = if (length parent) == 0 then Nothing else Just (head parent)
+                            blk = ScmBlock { blkBindings = bindings, blkParent = p, blkType = SbtLet } --create block
                         in 
-                            if (len == length labels && len == length p) then
-                                let bindings = zip labels $ thunkifyArgList ctx a --create bindings, zip params with thunkified args
-                                    p = if (length parent) == 0 then Nothing else Just (head parent)
-                                    blk = ScmBlock { blkBindings = bindings, blkParent = p, blkType = SbtLet } --create block
-                                in 
-                                    eval (ScmContext { ctxStk = blk : parent, ctxEnv = env }) body
-                            else
-                                Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
-                    otherwise -> 
-                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, params = " ++ (show paramlst) ++ ", args = " ++ (show arglst) } ]
-        otherwise -> Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
+                            eval (ScmContext { ctxStk = blk : parent, ctxEnv = env }) body
+                    else
+                        Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
+apply _ f _ = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
 
 -- fac :: Int -> Int
 -- fac 0 = 1
