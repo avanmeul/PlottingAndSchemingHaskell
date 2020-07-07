@@ -122,12 +122,14 @@ createPair (h1 : h2 : t) =
     let cons = ScmCons { scmCar = h2, scmCdr = h1 } 
     in addToCons cons t
 
-tokIsWhitespace :: Token -> Bool
-tokIsWhitespace (TokWhitespace x) = True
-tokIsWhitespace _ = False
+tokNonSemantic :: Token -> Bool
+tokNonSemantic (TokWhitespace _) = True
+tokNonSemantic (TokComment _) = True
+tokNonSemantic _ = False
 
-toksNoWhitespace :: [Token] -> [Token]
-toksNoWhitespace x = filter (\x -> not $ tokIsWhitespace x) x
+toksRemoveNonSemantic :: [Token] -> [Token]
+toksRemoveNonSemantic x = 
+    filter (\x -> not $ tokNonSemantic x) x
   
 --to do:  tokenize sharp symbols
 
@@ -188,6 +190,8 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
 buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occurred without a prior left, i.e. )(
     Left ("buildHeap:  right paren before left", t)
 buildHeap (TokWhitespace x : t) = 
+    buildHeap t --this is just in case these aren't filtered out before calling buildHeap
+buildHeap (TokComment x : t) = 
     buildHeap t --this is just in case these aren't filtered out before calling buildHeap
 buildHeap tokens = --this should never happen
     Left ("not implemented", tokens)

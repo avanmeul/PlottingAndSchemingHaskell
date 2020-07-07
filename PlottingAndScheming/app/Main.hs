@@ -32,7 +32,7 @@ strToTok s =
 strToHeaps :: String -> Either ([ScmError], [Token]) [ScmObject]
 strToHeaps x =
     case (strToTokens x) of
-        Right x -> iter [] (toksNoWhitespace x) where
+        Right x -> iter [] (toksRemoveNonSemantic x) where
             iter :: [ScmObject] -> [Token] -> Either ([ScmError], [Token]) [ScmObject]
             iter res [] = Right $ reverse res
             iter res toks =
