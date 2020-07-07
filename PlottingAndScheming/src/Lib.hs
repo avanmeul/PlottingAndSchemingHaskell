@@ -263,8 +263,40 @@ scmDefine ctx args =
             otherwise -> 
                 Left [ScmError { errCaller = "scmDefine", errMessage = "arguments to define were invalid" }]
 
+scmIf :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmIf ctx args =
+    let arg = Just args
+        cdr1 = safeCdr arg
+        cdr2 = safeCdr cdr1
+        cdr3 = safeCdr cdr2
+        predicate = safeCar arg
+        thenClause = safeCar cdr1
+        elseClause = safeCar cdr2
+    in
+        case (predicate, thenClause, elseClause, cdr3) of
+            (Just p, Just t, Just e, Just (ObjImmediate (ImmSym "()"))) -> 
+                case (eval ctx p) of
+                    Right (ObjImmediate (ImmSym "#t")) ->
+                        eval ctx t
+                    Right (ObjImmediate (ImmSym "#f")) ->
+                        eval ctx e
+                    otherwise -> 
+                        Left [ScmError { errCaller = "scmIf", errMessage = "invalid predicate" }]
+            otherwise -> 
+                let msg = "invalid if:  predicate = " ++ (show predicate) ++ " then = " ++ (show thenClause) ++ ", else = " ++ (show elseClause) in
+                    Left [ScmError { errCaller = "scmIf", errMessage = msg }]
+
+globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
+globalEnv = 
+    [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
+    , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
+    , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
+    , ("define", ObjPrimitive ScmPrimitive { priName = "define", priFunction = scmDefine })
+    , ("if", ObjPrimitive ScmPrimitive { priName = "if", priFunction = scmIf })
+    ]
+
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
---to do:  scmCons, +, -, *, /, if, etc.; deflet, defrec
+--to do:  scmCons, +, -, *, /, if, null?, zero? etc.; deflet, defrec
 
 {- --the environments of ghci
 Prelude Data.List> tails $ reverse ["foo1", "foo2", "foo3"]
@@ -276,14 +308,6 @@ Prelude Data.List> tail it
 
 --to do:  define returns ctx
 --filter (\ (l, v) -> l /= "foo")
-
-globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
-globalEnv = 
-    [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
-    , ("head", ObjPrimitive ScmPrimitive { priName = "head", priFunction = scmHead }) 
-    , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
-    , ("define", ObjPrimitive ScmPrimitive { priName = "define", priFunction = scmDefine })
-    ]
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
 findLabel env sym =
