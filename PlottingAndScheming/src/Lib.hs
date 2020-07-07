@@ -291,36 +291,24 @@ scmZero ctx args =
     let arg = safeCar $ Just args
     in 
         case arg of
-            Just (ObjImmediate (ImmInt x)) ->
-                if x == 0 then
-                    Right symTrue
-                else 
-                    Right symFalse
-            Just (ObjImmediate (ImmFloat x)) -> 
-                if x == 0.0 then
-                    Right symTrue
-                else 
-                    Right symFalse
-            otherwise -> 
-                Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show arg) }]                
-
--- scmOp :: Num a => ScmContext -> (a -> a -> a) -> [ScmObject] -> Either [ScmError] ScmObject
--- scmOp ctx op x = iter x (Just 0, Just 0.0) where
---     iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
---     iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
---     iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
---     iter (h : t) (sumi, Just f) = 
---         case (eval ctx h) of
---             Right (ObjImmediate (ImmInt x)) -> 
---                 case sumi of
---                     Just i -> iter t (Just $ op i x, Just $ f `op` (fromIntegral x))
---                     otherwise -> iter t (Nothing, Just $ f `op` (fromIntegral x))
---             Right (ObjImmediate (ImmFloat x)) -> 
---                 iter t (Nothing, Just $ f `op` x)
---             Right x -> 
---                 Left [ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show h) }]
---             Left x -> 
---                 Left $ ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show x) } : x
+            Just x -> 
+                case (eval ctx x) of
+                    Right (ObjImmediate (ImmInt x)) ->
+                        if x == 0 then
+                            Right symTrue
+                        else 
+                            Right symFalse
+                    Right (ObjImmediate (ImmFloat x)) -> 
+                        if x == 0.0 then
+                            Right symTrue
+                        else 
+                            Right symFalse
+                    Left x ->
+                        Left $ ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show x) } : x
+                    otherwise -> 
+                        Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show x) }]
+            Nothing -> 
+                Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show arg) }]
 
 scmPlus :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmPlus ctx args = 
@@ -363,7 +351,7 @@ scmTimes ctx args =
                         Right x -> 
                             Left [ScmError { errCaller = "scmTimes", errMessage = "bad argument:  " ++ (show h) }]
                         Left x -> 
-                            Left $ ScmError { errCaller = "scmTimes", errMessage = "bad argument:  " ++ (show x) } : x
+                            Left $ ScmError { errCaller = "scmTimes", errMessage = "argument caused failure:  " ++ (show h) } : x
         Nothing -> Left [ScmError { errCaller = "scmTimes", errMessage = "bad argument:  " ++ (show args) }]
 
 scmSub :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
