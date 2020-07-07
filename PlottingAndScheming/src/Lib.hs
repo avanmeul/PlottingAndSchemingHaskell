@@ -130,18 +130,19 @@ toksNoWhitespace x = filter (\x -> not $ tokIsWhitespace x) x
 --to do:  tokenize sharp symbols
 
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token]) --to do:  should be ScmError rather than String
-buildHeap [] = Left ("out of tokens", [])
+buildHeap [] = 
+    Left ("out of tokens", [])
+buildHeap ((TokSymbol i@('#' : s)) : t) = 
+    Right (ObjImmediate (ImmSym i), t)
 buildHeap ((TokSymbol x) : t) =
     Right (ObjSymbol x, t)
 buildHeap (TokSingleQuote : t) =
-    let res = buildHeap t in
-        case res of 
-            Left (m, t) -> Left (m, t)
-            Right (x, t) -> 
-                case (createCons [x, ObjSymbol "quote"]) of
-                    Nothing -> Left ("buildHeap:  failed to create object of a quote", t)
-                    Just x -> Right (ObjCons x, t)
--- buildHeap ((Toksh)) --to do:  tokSharp
+    case (buildHeap t) of 
+        Left (m, t) -> Left (m, t)
+        Right (x, t) -> 
+            case (createCons [x, ObjSymbol "quote"]) of
+                Nothing -> Left ("buildHeap:  failed to create object of a quote", t)
+                Just x -> Right (ObjCons x, t)
 buildHeap ((TokString x) : t) =
     Right (ObjImmediate $ ImmString x, t)
 buildHeap ((TokInteger x) : t) =
@@ -184,7 +185,8 @@ buildHeap (TokLeftParen : t) = --walk across top level list until a right paren 
             Right (x, t) -> Right (ObjCons x, t)
 buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occurred without a prior left, i.e. )(
     Left ("buildHeap:  right paren before left", t)
-buildHeap (TokWhitespace x : t) = buildHeap t --this is just in case these aren't filtered out before calling buildHeap
+buildHeap (TokWhitespace x : t) = 
+    buildHeap t --this is just in case these aren't filtered out before calling buildHeap
 buildHeap tokens = --this should never happen
     Left ("not implemented", tokens)
 
@@ -500,8 +502,9 @@ parseSymbol :: String -> (Maybe Token, String)
 parseSymbol [] = (Nothing, [])
 parseSymbol s =
     let sym = takeWhile isSymbolChar s in
-    if sym == "" then (Nothing, s)
-    else (Just (TokSymbol sym), drop (length sym) s)
+        if sym == "" 
+        then (Nothing, s)
+        else (Just (TokSymbol sym), drop (length sym) s)
 
 parseAtom :: String -> (Maybe Token, String)
 parseAtom [] = (Nothing, [])
