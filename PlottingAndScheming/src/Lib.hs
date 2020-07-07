@@ -129,8 +129,6 @@ toksRemoveNonSemantic :: [Token] -> [Token]
 toksRemoveNonSemantic x = 
     filter (\x -> not $ tokNonSemantic x) x
   
---to do:  tokenize sharp symbols
-
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token]) --to do:  should be ScmError rather than String
 buildHeap [] = 
     Left ("out of tokens", [])
@@ -393,6 +391,23 @@ scmSub ctx args =
         Nothing -> 
             Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
 
+scmNull :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmNull ctx args = 
+    let arg = safeCar $ Just args in 
+        case arg of
+            Just x -> 
+                case (eval ctx x) of
+                    Right (ObjImmediate (ImmSym "()")) ->
+                        Right symTrue
+                    Right (ObjCons x) -> 
+                        Right symFalse
+                    Left x ->
+                        Left $ ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show x) } : x
+                    otherwise -> 
+                        Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show x) }]
+            Nothing -> 
+                Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show arg) }]
+
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
@@ -404,6 +419,7 @@ globalEnv =
     , ("+", ObjPrimitive ScmPrimitive { priName = "+", priFunction = scmPlus })
     , ("-", ObjPrimitive ScmPrimitive { priName = "-", priFunction = scmSub })
     , ("*", ObjPrimitive ScmPrimitive { priName = "*", priFunction = scmTimes })
+    , ("null?", ObjPrimitive ScmPrimitive { priName = "null?", priFunction = scmNull })
     ]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
