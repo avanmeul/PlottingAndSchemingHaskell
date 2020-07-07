@@ -17,7 +17,9 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  #t, #f, if, zero?, null?
+--to do:  define needs to put its symbol on the stack so it can be recursive
+
+--to do:  null?
 
 -- to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
 
@@ -254,7 +256,7 @@ scmDefine ctx args =
         case (sym, obj) of
             (Just (ObjSymbol s), Just o) ->
                 let thunks = thunkifyArgList ctx [o]
-                    env = filter (\ (l, v) -> l /= s) $ ctxEnv ctx
+                    env = filter (\ (l, v) -> l /= s) $ ctxEnv ctx --this needs to be the extended environment
                 in 
                     if (length thunks == 1 && (null $ ctxStk ctx)) then
                         Right $ ObjContext (ScmContext { ctxEnv = (s, (head thunks)) : env, ctxStk = [] })
@@ -280,8 +282,10 @@ scmIf ctx args =
                         eval ctx t
                     Right (ObjImmediate (ImmSym "#f")) ->
                         eval ctx e
-                    otherwise -> 
-                        Left [ScmError { errCaller = "scmIf", errMessage = "invalid predicate" }]
+                    Right x ->
+                        Left [ScmError { errCaller = "scmIf", errMessage = "invalid predicate:  " ++ (show x) }]
+                    Left x -> 
+                        Left $ ScmError { errCaller = "scmIf", errMessage = "predicate evaluation failed:  " ++ (show p) } : x
             otherwise -> 
                 let msg = "invalid if:  predicate = " ++ (show predicate) ++ " then = " ++ (show thenClause) ++ ", else = " ++ (show elseClause) in
                     Left [ScmError { errCaller = "scmIf", errMessage = msg }]
@@ -491,7 +495,7 @@ eval ctx n@(ObjImmediate _) = Right n
 eval ctx (ObjSymbol x) =
     case (findLabelInContext ctx x) of 
         Just o -> eval ctx o
-        Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x ++ ", global env = " ++ (show $ ctxEnv ctx) } ]
+        Nothing -> Left [ ScmError { errCaller = "eval", errMessage = "symbol lookup failed:  " ++ x ++ ", ctx = " ++ (show ctx) } ]
 eval ctx p@(ObjPrimitive _) = Right p
 eval ctx (ObjCons n@(ScmCons { scmCar = ObjSymbol "lambda", scmCdr = t })) =
     let args = safeCar $ Just t
@@ -507,7 +511,11 @@ eval ctx (ObjCons n@(ScmCons { scmCar = h, scmCdr = t })) =
     case (eval ctx h) of
         Left l -> Left (ScmError { errCaller = "eval", errMessage = "bad function " } : l)
         Right x -> apply ctx x t
-eval ctx (ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v })) = eval c v
+eval ctx (ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v })) = 
+    let stk = ctxStk c --stack comes from thunk
+        env = ctxEnv ctx --env comes from eval (which has the latest version of the global env)
+        ectx = ScmContext { ctxStk = stk, ctxEnv = env }
+    in eval ectx v
 eval ctx (ObjError e) = Left [ ScmError { errCaller = "eval", errMessage = e }]
 eval _ obj = Left [ ScmError { errCaller = "eval", errMessage = "could not evaluate " ++ (show obj) }]
 
@@ -536,10 +544,10 @@ symbolsToLabels lst = (iter lst []) where
 
 apply :: ScmContext -> ScmObject -> ScmObject -> Either [ScmError] ScmObject
 apply ctx (ObjPrimitive ScmPrimitive { priName = nm, priFunction = fct }) args = fct ctx args
-apply _ (ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = params }) args =
+apply ctx (ObjClosure ScmClosure { clsBody = body, clsCtx = ctxOfClosure, clsParameters = params }) args =
     let arglst = cnsToList args 
         paramlst = cnsToList params
-        (ScmContext { ctxStk = parent, ctxEnv = env }) = ctx
+        (ScmContext { ctxStk = parent, ctxEnv = env }) = ctxOfClosure
     in
         case (arglst, paramlst) of
             (Just a, Just p) ->
@@ -554,7 +562,7 @@ apply _ (ObjClosure ScmClosure { clsBody = body, clsCtx = ctx, clsParameters = p
                             eval (ScmContext { ctxStk = blk : parent, ctxEnv = env }) body
                     else
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
-apply _ f _ = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
+apply ctx f args = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
 
 -- fac :: Int -> Int
 -- fac 0 = 1

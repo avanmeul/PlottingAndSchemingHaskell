@@ -26,7 +26,13 @@ ScmError {errCaller = "eval", errMessage = "symbol lookup failed: fact, global e
 
 (define foo (lambda (x) (zero? x))) foo (foo 3)
 
+(define foo (lambda (x) 
+
+something to try:  ((lambda () 3)) ;to test null arg list
+
 [
 ScmError {errCaller = "evalHeaps", errMessage = "failed in evaluating ObjCons (ScmCons {scmCar = ObjSymbol \"foo\", scmCdr = ObjCons (ScmCons {scmCar = ObjImmediate (ImmInt 3), scmCdr = ObjImmediate (ImmSym \"()\")})})"},
 ScmError {errCaller = "scmZero", errMessage = "bad argument: Just (ObjSymbol \"x\")"}
 ]       
+
+(define foo 3) (define fido (lambda (x) (+ x foo))) (fido 2)
