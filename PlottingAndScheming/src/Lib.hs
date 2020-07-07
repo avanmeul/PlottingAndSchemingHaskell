@@ -423,9 +423,11 @@ scmConstructor ctx args =
                         (Right e, Right l) -> 
                             Right $ ObjCons ScmCons { scmCar = e, scmCdr = l }
                         (Left e, Left l) -> 
-                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "args failed" }], e, l]
-                        otherwise -> 
-                            Left [ScmError { errCaller = "scmConstructor", errMessage = "2nd argument wasn't a cons" } ]
+                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of args failed" }], e, l]
+                        (Left e, Right l) -> 
+                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of arg1 failed" }], e]
+                        (Right e, Left l) -> 
+                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of arg2 failed" }], l]                            
             otherwise -> 
                 Left [ScmError { errCaller = "scmConstructor", errMessage = "arguments to cons were invalid" }]                
 
