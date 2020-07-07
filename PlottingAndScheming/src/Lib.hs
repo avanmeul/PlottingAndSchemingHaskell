@@ -17,11 +17,9 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  define needs to put its symbol on the stack so it can be recursive
+--to do:  null?, cons; then define reverse
 
---to do:  null?
-
--- to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
+--to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
 
 data Token =
     TokComment String |
