@@ -304,6 +304,28 @@ scmZero ctx args =
             otherwise -> 
                 Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show arg) }]                
 
+scmPlus :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmPlus ctx args = 
+    case (cnsToList args) of
+        Just x -> 
+            iter x (Just 0, Just 0.0) where
+                iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
+                iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
+                iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
+                iter (h : t) (sumi, Just f) = 
+                    case (eval ctx h) of
+                        Right (ObjImmediate (ImmInt x)) -> 
+                            case sumi of
+                                Just i -> iter t (Just $ i + x, Just $ f + (fromIntegral x))
+                                otherwise -> iter t (Nothing, Just $ f + (fromIntegral x))
+                        Right (ObjImmediate (ImmFloat x)) -> 
+                            iter t (Nothing, Just $ f + x)
+                        Right x -> 
+                            Left [ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show h) }]
+                        Left x -> 
+                            Left $ ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show x) } : x
+        Nothing -> Left $ [ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show args) }]
+
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
@@ -312,6 +334,7 @@ globalEnv =
     , ("define", ObjPrimitive ScmPrimitive { priName = "define", priFunction = scmDefine })
     , ("if", ObjPrimitive ScmPrimitive { priName = "if", priFunction = scmIf })
     , ("zero?", ObjPrimitive ScmPrimitive { priName = "zero?", priFunction = scmZero })
+    , ("+", ObjPrimitive ScmPrimitive { priName = "+", priFunction = scmPlus })
     ]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
