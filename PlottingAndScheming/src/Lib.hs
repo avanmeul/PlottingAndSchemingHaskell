@@ -286,6 +286,24 @@ scmIf ctx args =
                 let msg = "invalid if:  predicate = " ++ (show predicate) ++ " then = " ++ (show thenClause) ++ ", else = " ++ (show elseClause) in
                     Left [ScmError { errCaller = "scmIf", errMessage = msg }]
 
+scmZero :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmZero ctx args = 
+    let arg = safeCar $ Just args
+    in 
+        case arg of
+            Just (ObjImmediate (ImmInt x)) ->
+                if x == 0 then
+                    Right symTrue
+                else 
+                    Right symFalse
+            Just (ObjImmediate (ImmFloat x)) -> 
+                if x == 0.0 then
+                    Right symTrue
+                else 
+                    Right symFalse
+            otherwise -> 
+                Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show arg) }]                
+
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
@@ -293,6 +311,7 @@ globalEnv =
     , ("tail", ObjPrimitive ScmPrimitive { priName = "tail", priFunction = scmTail }) 
     , ("define", ObjPrimitive ScmPrimitive { priName = "define", priFunction = scmDefine })
     , ("if", ObjPrimitive ScmPrimitive { priName = "if", priFunction = scmIf })
+    , ("zero?", ObjPrimitive ScmPrimitive { priName = "zero?", priFunction = scmZero })
     ]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
