@@ -1,3 +1,8 @@
 ((lambda (x y z a) (x (y (z a)))) head tail tail '(a b c))
 
 (define id (lambda (x) x)) (id (head (tail '(a b c))))
+
+(define fact
+    (lambda (n)
+        (if (zero? n) 1
+            n * (fact (- n 1)))))
