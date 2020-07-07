@@ -408,6 +408,27 @@ scmNull ctx args =
             Nothing -> 
                 Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show arg) }]
 
+scmConstructor :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmConstructor ctx args = 
+    let arg = Just args
+        el = safeCar arg
+        lst = safeCar $ safeCdr arg
+    in 
+        case (el, lst) of --should cons evaluate its argument?
+            (Just e, Just l) ->
+                let arg1 = eval ctx e
+                    arg2 = eval ctx l
+                in
+                    case (arg1, arg2) of
+                        (Right e, Right l) -> 
+                            Right $ ObjCons ScmCons { scmCar = e, scmCdr = l }
+                        (Left e, Left l) -> 
+                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "args failed" }], e, l]
+                        otherwise -> 
+                            Left [ScmError { errCaller = "scmConstructor", errMessage = "2nd argument wasn't a cons" } ]
+            otherwise -> 
+                Left [ScmError { errCaller = "scmConstructor", errMessage = "arguments to cons were invalid" }]                
+
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
@@ -420,6 +441,7 @@ globalEnv =
     , ("-", ObjPrimitive ScmPrimitive { priName = "-", priFunction = scmSub })
     , ("*", ObjPrimitive ScmPrimitive { priName = "*", priFunction = scmTimes })
     , ("null?", ObjPrimitive ScmPrimitive { priName = "null?", priFunction = scmNull })
+    , ("cons", ObjPrimitive ScmPrimitive { priName = "cons", priFunction = scmConstructor })
     ]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
