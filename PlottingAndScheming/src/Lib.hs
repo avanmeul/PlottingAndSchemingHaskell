@@ -17,7 +17,7 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  null?, cons; then define reverse
+--to do:  type rational, /, let*, letrec, number?, complex?, real?, integer?
 
 --to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
 
@@ -212,7 +212,7 @@ printHeap (ObjCons x) = concat $ reverse $ iter ["("] $ ObjCons x where
     iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = t })) = --cdr isn't cons and isn't ()
         ")" : (printHeap t) : " . " : (printHeap h) : lst                              
 printHeap (ObjContext x) = "#<context>"
-printHeap _ = "#<unknown object type>"
+printHeap x = "#<unknown object type:  " ++ (show x) ++ ">"
 
 -- fac :: Int -> Int
 -- fac 0 = 1
@@ -429,7 +429,43 @@ scmConstructor ctx args =
                         (Right e, Left l) -> 
                             Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of arg2 failed" }], l]                            
             otherwise -> 
-                Left [ScmError { errCaller = "scmConstructor", errMessage = "arguments to cons were invalid" }]                
+                Left [ScmError { errCaller = "scmConstructor", errMessage = "arguments to cons were invalid" }]
+
+createLetBindings :: ScmContext -> ScmObject -> Either [ScmError] [(String, ScmObject)]
+createLetBindings ctx obj = iter obj [] where
+    iter :: ScmObject -> [(String, ScmObject)] -> Either [ScmError] [(String, ScmObject)]
+    iter (ObjImmediate (ImmSym "()")) res = Right $ reverse res
+    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res =
+        case (cnsToList h) of
+            Just (ObjSymbol l : o : []) -> 
+                iter t $ (l, head $ thunkifyArgList ctx [o]) : res
+            Nothing -> 
+                Left [ ScmError { errCaller = "", errMessage = "bad arguments:  " ++ (show c)}]
+
+scmLet :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmLet ctx args = 
+    let arg = Just args
+        bindings = safeCar arg
+        body = safeCar $ safeCdr arg
+    in case (bindings, body) of
+        (Just p, Just b) -> 
+            let stk = ctxStk ctx
+                env = ctxEnv ctx
+                parent = if (null stk) then Nothing else Just $ head stk
+                bindings = createLetBindings ctx p
+            in case bindings of
+                Right p -> 
+                    let blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLet } --create block
+                    in 
+                        eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
+                Left e -> 
+                    Left $ ScmError { errCaller = "scmLet", errMessage = "failure on binding creation"} : e
+        (Nothing, Nothing) ->
+            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) ++ ", bad body:  " ++ (show body) } ]
+        (Just p, Nothing) ->
+            Left [ ScmError { errCaller = "scmLet", errMessage = "bad body:  " ++ (show body) } ]
+        (Nothing, Just b) -> 
+            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]
 
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
@@ -444,6 +480,7 @@ globalEnv =
     , ("*", ObjPrimitive ScmPrimitive { priName = "*", priFunction = scmTimes })
     , ("null?", ObjPrimitive ScmPrimitive { priName = "null?", priFunction = scmNull })
     , ("cons", ObjPrimitive ScmPrimitive { priName = "cons", priFunction = scmConstructor })
+    , ("let", ObjPrimitive ScmPrimitive { priName = "let", priFunction = scmLet })
     ]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
