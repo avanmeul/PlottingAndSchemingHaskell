@@ -17,11 +17,9 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  check for duplicate identifiers in let, lambda; make sure shadowing works in let*
+--to do:  implement division for int and float, use an OR type ScmNumber (int, float; more to be added later)
 
 --to do:  implement list
- 
---to do:  implement division for int and float, use an OR type ScmNumber (int, float; more to be added later)
 
 --to do:  type rational, /, letrec, number?, complex?, real?, integer?
 
@@ -518,7 +516,10 @@ scmLet ctx args =
                 Right p -> 
                     let blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLet } --create block
                     in 
-                        eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
+                        if (length (nub (fmap (\ (l, o) -> l) p)) == length p) then
+                            eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
+                        else 
+                            Left [ ScmError { errCaller = "scmLet", errMessage = "duplicate bindings are not allowed in let" } ]
                 Left e -> 
                     Left $ ScmError { errCaller = "scmLet", errMessage = "failure on binding creation"} : e
         (Nothing, Nothing) ->
@@ -653,6 +654,36 @@ scmLetStar ctx args =
         (Nothing, Just b) -> 
             Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad bindings:  " ++ (show bindings) } ]
 
+thunkifyRecArgs :: ScmContext -> [ScmObject] -> [ScmObject] --thunkify anything that isn't immediate
+thunkifyRecArgs ctx args = recur args where
+    recur :: [ScmObject] -> [ScmObject]
+    recur [] = []
+    recur (h : t) = 
+        case h of
+            i@(ObjImmediate x) -> 
+                i : ( recur t)
+            otherwise -> 
+                (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (recur t)
+
+createLetRecBindings :: ScmContext -> ScmObject -> Either [ScmError] [(String, ScmObject)]
+createLetRecBindings ctx obj = iter obj [] ctx where
+    iter :: ScmObject -> [(String, ScmObject)] -> ScmContext -> Either [ScmError] [(String, ScmObject)]
+    iter (ObjImmediate (ImmSym "()")) res ctx = Right $ reverse res
+    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res ctx =
+        case (cnsToList h) of
+            Just (ObjSymbol l : o : []) ->
+                if null res then 
+                    iter t ((l, head $ thunkifyRecArgs ctx [o]) : res) ctx
+                else
+                    let stk = ctxStk ctx
+                        parent = if null stk then Nothing else Just $ head stk
+                        blk = ScmBlock { blkBindings = res, blkParent = parent, blkType = SbtLetStar }
+                        newCtx = ScmContext { ctxEnv = ctxEnv ctx, ctxStk = [blk] }
+                    in
+                        iter t ((l, head $ thunkifyArgList newCtx [o]) : res) newCtx
+            Nothing -> 
+                Left [ ScmError { errCaller = "", errMessage = "bad arguments:  " ++ (show c)}]
+
 scmLetRec :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmLetRec ctx args = 
     let arg = Just args
@@ -663,21 +694,46 @@ scmLetRec ctx args =
             let stk = ctxStk ctx
                 env = ctxEnv ctx
                 parent = if (null stk) then Nothing else Just $ head stk
-                bindings = createLetBindings ctx p
+                bindings = createLetRecBindings ctx p
             in case bindings of
                 Right p -> 
-                    let
-                        blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLet }
+                    let blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLet } --create block
                     in 
-                        eval (ScmContext { ctxStk = blk : stk, ctxEnv = mappend p env }) b
+                        eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
                 Left e -> 
-                    Left $ ScmError { errCaller = "scmLet", errMessage = "failure on binding creation"} : e
+                    Left $ ScmError { errCaller = "scmLetStar", errMessage = "failure on binding creation"} : e
         (Nothing, Nothing) ->
-            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) ++ ", bad body:  " ++ (show body) } ]
+            Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad bindings:  " ++ (show bindings) ++ ", bad body:  " ++ (show body) } ]
         (Just p, Nothing) ->
-            Left [ ScmError { errCaller = "scmLet", errMessage = "bad body:  " ++ (show body) } ]
+            Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad body:  " ++ (show body) } ]
         (Nothing, Just b) -> 
-            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]   
+            Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad bindings:  " ++ (show bindings) } ]
+
+-- scmLetRec :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+-- scmLetRec ctx args = 
+--     let arg = Just args
+--         bindings = safeCar arg
+--         body = safeCar $ safeCdr arg
+--     in case (bindings, body) of
+--         (Just p, Just b) -> 
+--             let stk = ctxStk ctx
+--                 env = ctxEnv ctx
+--                 parent = if (null stk) then Nothing else Just $ head stk
+--                 bindings = createLetBindings ctx p
+--             in case bindings of
+--                 Right p -> 
+--                     let --self = ScmBlock { blkBindings = p, blkParent = Just parent, blkType = SbtLetRec }
+--                         blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLetRec }
+--                     in 
+--                         eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
+--                 Left e -> 
+--                     Left $ ScmError { errCaller = "scmLet", errMessage = "failure on binding creation"} : e
+--         (Nothing, Nothing) ->
+--             Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) ++ ", bad body:  " ++ (show body) } ]
+--         (Just p, Nothing) ->
+--             Left [ ScmError { errCaller = "scmLet", errMessage = "bad body:  " ++ (show body) } ]
+--         (Nothing, Just b) -> 
+--             Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]   
 
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
@@ -720,10 +776,10 @@ findLabelInBlock :: [(String, ScmObject)] -> String -> Maybe ScmBlock -> Maybe S
 findLabelInBlock gbl lbl blk = iter blk where
     iter :: Maybe ScmBlock -> Maybe ScmObject
     iter Nothing = findLabel gbl lbl --find in the global env
-    iter (Just ScmBlock { blkParent = p, blkBindings = b, blkType = _} ) =
+    iter (Just ScmBlock { blkParent = p, blkBindings = b, blkType = t} ) =
         case (findLabel b lbl) of
             o@(Just _) -> o
-            Nothing -> iter p --try my parent
+            Nothing -> iter p --try my parent (to do:  create recursive lookup that doesn't try parent, instead tries recursive environment)
 
 findLabelInContext :: ScmContext -> String -> Maybe ScmObject
 findLabelInContext (ScmContext { ctxStk = [], ctxEnv = e }) lbl = findLabel e lbl
@@ -828,8 +884,11 @@ apply ctx (ObjClosure ScmClosure { clsBody = body, clsCtx = ctxOfClosure, clsPar
                         let bindings = zip labels $ thunkifyArgList ctx a --create bindings, zip params with thunkified args
                             p = if (length parent) == 0 then Nothing else Just (head parent)
                             blk = ScmBlock { blkBindings = bindings, blkParent = p, blkType = SbtLet } --create block
-                        in 
-                            eval (ScmContext { ctxStk = blk : parent, ctxEnv = env }) body
+                        in
+                            if (length (nub (fmap (\ (l, o) -> l) bindings)) == length bindings) then
+                                eval (ScmContext { ctxStk = blk : parent, ctxEnv = env }) body
+                            else 
+                                Left [ ScmError { errCaller = "apply", errMessage = "duplicate bindings are not allowed in lambdas" } ]
                     else
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
 apply ctx f args = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]

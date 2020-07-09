@@ -1,8 +1,14 @@
 ;scheme test suite
 
+((lambda (f p t e) (f p t e)) if #t 3 x) ; => 3 (tests laziness and first class status of if)
+
 ((lambda (x x ) x) 1 2) ;=> error about duplicate identifier, not currently working
 
 (let ((x 1) (x 2)) x) ;=> error about duplicate identifier, not currently working
+
+(let ((x 1) (y 2)) (+ x y)) ;=> 3
+
+(letrec ((x 1) (y 2)) (+ x y)) ;=> 3
 
 (let ((x 1)
       (y 2))
@@ -12,12 +18,13 @@
          (y 2))
   (+ x y)) ;=> 4   
 
-(letrec ((rec 
-        (lambda (x) 
-            (if (null? x) 
-                'done 
-                (rec (tail x))))))
-    (rec '(a b c)))
+(let ((rec 5))
+  (letrec ((rec 
+          (lambda (x) 
+              (if (null? x) 
+                  'done 
+                  (rec (tail x))))))
+      (rec '(a b c))))
 
 (letrec ((fact (lambda (n) (if (zero? n) 1 (* n (fact (- n 1)))))))
   (fact 5))
