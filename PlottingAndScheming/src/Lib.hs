@@ -17,6 +17,8 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
+--to do:  check for duplicate identifiers in let, lambda; make sure shadowing works in let*
+
 --to do:  type rational, /, let*, letrec, number?, complex?, real?, integer?
 
 --to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
@@ -73,6 +75,33 @@ data ScmThunk = ScmThunk
     , thkEvaled :: Bool }
     deriving (Show) --to do:  add Eq
 
+data ScmCons = ScmCons
+    { scmCar :: ScmObject
+    , scmCdr :: ScmObject }
+    deriving (Show) --to do:  ad Eq
+
+data ScmError = ScmError 
+    { errCaller :: String
+    , errMessage :: String }
+    deriving (Eq, Show)
+
+data ScmBlockType =
+    SbtLet |
+    SbtLetStar |
+    SbtLetRec
+    deriving (Eq, Show)
+
+data ScmBlock = ScmBlock 
+    { blkParent :: Maybe ScmBlock
+    , blkType :: ScmBlockType --to do:  maybe remove this
+    , blkBindings :: [(String, ScmObject)] }
+    deriving (Show)
+
+data ScmContext = ScmContext --to do:  ctx prefix
+    { ctxStk :: [ScmBlock]
+    , ctxEnv :: [(String, ScmObject)] }
+    deriving (Show)    
+
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
 getToken ((TokComment _) : t) = getToken t
@@ -95,11 +124,6 @@ symTrue = ObjImmediate $ ImmSym "#t"
 
 symFalse :: ScmObject
 symFalse = ObjImmediate $ ImmSym "#f"
-
-data ScmCons = ScmCons
-    { scmCar :: ScmObject
-    , scmCdr :: ScmObject }
-    deriving (Show) --to do:  ad Eq
 
 addToCons :: ScmCons -> [ScmObject] -> Maybe ScmCons
 addToCons cons [] = Just cons
@@ -314,8 +338,8 @@ scmZero ctx args =
             Nothing -> 
                 Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show arg) }]
 
-scmPlus :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-scmPlus ctx args = 
+scmAdd :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmAdd ctx args = 
     case (cnsToList args) of
         Just x -> 
             iter x (Just 0, Just 0.0) where
@@ -331,13 +355,13 @@ scmPlus ctx args =
                         Right (ObjImmediate (ImmFloat x)) -> 
                             iter t (Nothing, Just $ f + x)
                         Right x -> 
-                            Left [ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show h) }]
+                            Left [ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ (show h) }]
                         Left x -> 
-                            Left $ ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show x) } : x
-        Nothing -> Left $ [ScmError { errCaller = "scmPlus", errMessage = "bad argument:  " ++ (show args) }]
+                            Left $ ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ (show x) } : x
+        Nothing -> Left $ [ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ (show args) }]
 
-scmTimes :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-scmTimes ctx args = 
+scmMul :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmMul ctx args = 
     case (cnsToList args) of
         Just x -> 
             iter x (Just 1, Just 1.0) where
@@ -353,12 +377,12 @@ scmTimes ctx args =
                         Right (ObjImmediate (ImmFloat x)) -> 
                             iter t (Nothing, Just $ f * x)
                         Right x -> 
-                            Left [ScmError { errCaller = "scmTimes", errMessage = "bad argument:  " ++ (show h) }]
+                            Left [ScmError { errCaller = "scmMul", errMessage = "bad argument:  " ++ (show h) }]
                         Left x -> 
-                            Left $ ScmError { errCaller = "scmTimes", errMessage = "argument caused failure:  " ++ (show h) } : x
-        Nothing -> Left [ScmError { errCaller = "scmTimes", errMessage = "bad argument:  " ++ (show args) }]
+                            Left $ ScmError { errCaller = "scmMul", errMessage = "argument caused failure:  " ++ (show h) } : x
+        Nothing -> Left [ScmError { errCaller = "scmMul", errMessage = "bad argument:  " ++ (show args) }]
 
-scmSub :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmSub :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --plus, minus, times, divide; add, sub, mul, div (to do:  rename to the latter)
 scmSub ctx args = 
     case (cnsToList args) of
         Just [] -> 
@@ -390,6 +414,39 @@ scmSub ctx args =
                         Left $ ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show x) } : x
         Nothing -> 
             Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
+
+scmDiv :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmDiv ctx args = undefined
+    -- case (cnsToList args) of
+    --     Just [] -> 
+    --         Left [ScmError { errCaller = "scmSub", errMessage = "arity must be greater than 0" }]
+    --     Just (h : []) ->
+    --         case (eval ctx h) of
+    --             Right (ObjImmediate (ImmInt x)) -> Right (ObjImmediate (ImmInt $ 0 - x))
+    --             Right (ObjImmediate (ImmFloat x)) -> Right (ObjImmediate (ImmFloat $ 0.0 - x))
+    --             otherwise -> 
+    --                 Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
+    --     Just x@(h : t) -> iter x (Nothing, Nothing) where
+    --         iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
+    --         iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
+    --         iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
+    --         iter (h : t) (resi, resf) = 
+    --             case (eval ctx h) of
+    --                 Right (ObjImmediate (ImmInt x)) -> 
+    --                     case (resi, resf) of
+    --                         (Nothing, Nothing) -> iter t (Just x, Just $ fromIntegral x)
+    --                         (Just i, Just f) -> iter t (Just $ i - x, Just $ f - (fromIntegral x))
+    --                         (Nothing, Just f) -> iter t (Nothing, Just $ f - (fromIntegral x))
+    --                 Right (ObjImmediate (ImmFloat x)) ->
+    --                     case (resi, resf) of
+    --                         (Nothing, Nothing) -> iter t (Nothing, Just x)
+    --                         (_, Just f) -> iter t (Nothing, Just $ f - x)
+    --                 Right x -> 
+    --                     Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
+    --                 Left x -> 
+    --                     Left $ ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show x) } : x
+    --     Nothing -> 
+    --         Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
 
 scmNull :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmNull ctx args = 
@@ -467,6 +524,133 @@ scmLet ctx args =
         (Nothing, Just b) -> 
             Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]
 
+--this one requires creating a reverse list of bindings and doing tails of it
+
+{-
+
+(let* ((x 1) ; bindings = []
+       (y (+ x 1))) bindings = [x]
+    (+ x y)) ; => 3
+
+Prelude Data.List> take 2 $ reverse $ tails $ reverse [("x", 1), ("y", 2)]
+[[],[("x",1)]]
+
+eval stk = [("x", 1), ("y", 2)]
+
+data ScmThunk = ScmThunk
+    { thkCtx :: ScmContext
+    , thkValue :: ScmObject
+    , thkEvaled :: Bool }
+    deriving (Show) --to do:  add Eq
+
+data ScmBlock = ScmBlock 
+    { blkParent :: Maybe ScmBlock
+    , blkType :: ScmBlockType
+    , blkBindings :: [(String, ScmObject)] }
+    deriving (Show)
+
+data ScmContext = ScmContext --to do:  ctx prefix
+    { ctxStk :: [ScmBlock]
+    , ctxEnv :: [(String, ScmObject)] }
+    deriving (Show)
+
+thunkifyArgList :: ScmContext -> [ScmObject] -> [ScmObject] --thunkify anything that isn't immediate
+thunkifyArgList ctx args = recur args where
+    recur :: [ScmObject] -> [ScmObject]
+    recur [] = []
+    recur (h : t) = 
+        case h of
+            i@(ObjImmediate x) -> i : ( recur t)
+            otherwise -> (ObjThunk ScmThunk { thkCtx = ctx, thkEvaled = False, thkValue = h }) : (recur t)
+            
+createLetBindings :: ScmContext -> ScmObject -> Either [ScmError] [(String, ScmObject)] --assumes same context for every element
+createLetBindings ctx obj = iter obj [] where
+    iter :: ScmObject -> [(String, ScmObject)] -> Either [ScmError] [(String, ScmObject)]
+    iter (ObjImmediate (ImmSym "()")) res = Right $ reverse res
+    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res =
+        case (cnsToList h) of
+            Just (ObjSymbol l : o : []) -> 
+                iter t $ (l, head $ thunkifyArgList ctx [o]) : res
+            Nothing -> 
+                Left [ ScmError { errCaller = "", errMessage = "bad arguments:  " ++ (show c)}]    
+
+-}
+
+--to do:  strategy:  need a function to create unthunkified bindindings, so that they bindings can be thunkified later?
+
+--need thunkify that takes in a list of [(String, ScmObject)]
+
+--
+thunkifyArgs :: [ScmContext] -> [ScmObject] -> [ScmObject]
+thunkifyArgs = undefined
+
+createBindings :: ScmContext -> Maybe ScmObject -> Maybe [(String, ScmObject)] --Either [ScmError] [(String, ScmObject)]
+createBindings ctx obj = --returns a list of tuples of labels + thunkified objects
+    case obj of
+        Just o ->
+            undefined
+        Nothing ->
+            undefined
+    
+createContexts :: ScmContext -> Maybe [(String, ScmObject)] -> Maybe [ScmContext]
+createContexts parent bindings = undefined
+
+createLetStarBindings :: ScmContext -> ScmObject -> Either [ScmError] [(String, ScmObject)]
+createLetStarBindings ctx obj = iter obj [] where
+    iter :: ScmObject -> [(String, ScmObject)] -> Either [ScmError] [(String, ScmObject)]
+    iter (ObjImmediate (ImmSym "()")) res = Right $ reverse res
+    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res =
+        case (cnsToList h) of
+            Just (ObjSymbol l : o : []) ->
+                case res of
+                    [] -> iter t $ (l, head $ thunkifyArgList ctx [o]) : res
+                    ((_, (ObjThunk (ScmThunk { thkCtx = c@ScmContext { ctxStk = s, ctxEnv = e }, thkValue = _, thkEvaled = _ }))) : _) ->
+                        iter t $ (l, head $ thunkifyArgList c [o]) : res
+                    otherwise -> --Left [ ScmError { errCaller = "", errMessage = " problem creating contexts" }]
+                        let parentStk = ctxStk ctx
+                            parentBlk = if null parentStk then Nothing else Just $ head parentStk
+                            newBlk = ScmBlock { blkBindings = res, blkParent = parentBlk, blkType = SbtLetStar }
+                            newCtx = ScmContext { ctxEnv = ctxEnv ctx, ctxStk = [newBlk] }
+                        in 
+                            iter t $ (l, head $ thunkifyArgList newCtx [o]) : res
+            Nothing -> 
+                Left [ ScmError { errCaller = "", errMessage = "bad arguments:  " ++ (show c)}]
+
+scmLetStar :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmLetStar ctx args = 
+    -- let arglst = Just args
+    --     contexts = Nothing
+    --     -- contexts = createContexts ctx bindings
+    --     bindings = createBindings ctx $ safeCar arglst --must create bindinds and collect the contexts
+    --     body = safeCar $ safeCdr arglst
+    --     stk = ctxStk ctx
+    --     env = ctxEnv ctx
+    --     parent = if (null stk) then Nothing else Just $ head stk
+    -- in
+    --     undefined
+    let arg = Just args
+        bindings = safeCar arg
+        body = safeCar $ safeCdr arg
+    in case (bindings, body) of
+        (Just p, Just b) -> 
+            let stk = ctxStk ctx
+                env = ctxEnv ctx
+                parent = if (null stk) then Nothing else Just $ head stk
+                bindings = createLetStarBindings ctx p
+            in case bindings of
+                Right p -> 
+                    let blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLet } --create block
+                    in 
+                        eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
+                Left e -> 
+                    Left $ ScmError { errCaller = "scmLetStar", errMessage = "failure on binding creation"} : e
+        (Nothing, Nothing) ->
+            Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad bindings:  " ++ (show bindings) ++ ", bad body:  " ++ (show body) } ]
+        (Just p, Nothing) ->
+            Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad body:  " ++ (show body) } ]
+        (Nothing, Just b) -> 
+            Left [ ScmError { errCaller = "scmLetStar", errMessage = "bad bindings:  " ++ (show bindings) } ]
+
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
@@ -475,12 +659,14 @@ globalEnv =
     , ("define", ObjPrimitive ScmPrimitive { priName = "define", priFunction = scmDefine })
     , ("if", ObjPrimitive ScmPrimitive { priName = "if", priFunction = scmIf })
     , ("zero?", ObjPrimitive ScmPrimitive { priName = "zero?", priFunction = scmZero })
-    , ("+", ObjPrimitive ScmPrimitive { priName = "+", priFunction = scmPlus })
+    , ("+", ObjPrimitive ScmPrimitive { priName = "+", priFunction = scmAdd })
     , ("-", ObjPrimitive ScmPrimitive { priName = "-", priFunction = scmSub })
-    , ("*", ObjPrimitive ScmPrimitive { priName = "*", priFunction = scmTimes })
+    , ("*", ObjPrimitive ScmPrimitive { priName = "*", priFunction = scmMul })
+    , ("/", ObjPrimitive ScmPrimitive { priName = "/", priFunction = scmDiv })
     , ("null?", ObjPrimitive ScmPrimitive { priName = "null?", priFunction = scmNull })
     , ("cons", ObjPrimitive ScmPrimitive { priName = "cons", priFunction = scmConstructor })
     , ("let", ObjPrimitive ScmPrimitive { priName = "let", priFunction = scmLet })
+    , ("let*", ObjPrimitive ScmPrimitive { priName = "let*", priFunction = scmLetStar })
     ]
 
 --to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
@@ -493,9 +679,6 @@ Prelude Data.List> tail it
 [["foo2","foo1"],["foo1"],[]]
 --need to do one last reverse
 -}
-
---to do:  define returns ctx
---filter (\ (l, v) -> l /= "foo")
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
 findLabel env sym =
@@ -519,28 +702,6 @@ findLabelInContext (ScmContext { ctxStk = (h : _), ctxEnv = e }) lbl = findLabel
 
 findGlobal :: String -> Maybe ScmObject --to do:  remove this
 findGlobal = findLabel globalEnv
-
-data ScmError = ScmError 
-    { errCaller :: String
-    , errMessage :: String }
-    deriving (Eq, Show)
-
-data ScmBlockType =
-    SbtLet |
-    SbtLetStar |
-    SbtLetRec
-    deriving (Eq, Show)
-
-data ScmBlock = ScmBlock 
-    { blkParent :: Maybe ScmBlock
-    , blkType :: ScmBlockType
-    , blkBindings :: [(String, ScmObject)] }
-    deriving (Show)
-
-data ScmContext = ScmContext --to do:  ctx prefix
-    { ctxStk :: [ScmBlock]
-    , ctxEnv :: [(String, ScmObject)] }
-    deriving (Show)
 
 --to do:  create a show-internals that will show internals of a closure (etc.)
 
