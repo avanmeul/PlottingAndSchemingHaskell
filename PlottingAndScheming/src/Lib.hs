@@ -17,9 +17,9 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  implement division for int and float, use an OR type ScmNumber (int, float; more to be added later)
-
 --to do:  implement list
+
+--to do:  refactor numbers:  ObjNumber ScmNumber
 
 --to do:  type rational, /, letrec, number?, complex?, real?, integer?
 
@@ -102,7 +102,11 @@ data ScmBlock = ScmBlock
 data ScmContext = ScmContext --to do:  ctx prefix
     { ctxStk :: [ScmBlock]
     , ctxEnv :: [(String, ScmObject)] }
-    deriving (Show)    
+    deriving (Show)
+
+data ScmNumber = 
+    NumInt Int |
+    NumFloat Float
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -418,37 +422,41 @@ scmSub ctx args =
             Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
 
 scmDiv :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-scmDiv ctx args = undefined
-    -- case (cnsToList args) of
-    --     Just [] -> 
-    --         Left [ScmError { errCaller = "scmSub", errMessage = "arity must be greater than 0" }]
-    --     Just (h : []) ->
-    --         case (eval ctx h) of
-    --             Right (ObjImmediate (ImmInt x)) -> Right (ObjImmediate (ImmInt $ 0 - x))
-    --             Right (ObjImmediate (ImmFloat x)) -> Right (ObjImmediate (ImmFloat $ 0.0 - x))
-    --             otherwise -> 
-    --                 Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
-    --     Just x@(h : t) -> iter x (Nothing, Nothing) where
-    --         iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
-    --         iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
-    --         iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
-    --         iter (h : t) (resi, resf) = 
-    --             case (eval ctx h) of
-    --                 Right (ObjImmediate (ImmInt x)) -> 
-    --                     case (resi, resf) of
-    --                         (Nothing, Nothing) -> iter t (Just x, Just $ fromIntegral x)
-    --                         (Just i, Just f) -> iter t (Just $ i - x, Just $ f - (fromIntegral x))
-    --                         (Nothing, Just f) -> iter t (Nothing, Just $ f - (fromIntegral x))
-    --                 Right (ObjImmediate (ImmFloat x)) ->
-    --                     case (resi, resf) of
-    --                         (Nothing, Nothing) -> iter t (Nothing, Just x)
-    --                         (_, Just f) -> iter t (Nothing, Just $ f - x)
-    --                 Right x -> 
-    --                     Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
-    --                 Left x -> 
-    --                     Left $ ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show x) } : x
-    --     Nothing -> 
-    --         Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
+scmDiv ctx args = --to do:  maybe not convert to a Haskell list (adds overhead), and maybe create ObjNumber to remove numbers from ObjImmediate
+    case (cnsToList args) of
+        Just [] -> 
+            Left [ScmError { errCaller = "scmDiv", errMessage = "arity must be greater than 0" }]
+        Just (h : []) ->
+            case (eval ctx h) of
+                Right (ObjImmediate (ImmInt x)) -> Right (ObjImmediate (ImmFloat $ 1.0 / (fromIntegral x)))
+                Right (ObjImmediate (ImmFloat x)) -> Right (ObjImmediate (ImmFloat $ 1.0 / x))
+                otherwise -> 
+                    Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 1):  " ++ (show h) }]
+        Just x@(h : t) -> iter x Nothing where
+            iter :: [ScmObject] -> Maybe ScmNumber -> Either [ScmError] ScmObject
+            iter [] (Just (NumFloat f)) = Right $ ObjImmediate $ ImmFloat f
+            iter (h : t) Nothing = 
+                case (eval ctx h) of
+                    Right (ObjImmediate (ImmInt x)) -> 
+                        iter t (Just (NumFloat (fromIntegral x)))
+                    Right (ObjImmediate (ImmFloat x)) -> 
+                        iter t (Just (NumFloat x))
+                    Right x -> 
+                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 2):  " ++ (show h) }]
+                    Left x -> 
+                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 3):  " ++ (show x) } : x
+            iter (h : t) (Just (NumFloat f)) = 
+                case (eval ctx h) of
+                    Right (ObjImmediate (ImmInt x)) -> 
+                        iter t (Just (NumFloat $ f / (fromIntegral x)))
+                    Right (ObjImmediate (ImmFloat x)) -> 
+                        iter t (Just (NumFloat $ f / x))                        
+                    Right x -> 
+                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ (show h) }]
+                    Left x -> 
+                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 5):  " ++ (show x) } : x
+        Nothing -> 
+            Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument:  " ++ (show args) }]
 
 scmNull :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmNull ctx args = 
