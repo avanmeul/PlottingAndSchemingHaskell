@@ -11,11 +11,20 @@
        (y (+ x 1)))
     y) ; => 2
     
-   
+(let* ((x 1)
+       (y (+ x 1))
+       (z (+ y 1)))
+    z) ;=> 3
+    
 (let* ((x 1)
        (y (+ x 1))
        (z (+ x y)))
     z) ;=> 3
+
+(let* ((x 1)
+       (x (+ x 1))
+       (y (+ x 1)))
+    y) ;=> 3
     
 ;ok
 (let* ((len-div-6 (lambda (len) (/ len 6)))
@@ -25,6 +34,13 @@
             y))))
   (foo 12)) ;=> 2
 
+(let* ((len-div-6 (lambda (len) (* len 6)))
+       (foo 
+        (lambda (x) 
+          (let ((y (len-div-6 x)))
+            y))))
+  (foo 12)) ;=> 72
+  
 ;ok
 (let* ((len-div-6 (lambda (len) (/ len 6)))
        (foo 

@@ -596,23 +596,21 @@ createContexts :: ScmContext -> Maybe [(String, ScmObject)] -> Maybe [ScmContext
 createContexts parent bindings = undefined
 
 createLetStarBindings :: ScmContext -> ScmObject -> Either [ScmError] [(String, ScmObject)]
-createLetStarBindings ctx obj = iter obj [] where
-    iter :: ScmObject -> [(String, ScmObject)] -> Either [ScmError] [(String, ScmObject)]
-    iter (ObjImmediate (ImmSym "()")) res = Right $ reverse res
-    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res =
+createLetStarBindings ctx obj = iter obj [] ctx where
+    iter :: ScmObject -> [(String, ScmObject)] -> ScmContext -> Either [ScmError] [(String, ScmObject)]
+    iter (ObjImmediate (ImmSym "()")) res ctx = Right $ reverse res
+    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res ctx =
         case (cnsToList h) of
             Just (ObjSymbol l : o : []) ->
-                case res of
-                    [] -> iter t $ (l, head $ thunkifyArgList ctx [o]) : res
-                    ((_, (ObjThunk (ScmThunk { thkCtx = c@ScmContext { ctxStk = s, ctxEnv = e }, thkValue = _, thkEvaled = _ }))) : _) ->
-                        iter t $ (l, head $ thunkifyArgList c [o]) : res
-                    otherwise -> --Left [ ScmError { errCaller = "", errMessage = " problem creating contexts" }]
-                        let parentStk = ctxStk ctx
-                            parentBlk = if null parentStk then Nothing else Just $ head parentStk
-                            newBlk = ScmBlock { blkBindings = res, blkParent = parentBlk, blkType = SbtLetStar }
-                            newCtx = ScmContext { ctxEnv = ctxEnv ctx, ctxStk = [newBlk] }
-                        in 
-                            iter t $ (l, head $ thunkifyArgList newCtx [o]) : res
+                if null res then 
+                    iter t ((l, head $ thunkifyArgList ctx [o]) : res) ctx
+                else
+                    let stk = ctxStk ctx
+                        parent = if null stk then Nothing else Just $ head stk
+                        blk = ScmBlock { blkBindings = res, blkParent = parent, blkType = SbtLetStar }
+                        newCtx = ScmContext { ctxEnv = ctxEnv ctx, ctxStk = [blk] }
+                    in
+                        iter t ((l, head $ thunkifyArgList newCtx [o]) : res) newCtx
             Nothing -> 
                 Left [ ScmError { errCaller = "", errMessage = "bad arguments:  " ++ (show c)}]
 
