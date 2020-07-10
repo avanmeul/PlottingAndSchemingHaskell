@@ -61,17 +61,13 @@ heapifyResults str =
 main :: IO ()
 main = do
     -- putStrLn $ "caller is " ++ (errCaller testError)
-    -- expression <- get value inputExpression
-    -- putStrLn $ show (tokParse "3")
-    -- putStrLn $ show (filter ((\ x (l, v) -> l /= x) "foo") junk)
-    -- putStrLn $ show $ strToHeaps expression
     startGUI defaultConfig setup
-
 
 setup :: Window -> UI ()
 setup window = do
     return window # set title "Plotting and Scheming in Haskell"
     txtInput  <- UI.textarea #. "send-textarea"
+    txtOutput  <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
     btnClearInput <- UI.button #+ [string "clear input"]
     btnTokenize <- UI.button #+ [string "tokenize"]
@@ -98,26 +94,26 @@ setup window = do
         , element btnEval
         , element btnTest
         , element btnClear
-        , element elResult
+        , element txtOutput
         ]
 
     on UI.click btnTokenize $ const $ do
         expression <- get value txtInput
-        element elResult # set UI.text (strToTok expression)
+        element txtOutput # set UI.text (strToTok expression)
 
     on UI.click btnTest $ const $ do
-        element elResult # set UI.text (show $ parseTest' parseTests)
+        element txtOutput # set UI.text (show $ parseTest' parseTests)
 
     on UI.click btnAst $ const $ do
         expression <- get value txtInput
-        element elResult # set UI.text (heapifyResults expression)
+        element txtOutput # set UI.text (heapifyResults expression)
 
     on UI.click btnEval $ const $ do
         expression <- get value txtInput
-        element elResult # set UI.text (evalResults expression)
+        element txtOutput # set UI.text (evalResults expression)
 
     on UI.click btnClear $ const $ do
-        element elResult # set UI.text ""
+        element txtOutput # set UI.text ""
 
     on UI.click btnClearInput $ const $ do
         element txtInput # set value ""
