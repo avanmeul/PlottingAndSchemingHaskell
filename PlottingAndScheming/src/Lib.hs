@@ -17,7 +17,7 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  implement list
+--to do:  implement list, begin, equal (useful for creating a test suite)
 
 --to do:  refactor numbers:  ObjNumber ScmNumber
 
@@ -39,14 +39,20 @@ data Token =
     TokString String
     deriving (Eq, Show)
 
+data ScmNumber = 
+    NumInt Int |
+    NumFloat Float
+
 data ScmImm = 
     ImmSym String |
+    ImmString String |
     ImmRat (Int, Int) |
     ImmInt Int |
     ImmFloat Float |
-    ImmComplex (Float, Float) |
-    ImmString String
+    ImmComplex (Float, Float)
     deriving (Eq, Show)
+
+--to do:  ScmImm has Symbol, Number, String
 
 data ScmPrimitive = ScmPrimitive
     { priName :: String
@@ -103,10 +109,6 @@ data ScmContext = ScmContext --to do:  ctx prefix
     { ctxStk :: [ScmBlock]
     , ctxEnv :: [(String, ScmObject)] }
     deriving (Show)
-
-data ScmNumber = 
-    NumInt Int |
-    NumFloat Float
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -244,13 +246,7 @@ printHeap (ObjCons x) = concat $ reverse $ iter ["("] $ ObjCons x where
 printHeap (ObjContext x) = "#<context>"
 printHeap x = "#<unknown object type:  " ++ (show x) ++ ">"
 
--- fac :: Int -> Int
--- fac 0 = 1
--- fac n = n * (fac $ n - 1)
-
 {-
-Replace thunks with result objects (which are built from ScmObject but are evaluated to a result; hence like hidden quote functions).
-
 Haskell LISP equivalents of LISP:
 
 cnsCons
@@ -743,6 +739,24 @@ scmLetRec ctx args =
 --         (Nothing, Just b) -> 
 --             Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]   
 
+
+scmList :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmList ctx args =
+    case (cnsToList args) of
+        Just x -> 
+            --to do:  use fmap of eval on the list?  no, not lazy
+            Left [ ScmError { errCaller = "scmList", errMessage = "args = " ++ (show args) } ]
+        Nothing -> 
+            Left [ ScmError { errCaller = "scmList", errMessage = "not implemented" } ]
+    -- let arg = Just args
+    --     lst = safeCar arg
+    --     final = safeCdr arg
+    -- in
+    --     case (lst, final) of
+    --         (Just c@(ObjCons x), Just (ObjImmediate (ImmSym "()"))) -> 
+    --             undefined
+    --         otherwise -> undefined
+
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
     [ ("quote", ObjPrimitive ScmPrimitive { priName = "quote", priFunction = scmQuote }) 
@@ -760,18 +774,8 @@ globalEnv =
     , ("let", ObjPrimitive ScmPrimitive { priName = "let", priFunction = scmLet })
     , ("let*", ObjPrimitive ScmPrimitive { priName = "let*", priFunction = scmLetStar })
     , ("letrec", ObjPrimitive ScmPrimitive { priName = "letrec", priFunction = scmLetRec })
+    , ("list", ObjPrimitive ScmPrimitive { priName = "list", priFunction = scmList })
     ]
-
---to do:  for blocks, if a closure is done within a let*, make a copy of it with env reversed, with tail of env (to remove items not visible)
---to do:  scmCons, +, -, *, /, if, null?, zero? etc.; deflet, defrec
-
-{- --the environments of ghci
-Prelude Data.List> tails $ reverse ["foo1", "foo2", "foo3"]
-[["foo3","foo2","foo1"],["foo2","foo1"],["foo1"],[]]
-Prelude Data.List> tail it
-[["foo2","foo1"],["foo1"],[]]
---need to do one last reverse
--}
 
 findLabel :: [(String, ScmObject)] -> String -> Maybe ScmObject
 findLabel env sym =
@@ -900,10 +904,6 @@ apply ctx (ObjClosure ScmClosure { clsBody = body, clsCtx = ctxOfClosure, clsPar
                     else
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
 apply ctx f args = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
-
--- fac :: Int -> Int
--- fac 0 = 1
--- fac n = n * (fac $ n - 1)
 
 symbolChars :: String
 symbolChars =

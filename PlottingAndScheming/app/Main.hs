@@ -12,15 +12,6 @@ import Data.List
 
 -- testError = ScmError { errCaller = "fido", errMessage = "hey you" }
 
-main :: IO ()
-main = do
-    -- putStrLn $ "caller is " ++ (errCaller testError)
-    -- expression <- get value inputExpression
-    -- putStrLn $ show (tokParse "3")
-    -- putStrLn $ show (filter ((\ x (l, v) -> l /= x) "foo") junk)
-    -- putStrLn $ show $ strToHeaps expression
-    startGUI defaultConfig setup
-
 strToTok :: String -> String
 strToTok s =
     let res = tokParse s
@@ -67,11 +58,22 @@ heapifyResults str =
         Right x -> concat $ intersperse "\r\n" $ fmap printHeap x
         Left x -> show x        
 
+main :: IO ()
+main = do
+    -- putStrLn $ "caller is " ++ (errCaller testError)
+    -- expression <- get value inputExpression
+    -- putStrLn $ show (tokParse "3")
+    -- putStrLn $ show (filter ((\ x (l, v) -> l /= x) "foo") junk)
+    -- putStrLn $ show $ strToHeaps expression
+    startGUI defaultConfig setup
+
+
 setup :: Window -> UI ()
 setup window = do
     return window # set title "Plotting and Scheming in Haskell"
-
+    txtInput  <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
+    btnClearInput <- UI.button #+ [string "clear input"]
     btnTokenize <- UI.button #+ [string "tokenize"]
     btnAst <- UI.button #+ [string "create AST"]
     btnEval <- UI.button #+ [string "eval"]
@@ -86,14 +88,11 @@ setup window = do
     --to do:  possibly add untokenize button?
     --to do:  put all debug buttons in a debug tab
 
-    --to do:  change this from input box into text box?
-    inputExpression <- UI.input --to do:  change the name of this
-        # set (attr "placeholder") "expression to be evaluated"
-
     elResult <- UI.span
 
     getBody window #+
-        [ element inputExpression
+        [ element txtInput
+        , element btnClearInput
         , element btnTokenize
         , element btnAst
         , element btnEval
@@ -103,19 +102,22 @@ setup window = do
         ]
 
     on UI.click btnTokenize $ const $ do
-        expression <- get value inputExpression
+        expression <- get value txtInput
         element elResult # set UI.text (strToTok expression)
 
     on UI.click btnTest $ const $ do
         element elResult # set UI.text (show $ parseTest' parseTests)
 
-    on UI.click btnAst $ const $ do --to do:  make this work for expressions
-        expression <- get value inputExpression
+    on UI.click btnAst $ const $ do
+        expression <- get value txtInput
         element elResult # set UI.text (heapifyResults expression)
 
     on UI.click btnEval $ const $ do
-        expression <- get value inputExpression
+        expression <- get value txtInput
         element elResult # set UI.text (evalResults expression)
 
     on UI.click btnClear $ const $ do
         element elResult # set UI.text ""
+
+    on UI.click btnClearInput $ const $ do
+        element txtInput # set value ""
