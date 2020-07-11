@@ -24,9 +24,9 @@ Open question:  if true and false were defined as combinators, the user could de
 However:  how would you make sure that true is equal to true given that equality of functions is undecidable?
 -}
 
---to do:  sin, cos, sqrt return only floats; change to return ints (when possible), also return doubles rather than floats
+--to do:  add tab control
 
---to do:  buttons in middle (between input and output panes)
+--to do:  sin, cos, sqrt return only floats; change to return ints (when possible), also return doubles rather than floats
 
 --to do:  implement plotting screens; full parity with old program reached (record it in comments before moving on)
 

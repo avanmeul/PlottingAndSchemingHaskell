@@ -86,15 +86,10 @@ setup window = do
 
     elResult <- UI.span
 
-    getBody window #+
-        [ element txtInput
-        , element btnClearInput
-        , element btnTokenize
-        , element btnAst
-        , element btnEval
-        , element btnTest
-        , element btnClear
-        , element txtOutput
+    getBody window #+ [grid
+        [[row [element txtInput]]
+        ,[row [element btnClearInput, element btnTokenize, element btnAst, element btnEval, element btnTest, element btnClear]]
+        ,[row [element txtOutput]]]
         ]
 
     on UI.click btnTokenize $ const $ do
