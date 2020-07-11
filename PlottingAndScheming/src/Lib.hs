@@ -17,11 +17,21 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 
---to do:  implement list, begin, equal (useful for creating a test suite)
+{-
+Open question:  if true and false were defined as combinators, the user could define if.
+
+However:  how would you make sure that true is equal to true given that equality of functions is undecidable?
+-}
+
+--to do:  fix bug in / (always returns floats, even when result is an int)
+
+--to do:  implement sin, cos, sqrt; parity reached (record it in comments before moving on)
+
+--to do:  begin, equal (useful for creating a test suite)
 
 --to do:  refactor numbers:  ObjNumber ScmNumber
 
---to do:  type rational, /, letrec, number?, complex?, real?, integer?
+--to do:  type rational, update math to use type rational, letrec; numeric predicates:  number?, complex?, real?, integer?
 
 --to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
 
@@ -739,23 +749,35 @@ scmLetRec ctx args =
 --         (Nothing, Just b) -> 
 --             Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]   
 
+lazyEvalArgs :: ScmContext -> [ScmObject] -> Either [ScmError] [ScmObject] --returns reversed list of evaluated items
+lazyEvalArgs ctx args = iter args [] where
+    iter :: [ScmObject] -> [ScmObject] -> Either [ScmError] [ScmObject]
+    iter [] res = Right res
+    iter (h : t) res =
+        case (eval ctx h) of
+            Right x -> iter t $ x : res
+            Left x -> Left $ ScmError { errCaller = "", errMessage = "evaluation failed for:  " ++ (show x) } : x
+
+listToCons :: [ScmObject] -> ScmObject
+listToCons (h : t) = iter t $ ObjCons $ ScmCons { scmCar = h, scmCdr = ObjImmediate $ ImmSym "()" } where
+    iter :: [ScmObject] -> ScmObject -> ScmObject
+    iter [] obj = obj
+    iter (h : t) obj = 
+        iter t $ ObjCons $ ScmCons { scmCar = h, scmCdr = obj }
 
 scmList :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmList ctx args =
-    case (cnsToList args) of
-        Just x -> 
-            --to do:  use fmap of eval on the list?  no, not lazy
-            Left [ ScmError { errCaller = "scmList", errMessage = "args = " ++ (show args) } ]
-        Nothing -> 
-            Left [ ScmError { errCaller = "scmList", errMessage = "not implemented" } ]
-    -- let arg = Just args
-    --     lst = safeCar arg
-    --     final = safeCdr arg
-    -- in
-    --     case (lst, final) of
-    --         (Just c@(ObjCons x), Just (ObjImmediate (ImmSym "()"))) -> 
-    --             undefined
-    --         otherwise -> undefined
+    if (isNil args) then
+        Right symNil
+    else
+        case (cnsToList args) of
+            Just x ->
+                case (lazyEvalArgs ctx x) of
+                    Right x -> Right $ listToCons x
+                    Left x -> 
+                        Left $ ScmError { errCaller = "scmList", errMessage = "evaluation of args failed = " ++ (show args) } : x
+            Nothing -> 
+                Left [ ScmError { errCaller = "scmList", errMessage = "bad args:  " ++ (show args) } ]
 
 globalEnv :: [(String, ScmObject)] --lambda isn't a primitive; but let, let*, and letrec are
 globalEnv = 
@@ -812,6 +834,10 @@ Just 4
 
 --to do:  change scmCar to cnsCar and scmCdr to cnsCdr?
 
+isNil :: ScmObject -> Bool
+isNil (ObjImmediate (ImmSym "()")) = True
+isNil _ = False
+
 car :: ScmObject -> Maybe ScmObject
 car (ObjCons ScmCons { scmCar = h, scmCdr = _ }) = Just h
 car _ = Nothing
@@ -857,12 +883,27 @@ eval ctx (ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v })) =
 eval ctx (ObjError e) = Left [ ScmError { errCaller = "eval", errMessage = e }]
 eval _ obj = Left [ ScmError { errCaller = "eval", errMessage = "could not evaluate " ++ (show obj) }]
 
-cnsToList :: ScmObject -> Maybe [ScmObject] --lesson learned:  calling without the prime can result in a curried result (not intended!)
-cnsToList x = cnsToList' x [] where
-    cnsToList' :: ScmObject -> [ScmObject] -> Maybe [ScmObject]
-    cnsToList' (ObjImmediate (ImmSym "()")) result = Just $ reverse result
-    cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList' t (h : result) 
-    cnsToList' _ _ = Nothing
+--to do?  create cnsToRevList that doesn't reverse the list, have cnsToList call it
+
+cnsToRevList :: ScmObject -> Maybe [ScmObject]
+cnsToRevList x = iter x [] where --lesson learned:  calling without the prime can result in a curried result (not intended!)
+    iter :: ScmObject -> [ScmObject] -> Maybe [ScmObject]
+    iter (ObjImmediate (ImmSym "()")) result = Just result
+    iter (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = iter t (h : result) 
+    iter _ _ = Nothing
+
+-- cnsToList :: ScmObject -> Maybe [ScmObject]
+-- cnsToList x = cnsToList' x [] where --lesson learned:  calling without the prime can result in a curried result (not intended!)
+--     cnsToList' :: ScmObject -> [ScmObject] -> Maybe [ScmObject]
+--     cnsToList' (ObjImmediate (ImmSym "()")) result = Just $ reverse result
+--     cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList' t (h : result) 
+--     cnsToList' _ _ = Nothing
+
+cnsToList :: ScmObject -> Maybe [ScmObject]
+cnsToList x = 
+    case (cnsToRevList x) of
+        Just x -> Just $ reverse x
+        Nothing -> Nothing
 
 thunkifyArgList :: ScmContext -> [ScmObject] -> [ScmObject] --thunkify anything that isn't immediate
 thunkifyArgList ctx args = recur args where

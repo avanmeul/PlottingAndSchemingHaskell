@@ -1,5 +1,11 @@
 ;scheme test suite
 
+(* 2 3 4.0 5) ;=> 120.0
+
+(list)
+
+(list 1 2 3 'a 'b 'c (head (tail (tail '(a b c)))) (+ 1 2 3)) ;=> (1 2 3 a b c c 6)
+
 ((lambda (f p t e) (f p t e)) if #t 3 x) ; => 3 (tests laziness and first class status of if)
 
 ((lambda (x x ) x) 1 2) ;=> error about duplicate identifier, not currently working
@@ -8,26 +14,11 @@
 
 (let ((x 1) (y 2)) (+ x y)) ;=> 3
 
-(letrec ((x 1) (y 2)) (+ x y)) ;=> 3
+(letrec ((x 1) (y 2)) (+ x y)) ;=> 3 (but this is just a let, nothing recursive here)
 
 (let ((x 1)
       (y 2))
     (+ x y)) ;=> 3
-    
-(letrec ((x y)
-         (y 2))
-  (+ x y)) ;=> 4   
-
-(let ((rec 5))
-  (letrec ((rec 
-          (lambda (x) 
-              (if (null? x) 
-                  'done 
-                  (rec (tail x))))))
-      (rec '(a b c))))
-
-(letrec ((fact (lambda (n) (if (zero? n) 1 (* n (fact (- n 1)))))))
-  (fact 5))
     
 (let ((TRUE (lambda (x) (lambda (y) x)))
       (FALSE (lambda (x) (lambda (y) y))))
@@ -58,7 +49,7 @@
         (lambda (x) 
           (let ((y (len-div-6 x)))
             y))))
-  (foo 12)) ;=> 2
+  (foo 12)) ;=> 2.0 (should be 2)
 
 (let* ((len-div-6 (lambda (len) (* len 6)))
        (foo 
@@ -72,7 +63,7 @@
         (lambda (z) 
           (let ((x (len-div-6 z)))
             x))))
-  (foo 12)) ;=> 2
+  (foo 12)) ;=> 2.0, should be 2
   
  (let* ((len-div-6 (lambda (len) (* len 6)))
        (foo 
@@ -86,7 +77,7 @@
         (lambda (x) 
           (let ((x (len-div-6 x)))
             x))))
-  (foo 12)) ;=> 2
+  (foo 12)) ;=> 2.0 (should be 2)
   
 (let* ((len-div-6 (lambda (len) (* len 6)))
        (foo 
@@ -100,7 +91,7 @@
          (lambda (x) 
           (let ((x (len-div-6 x)))
            x))))
-    (foo 12))) ;=> 2
+    (foo 12))) ;=> 2.0 (should be 2)
     
 (let ((len-div-6 (lambda (len) (* len 6))))
   (let ((foo 
@@ -246,3 +237,20 @@
 ((lambda () 3)) ;=> 3
 
 (define foo 3) (define fido (lambda (x) (+ x foo))) (fido 2) ;=> 5
+
+;things that might not be working yet
+
+(letrec ((x 1)
+         (y (+ x 1)))
+  (+ x y)) ;=> 3 (nothing recursive here)
+
+(let ((rec 5))
+  (letrec ((rec 
+          (lambda (x) 
+              (if (null? x) 
+                  'done 
+                  (rec (tail x))))))
+      (rec '(a b c))))
+
+(letrec ((fact (lambda (n) (if (zero? n) 1 (* n (fact (- n 1)))))))
+  (fact 5))
