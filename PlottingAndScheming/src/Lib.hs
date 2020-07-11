@@ -25,7 +25,15 @@ However:  how would you make sure that true is equal to true given that equality
 
 --to do:  fix bug in / (always returns floats, even when result is an int)
 
---to do:  implement sin, cos, sqrt; parity reached (record it in comments before moving on)
+--to do:  implement sin, cos, sqrt; Scheme parity with old program reached (record it in comments before moving on)
+
+--to do:  buttons in middle (between input and output panes)
+
+--to do:  implement plotting screens; full parity with old program reached (record it in comments before moving on)
+
+--to do:  implement a lambda tab (for lambda calculus) and an SKI tab for combinators (possibly an X tab for the X combinator)
+
+--Note:  lambda would have a tokenizer, and would emit lazy Scheme code; therefore no need for alpha reductions (they are handled with environments and bindings)
 
 --to do:  begin, equal (useful for creating a test suite)
 
@@ -427,6 +435,25 @@ scmSub ctx args =
         Nothing -> 
             Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
 
+divOp :: ScmNumber -> ScmNumber -> ScmNumber
+divOp (NumInt x) (NumInt y) = 
+    let (quotient, remainder) = x `quotRem` y
+    in 
+        if (remainder == 0) then
+            NumInt quotient
+        else
+            let q = fromIntegral quotient
+                r = fromIntegral remainder
+                divisor = fromIntegral y
+            in 
+                NumFloat $ q + (r / divisor)
+divOp (NumInt x) (NumFloat y) = 
+    NumFloat ((fromIntegral x) / y)
+divOp (NumFloat x) (NumInt y) = 
+    NumFloat (x / (fromIntegral y))
+divOp (NumFloat x) (NumFloat y) = 
+    NumFloat (x / y)
+
 scmDiv :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmDiv ctx args = --to do:  maybe not convert to a Haskell list (adds overhead), and maybe create ObjNumber to remove numbers from ObjImmediate
     case (cnsToList args) of
@@ -434,29 +461,42 @@ scmDiv ctx args = --to do:  maybe not convert to a Haskell list (adds overhead),
             Left [ScmError { errCaller = "scmDiv", errMessage = "arity must be greater than 0" }]
         Just (h : []) ->
             case (eval ctx h) of
-                Right (ObjImmediate (ImmInt x)) -> Right (ObjImmediate (ImmFloat $ 1.0 / (fromIntegral x)))
-                Right (ObjImmediate (ImmFloat x)) -> Right (ObjImmediate (ImmFloat $ 1.0 / x))
+                Right (ObjImmediate (ImmInt x)) ->
+                    case (divOp (NumInt 1) (NumInt x)) of
+                        NumInt x -> Right $ ObjImmediate $ ImmInt x
+                        NumFloat x -> Right $ ObjImmediate $ ImmFloat x
                 otherwise -> 
                     Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 1):  " ++ (show h) }]
         Just x@(h : t) -> iter x Nothing where
             iter :: [ScmObject] -> Maybe ScmNumber -> Either [ScmError] ScmObject
-            iter [] (Just (NumFloat f)) = Right $ ObjImmediate $ ImmFloat f
+            iter [] (Just (NumFloat x)) = Right $ ObjImmediate $ ImmFloat x
+            iter [] (Just (NumInt x)) = Right $ ObjImmediate $ ImmInt x
             iter (h : t) Nothing = 
                 case (eval ctx h) of
                     Right (ObjImmediate (ImmInt x)) -> 
-                        iter t (Just (NumFloat (fromIntegral x)))
+                        iter t (Just (NumInt x))
                     Right (ObjImmediate (ImmFloat x)) -> 
                         iter t (Just (NumFloat x))
                     Right x -> 
                         Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 2):  " ++ (show h) }]
                     Left x -> 
                         Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 3):  " ++ (show x) } : x
-            iter (h : t) (Just (NumFloat f)) = 
+            iter (h : t) (Just n@(NumFloat f)) = 
                 case (eval ctx h) of
                     Right (ObjImmediate (ImmInt x)) -> 
-                        iter t (Just (NumFloat $ f / (fromIntegral x)))
+                        iter t (Just (divOp n (NumFloat (fromIntegral x)))) --(Just (NumFloat $ f / (fromIntegral x)))
                     Right (ObjImmediate (ImmFloat x)) -> 
-                        iter t (Just (NumFloat $ f / x))                        
+                        iter t (Just (divOp n (NumFloat x)))                      
+                    Right x -> 
+                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ (show h) }]
+                    Left x -> 
+                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 5):  " ++ (show x) } : x                
+            iter (h : t) (Just n@(NumInt i)) = 
+                case (eval ctx h) of
+                    Right (ObjImmediate (ImmInt x)) -> 
+                        iter t $ Just $ divOp n $ NumInt x
+                    Right (ObjImmediate (ImmFloat x)) -> 
+                        iter t $ Just $ divOp n $ NumFloat x                       
                     Right x -> 
                         Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ (show h) }]
                     Left x -> 
