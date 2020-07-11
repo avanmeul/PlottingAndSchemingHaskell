@@ -2,6 +2,7 @@
 André van Meulebrouck
 scheme.hs
 2019-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
+2020-07-10:  reached parity (and beyond) with F# lazy Scheme interpreter (modulo some math functions that only return floats)
 -}
 
 module Lib where
@@ -23,9 +24,7 @@ Open question:  if true and false were defined as combinators, the user could de
 However:  how would you make sure that true is equal to true given that equality of functions is undecidable?
 -}
 
---to do:  fix bug in / (always returns floats, even when result is an int)
-
---to do:  implement sin, cos, sqrt; Scheme parity with old program reached (record it in comments before moving on)
+--to do:  sin, cos, sqrt return only floats; change to return ints (when possible), also return doubles rather than floats
 
 --to do:  buttons in middle (between input and output panes)
 
@@ -504,6 +503,69 @@ scmDiv ctx args = --to do:  maybe not convert to a Haskell list (adds overhead),
         Nothing -> 
             Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument:  " ++ (show args) }]
 
+evalCar :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+evalCar ctx args =
+    case (safeCar $ Just args) of
+        Just x -> 
+            eval ctx x
+        Nothing -> 
+            Left [ScmError { errCaller = "safeEval", errMessage = "bad args:  " ++ (show args) }]
+
+scmSin :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --never returns an int (unlike Scheme)
+scmSin ctx args = 
+    case (evalCar ctx args) of
+        Right (ObjImmediate (ImmInt x)) -> 
+            Right $ ObjImmediate $ ImmFloat $ sin $ fromIntegral x
+        Right (ObjImmediate (ImmFloat x)) -> 
+            Right $ ObjImmediate $ ImmFloat $ sin x
+        Right x -> 
+            Left [ScmError { errCaller = "scmSin", errMessage = "bad argument:  " ++ (show x) }]
+        Left x -> Left $ ScmError { errCaller = "scmSin", errMessage = "evaluation failed" } : x
+
+-- scmSin :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+-- scmSin ctx args = 
+--     case (evalCar ctx args) of
+--         Right (ObjImmediate (ImmInt x)) -> 
+--             let (arg :: Int) = x
+--                 (res :: Float) = sin arg
+--             in
+--                 case (res) of
+--                     0.0 -> Right $ ObjImmediate $ ImmInt 0
+--                     1.0 -> Right $ ObjImmediate $ ImmInt 1
+--                     (-1.0) -> Right $ ObjImmediate $ ImmInt (-1)
+--                     x -> Right $ ObjImmediate $ ImmFloat $ fromIntegral x
+--         Right (ObjImmediate (ImmFloat x)) -> 
+--             case (sin x) of
+--                 0.0 -> Right $ ObjImmediate $ ImmInt 0
+--                 1.0 -> Right $ ObjImmediate $ ImmInt 1
+--                 (-1.0) -> Right $ ObjImmediate $ ImmInt (-1)
+--                 x -> Right $ ObjImmediate $ ImmFloat x
+--         Right x -> 
+--             Left [ScmError { errCaller = "scmSin", errMessage = "bad argument:  " ++ (show x) }]
+--         Left x -> Left $ ScmError { errCaller = "scmSin", errMessage = "evaluation failed" } : x
+
+scmCos :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --never returns an int (unlike Scheme)
+scmCos ctx args = 
+    case (evalCar ctx args) of
+        Right (ObjImmediate (ImmInt x)) -> 
+            Right $ ObjImmediate $ ImmFloat $ cos $ fromIntegral x
+        Right (ObjImmediate (ImmFloat x)) -> 
+            Right $ ObjImmediate $ ImmFloat $ cos x
+        Right x -> 
+            Left [ScmError { errCaller = "scmCos", errMessage = "bad argument:  " ++ (show x) }]
+        Left x -> Left $ ScmError { errCaller = "scmCos", errMessage = "evaluation failed" } : x
+
+scmSqrt :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --never returns an int (unlike Scheme)
+scmSqrt ctx args = 
+    case (evalCar ctx args) of
+        Right (ObjImmediate (ImmInt x)) -> 
+            Right $ ObjImmediate $ ImmFloat $ sqrt $ fromIntegral x
+        Right (ObjImmediate (ImmFloat x)) -> 
+            Right $ ObjImmediate $ ImmFloat $ sqrt x
+        Right x -> 
+            Left [ScmError { errCaller = "scmSqrt", errMessage = "bad argument:  " ++ (show x) }]
+        Left x -> Left $ ScmError { errCaller = "scmSqrt", errMessage = "evaluation failed" } : x
+
 scmNull :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmNull ctx args = 
     let arg = safeCar $ Just args in 
@@ -831,6 +893,9 @@ globalEnv =
     , ("-", ObjPrimitive ScmPrimitive { priName = "-", priFunction = scmSub })
     , ("*", ObjPrimitive ScmPrimitive { priName = "*", priFunction = scmMul })
     , ("/", ObjPrimitive ScmPrimitive { priName = "/", priFunction = scmDiv })
+    , ("sin", ObjPrimitive ScmPrimitive { priName = "sin", priFunction = scmSin })
+    , ("cos", ObjPrimitive ScmPrimitive { priName = "cos", priFunction = scmCos })
+    , ("sqrt", ObjPrimitive ScmPrimitive { priName = "sqrt", priFunction = scmSqrt })
     , ("null?", ObjPrimitive ScmPrimitive { priName = "null?", priFunction = scmNull })
     , ("cons", ObjPrimitive ScmPrimitive { priName = "cons", priFunction = scmConstructor })
     , ("let", ObjPrimitive ScmPrimitive { priName = "let", priFunction = scmLet })
