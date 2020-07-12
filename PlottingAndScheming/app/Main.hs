@@ -6,12 +6,6 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
 
-{-----------------------------------------------------------------------------
-    Main
-------------------------------------------------------------------------------}
-
--- testError = ScmError { errCaller = "fido", errMessage = "hey you" }
-
 strToTok :: String -> String
 strToTok s =
     let res = tokParse s
@@ -58,6 +52,10 @@ heapifyResults str =
         Right x -> concat $ intersperse "\r\n" $ fmap printHeap x
         Left x -> show x        
 
+{-----------------------------------------------------------------------------
+    Main
+------------------------------------------------------------------------------}
+
 main :: IO ()
 main = do
     -- putStrLn $ "caller is " ++ (errCaller testError)
@@ -74,6 +72,22 @@ setup window = do
     btnAst <- UI.button #+ [string "create AST"]
     btnEval <- UI.button #+ [string "eval"]
     btnTest <- UI.button #+ [string "run test suite"]
+    btnVecPlot <- UI.button #+ [string "plot vector"]
+    divTab <- UI.div #. "header" #+ [string "plotting and scheming"]
+    btnScheme <- UI.button #+ [string "scheme"]
+    btnVector <- UI.button #+ [string "vector"]
+    divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
+        [grid
+            [ [row [element txtInput]]
+            , [row [element btnClearInput, element btnTokenize, element btnAst, element btnEval, element btnTest, element btnClear]]
+            , [row [element txtOutput]]
+            ]
+        ]
+    divVector <- UI.div #+ -- #. -- "header" #+ [string "vector"] #+
+        [grid
+            [ [row [element btnVecPlot]]]
+        ]
+    --to do:  add tabs for lambda calculus (using lambda symbol), SKI, X, complex, l-system, 2d, 3d
     --to do:  add text box for success/failure (or radio button)
     --to do:  add time stamp for latest run
     --to do:  add text box for transcript window
@@ -86,11 +100,32 @@ setup window = do
 
     elResult <- UI.span
 
-    getBody window #+ [grid
-        [[row [element txtInput]]
-        ,[row [element btnClearInput, element btnTokenize, element btnAst, element btnEval, element btnTest, element btnClear]]
-        ,[row [element txtOutput]]]
+    getBody window #+ 
+        [ UI.div #+ [element btnScheme, element btnVector]
+        , element divScheme 
+        , element divVector
+            # set UI.style [("display", "none")] 
         ]
+
+    on UI.click btnScheme $ const $ do
+        element divScheme 
+            # set UI.style [("left", "0"), ("display", "block")] 
+        element divVector
+            # set UI.style [("display", "none")]
+        element btnScheme
+            # set UI.style [("color", "blue")]
+        element btnVector
+            # set UI.style [("color", "black")]
+    
+    on UI.click btnVector $ const $ do
+        element divScheme 
+            # set UI.style [("display", "none")]
+        element divVector
+            # set UI.style [("display", "block")]
+        element btnScheme
+            # set UI.style [("color", "black")]
+        element btnVector
+            # set UI.style [("color", "blue")]            
 
     on UI.click btnTokenize $ const $ do
         expression <- get value txtInput
