@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import Scheme
+import Vector
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -92,6 +93,7 @@ setup window = do
     return window # set title "Plotting and Scheming in Haskell"
     txtInput  <- UI.textarea #. "send-textarea"
     txtOutput  <- UI.textarea #. "send-textarea"
+    txtScratch <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
     btnClearInput <- UI.button #+ [string "clear input"]
     btnTokenize <- UI.button #+ [string "tokenize"]
@@ -124,6 +126,11 @@ setup window = do
             [ [row [element canVec]]
             , [row [element btnVecPlot]]]
         ]
+    divScratch <- UI.div #+
+        [grid [[row [element txtScratch]]]]
+        -- [grid 
+        --     -- [ [row [element UI.select #+ UI.option [string "foo", string "fido"] [string "3", string "5"]]]]
+        -- ]
     elResult <- UI.span --to do:  remove this?
 
     getBody window #+ 

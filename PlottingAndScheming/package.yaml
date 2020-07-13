@@ -49,6 +49,8 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - PlottingAndScheming
+    # - Lib
+    # - Vector
 
 tests:
   PlottingAndScheming-test:
@@ -61,3 +63,4 @@ tests:
     dependencies:
     - PlottingAndScheming
     # - Lib
+    # - Vector
