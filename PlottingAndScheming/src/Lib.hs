@@ -2,7 +2,11 @@
 André van Meulebrouck
 scheme.hs
 2019-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
+2020-03-13:  initial commit to github
+2020-06-15:  single quote implemented
+2020-06-28:  hooked up threepenny-gui
 2020-07-10:  reached parity (and beyond) with F# lazy Scheme interpreter (modulo some math functions that only return floats)
+2020-07-12:  tab control working
 -}
 
 module Lib where
@@ -22,25 +26,33 @@ import Text.Show.Functions
 Open question:  if true and false were defined as combinators, the user could define if.
 
 However:  how would you make sure that true is equal to true given that equality of functions is undecidable?
+
+Answer:  yes, equal only cares about structural equality (not semantic equality).
+
+Solution:  keep #t, but behind the scenes make it a curried TRUE combinator.
 -}
+ 
+--to do:
 
---to do:  add tab control
+{-
 
---to do:  sin, cos, sqrt return only floats; change to return ints (when possible), also return doubles rather than floats
+to do:  sin, cos, sqrt return only floats; change to return ints (when possible), also return doubles rather than floats
 
---to do:  implement plotting screens; full parity with old program reached (record it in comments before moving on)
+to do:  implement plotting screens; full parity with old program reached (record it in comments before moving on)
 
---to do:  implement a lambda tab (for lambda calculus) and an SKI tab for combinators (possibly an X tab for the X combinator)
+to do:  implement a lambda tab (for lambda calculus) and an SKI tab for combinators (possibly an X tab for the X combinator)
 
---Note:  lambda would have a tokenizer, and would emit lazy Scheme code; therefore no need for alpha reductions (they are handled with environments and bindings)
+    Note:  lambda would have a tokenizer, and would emit lazy Scheme code; therefore no need for alpha reductions (they are handled with environments and bindings)
 
---to do:  begin, equal (useful for creating a test suite)
+to do:  begin, equal (useful for creating a test suite)
 
---to do:  refactor numbers:  ObjNumber ScmNumber
+to do:  refactor numbers:  ObjNumber ScmNumber
 
---to do:  type rational, update math to use type rational, letrec; numeric predicates:  number?, complex?, real?, integer?
+to do:  type rational, update math to use type rational, letrec; numeric predicates:  number?, complex?, real?, integer?
 
---to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
+to do:  TokComment, TokCommwentBlockStart, TokCommentBlockEnd, TokCrLf
+
+-}
 
 data Token =
     TokComment String |

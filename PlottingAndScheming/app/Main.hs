@@ -6,6 +6,21 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
 
+{-
+
+to do:  add tabs for lambda calculus (using lambda symbol), SKI, X, complex, l-system, 2d, 3d
+to do:  add text box for success/failure (or radio button)
+to do:  add time stamp for latest run
+to do:  add text box for transcript window
+to do:  research how to do a tab control
+to do:  add table
+to do:  add scrolling to text boxes for expression and result
+to do:  parse failures should return Left (string, [Token])
+to do:  possibly add untokenize button?
+to do:  put all debug buttons in a debug tab
+
+-}
+
 strToTok :: String -> String
 strToTok s =
     let res = tokParse s
@@ -74,7 +89,7 @@ setup window = do
     btnTest <- UI.button #+ [string "run test suite"]
     btnVecPlot <- UI.button #+ [string "plot vector"]
     divTab <- UI.div #. "header" #+ [string "plotting and scheming"]
-    btnScheme <- UI.button #+ [string "scheme"]
+    btnScheme <- UI.button #+ [string "scheme"] # set UI.style [("color", "blue")]
     btnVector <- UI.button #+ [string "vector"]
     divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
         [grid
@@ -87,16 +102,6 @@ setup window = do
         [grid
             [ [row [element btnVecPlot]]]
         ]
-    --to do:  add tabs for lambda calculus (using lambda symbol), SKI, X, complex, l-system, 2d, 3d
-    --to do:  add text box for success/failure (or radio button)
-    --to do:  add time stamp for latest run
-    --to do:  add text box for transcript window
-    --to do:  research how to do a tab control
-    --to do:  add table
-    --to do:  add scrolling to text boxes for expression and result
-    --to do:  parse failures should return Left (string, [Token])
-    --to do:  possibly add untokenize button?
-    --to do:  put all debug buttons in a debug tab
 
     elResult <- UI.span
 
@@ -104,12 +109,12 @@ setup window = do
         [ UI.div #+ [element btnScheme, element btnVector]
         , element divScheme 
         , element divVector
-            # set UI.style [("display", "none")] 
+            # set UI.style [("display", "none")]
         ]
 
     on UI.click btnScheme $ const $ do
         element divScheme 
-            # set UI.style [("left", "0"), ("display", "block")] 
+            # set UI.style [("display", "block")] 
         element divVector
             # set UI.style [("display", "none")]
         element btnScheme
