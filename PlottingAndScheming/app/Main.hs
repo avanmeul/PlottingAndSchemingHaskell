@@ -78,6 +78,15 @@ main = do
     -- putStrLn $ "caller is " ++ (errCaller testError)
     startGUI defaultConfig setup
 
+-- draw a single line
+line :: UI.Point -> UI.Point -> Element -> UI ()
+line xy1 xy2 c = do
+    c # UI.beginPath
+    c # UI.moveTo xy1
+    c # UI.lineTo xy2
+    c # UI.closePath
+    c # UI.stroke
+   
 setup :: Window -> UI ()
 setup window = do
     return window # set title "Plotting and Scheming in Haskell"
@@ -102,6 +111,7 @@ setup window = do
     btnx <- UI.button #+ [string "x"]
     btnmrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
+    canVec <- UI.canvas
     divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
         [grid
             [ [row [element txtInput]]
@@ -111,10 +121,10 @@ setup window = do
         ]
     divVector <- UI.div #+ -- #. -- "header" #+ [string "vector"] #+
         [grid
-            [ [row [element btnVecPlot]]]
+            [ [row [element canVec]]
+            , [row [element btnVecPlot]]]
         ]
-
-    elResult <- UI.span
+    elResult <- UI.span --to do:  remove this?
 
     getBody window #+ 
         [ UI.div #+ 
@@ -165,3 +175,8 @@ setup window = do
 
     on UI.click btnClearInput $ const $ do
         element txtInput # set value ""
+
+    on UI.click btnVecPlot $ const $ do
+        canVec # line (0, 0) (20, 20)
+        canVec # UI.fillRect (50, 50) 1 1 --set pixel; to do:  package this up as function
+        return canVec
