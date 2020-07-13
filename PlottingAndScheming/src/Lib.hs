@@ -36,6 +36,8 @@ Solution:  keep #t, but behind the scenes make it a curried TRUE combinator.
 
 {-
 
+to do:  change Lib.hs to scheme.hs?
+
 to do:  sin, cos, sqrt return only floats; change to return ints (when possible), also return doubles rather than floats
 
 to do:  implement plotting screens; full parity with old program reached (record it in comments before moving on)

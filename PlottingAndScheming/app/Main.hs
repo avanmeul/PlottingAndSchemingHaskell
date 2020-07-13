@@ -9,6 +9,8 @@ import Data.List
 {-
 
 to do:  add tabs for lambda calculus (using lambda symbol), SKI, X, complex, l-system, 2d, 3d
+to do:  add canvas, plot a point and line (to show how this can be done) on button click
+to do:  add a dropdown for selecting equations
 to do:  add text box for success/failure (or radio button)
 to do:  add time stamp for latest run
 to do:  add text box for transcript window
@@ -91,6 +93,15 @@ setup window = do
     divTab <- UI.div #. "header" #+ [string "plotting and scheming"]
     btnScheme <- UI.button #+ [string "scheme"] # set UI.style [("color", "blue")]
     btnVector <- UI.button #+ [string "vector"]
+    btnComplex <- UI.button #+ [string "complex"]
+    btn2d <- UI.button #+ [string "2d"]
+    btn3d <- UI.button #+ [string "3d"]
+    btnlsystem <- UI.button #+ [string "l-system"]
+    btnLambda <- UI.button #+ [string "lambda"]
+    btnski <- UI.button #+ [string "ski"]
+    btnx <- UI.button #+ [string "x"]
+    btnmrcm <- UI.button #+ [string "mrcm"]
+    btnScratch <- UI.button #+ [string "scratch"]
     divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
         [grid
             [ [row [element txtInput]]
@@ -106,7 +117,9 @@ setup window = do
     elResult <- UI.span
 
     getBody window #+ 
-        [ UI.div #+ [element btnScheme, element btnVector]
+        [ UI.div #+ 
+            [ element btnScheme, element btnVector, element btnComplex, element btnlsystem, element btnmrcm 
+            , element btn2d, element btn3d, element btnLambda, element btnski, element btnx, element btnScratch]
         , element divScheme 
         , element divVector
             # set UI.style [("display", "none")]
