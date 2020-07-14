@@ -32,16 +32,7 @@ main :: IO ()
 main = do
     -- putStrLn $ "caller is " ++ (errCaller testError)
     startGUI defaultConfig setup
-
--- draw a single line
-line :: UI.Point -> UI.Point -> Element -> UI ()
-line xy1 xy2 c = do
-    c # UI.beginPath
-    c # UI.moveTo xy1
-    c # UI.lineTo xy2
-    c # UI.closePath
-    c # UI.stroke
-   
+ 
 setup :: Window -> UI ()
 setup window = do
     return window # set title "Plotting and Scheming in Haskell"
@@ -138,6 +129,7 @@ setup window = do
         element txtInput # set value ""
 
     on UI.click btnVecPlot $ const $ do
-        canVec # line (0, 0) (20, 20)
+        canVec # drawLines [((0,0), (20, 20)), ((20, 20), (80, 20)), ((80, 20), (50, 50)) ]
+        -- canVec # line (0, 0) (20, 20)
         canVec # UI.fillRect (50, 50) 1 1 --set pixel; to do:  package this up as function
         return canVec

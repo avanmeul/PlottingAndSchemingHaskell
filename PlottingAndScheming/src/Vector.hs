@@ -1,8 +1,28 @@
 module Vector where
 
+import Scheme
+import qualified Graphics.UI.Threepenny as UI
+import Graphics.UI.Threepenny.Core
+
 {-
 Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
 -}
+
+line :: UI.Point -> UI.Point -> Element -> UI ()
+line xy1 xy2 c = do
+    c # UI.beginPath
+    c # UI.moveTo xy1
+    c # UI.lineTo xy2
+    c # UI.closePath
+    c # UI.stroke
+
+drawLines :: [(UI.Point, UI.Point)] -> Element -> UI ()
+drawLines lines c = iter lines where
+    iter :: [(UI.Point, UI.Point)] -> UI ()
+    iter [] = return ()
+    iter (h : t) = do
+        line (fst h) (snd h) c
+        iter t    
 
 {-
 //namespace vanmeule.FSharp.PlottingAndScheming
