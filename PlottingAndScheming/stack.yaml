@@ -20,7 +20,9 @@
 # resolver: lts-14.2
 
 # extra-deps: []
-resolver: lts-11.7
+resolver: lts-16.5
+        # , ghc-8.10.1
+# resolver: lts-11.7
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.

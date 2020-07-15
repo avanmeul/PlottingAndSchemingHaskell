@@ -181,9 +181,10 @@
 (define id (lambda (x) x))
 
 (define fact 
-	(lambda (n)
-		(if (zero? n) 1
-			(* n (fact (- n 1))))))
+  (lambda (n)
+    (if (zero? n) 
+        1
+        (* n (fact (- n 1))))))
             
 (fact 5)
 			

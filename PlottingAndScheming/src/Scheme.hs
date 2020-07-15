@@ -1,15 +1,16 @@
-{-
-André van Meulebrouck
-scheme.hs
+{- Copyright (c) 2020 by André van Meulebrouck.  All rights reserved worldwide.
+
+File:  Scheme.hs
 2019-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
 2020-03-13:  initial commit to github
 2020-06-15:  single quote implemented
 2020-06-28:  hooked up threepenny-gui
 2020-07-10:  reached parity (and beyond) with F# lazy Scheme interpreter (modulo some math functions that only return floats)
 2020-07-12:  tab control working
+
 -}
 
-module Scheme where
+module Scheme (evalResults, heapifyResults, parseTests, parseTest', strToTok, ScmBlock) where
 
 import Text.Regex.Posix
 import Text.Read
