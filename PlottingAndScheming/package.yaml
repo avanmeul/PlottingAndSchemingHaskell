@@ -31,8 +31,11 @@ dependencies:
 # - control
 # - HSpec
 - threepenny-gui
+- xml
+# - colors
 
 # extra-deps:
+# - colors-0.3.0.2@sha256:b49946d81e0089d4d80191523839f934802975ede3b9fd9521ead9e591142560,764
 # # - control-monad
 # # - mtl-2.2.2
 

@@ -1,15 +1,17 @@
 module Vector where
 
+-- {-# LANGUAGE RecordWildCards #-}
 import Scheme
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
+import Text.XML.Light
 -- import Data.Color
 
 {-
 Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
 -}
 
-line :: UI.Point -> UI.Point -> Element -> UI ()
+line :: UI.Point -> UI.Point -> UI.Element -> UI ()
 line xy1 xy2 c = do
     c # UI.beginPath
     c # UI.moveTo xy1
@@ -17,7 +19,7 @@ line xy1 xy2 c = do
     c # UI.closePath
     c # UI.stroke
 
-drawLines :: [(UI.Point, UI.Point)] -> Element -> UI ()
+drawLines :: [(UI.Point, UI.Point)] -> UI.Element -> UI ()
 drawLines lines c = iter lines where
     iter :: [(UI.Point, UI.Point)] -> UI ()
     iter [] = return ()
@@ -63,7 +65,7 @@ drawLines lines c = iter lines where
 -- *)
 
 data PalettePicker = PalettePicker
-    { ppkPalette :: [Int] 
+    { ppkPalette :: [UI.Color] 
     , ppkLoc :: Int }
 
 -- type palettePicker = {
@@ -93,7 +95,17 @@ data PalettePicker = PalettePicker
 --         x.loc <- (x.loc + 1) % x.palette.Length
 --     member x.reset () =
 --         x.loc <- -1
-        
+
+data SizeColorizer = SizeColorizer 
+    { sczNumberOfRules :: Int
+    , sczPicker :: PalettePicker
+    , sczSubtractor :: Int
+    , sczGenerations :: Int
+    , sczRuleCount :: Int
+    , sczSizes :: [Double]
+    , sczCounter :: Int
+    }
+
 -- //to do:  could put start index into the mix, retrieve from xml
 -- type sizeColorizer = {
 --     numberOfRules : int;
@@ -128,6 +140,11 @@ data PalettePicker = PalettePicker
 --                 //add newly found size
 --                 x.sizes <- x.sizes @ [size]
 --                 x.picker.index <- x.sizes.Length - 1
+ 
+data LevelColorizer = LevelColorizer
+    { lczPicker :: PalettePicker 
+    , lczLevel :: Int
+    }
 
 -- type levelColorizer = {
 --     picker : palettePicker; 
@@ -139,12 +156,18 @@ data PalettePicker = PalettePicker
 --         if x.level = level then
 --             x.picker.inc ()
 
+data VectorColorizer = 
+    VczLevel LevelColorizer |
+    VczImage SizeColorizer
+
 -- type vectorColorizer = 
 --     | Level of levelColorizer
 --     | Image of sizeColorizer
 --     //| Solid of int
 --     //| Group of int
 --     //| Force
+
+--to do:  bookmark here
 
 -- //to do:  push function
 -- //keep track of number of line segments
