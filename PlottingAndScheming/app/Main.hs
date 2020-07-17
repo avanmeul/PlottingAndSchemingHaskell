@@ -9,9 +9,7 @@ import Data.List
 
 {-
 
-to do:  add tabs for lambda calculus (using lambda symbol), SKI, X, complex, l-system, 2d, 3d
-to do:  add canvas, plot a point and line (to show how this can be done) on button click
-to do:  add a dropdown for selecting equations
+to do:  lambda calculus should use lambda symbol
 to do:  add text box for success/failure (or radio button)
 to do:  add time stamp for latest run
 to do:  add text box for transcript window
@@ -24,13 +22,26 @@ to do:  put all debug buttons in a debug tab
 
 -}
 
+toggleTabs :: [(UI.Element, UI.Element)] -> UI ()
+toggleTabs [] = return ()
+toggleTabs ((d, b) : t) = do
+    element d
+        # set UI.style [("display", "none")]
+    element b
+        # set UI.style [("color", "black")]
+    toggleTabs t
+
+toggleTab :: UI.Element -> UI.Element -> UI ()
+toggleTab d b = do
+    element d
+        # set UI.style [("display", "block")]
+    element b
+        # set UI.style [("color", "blue")]
+    return ()
+
 {-----------------------------------------------------------------------------
     Main
 ------------------------------------------------------------------------------}
-
--- foo = UI.option #+ [UI.element "1"]
-
-cbx = UI.select #+ [string "hey"]
 
 main :: IO ()
 main = do
@@ -56,10 +67,10 @@ setup window = do
     btnComplex <- UI.button #+ [string "complex"]
     btn2d <- UI.button #+ [string "2d"]
     btn3d <- UI.button #+ [string "3d"]
-    btnlsystem <- UI.button #+ [string "l-system"]
+    btnLsystem <- UI.button #+ [string "l-system"]
     btnLambda <- UI.button #+ [string "lambda"]
     btnCombinator <- UI.button #+ [string "combinator"]
-    btnmrcm <- UI.button #+ [string "mrcm"]
+    btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
     -- cbxVector <- UI.select #+ [UI.option #+ [string "1"], UI.option #+ [string "2"]] 
     cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
@@ -78,38 +89,91 @@ setup window = do
             , [row [element btnVecPlot]] 
             ]
         ]
+    divComplex <- UI.div
+    div2d <- UI.div
+    div3d <- UI.div
+    divLsystem <- UI.div
+    divMrcm <- UI.div
+    divLambda <- UI.div
+    divCombinator <- UI.div
     divScratch <- UI.div #+
         [grid [[row [element txtScratch]]]]
-    -- elResult <- UI.span --to do:  remove this?
 
     getBody window #+ 
         [ UI.div #+ 
-            [ element btnScheme, element btnVector, element btnComplex, element btnlsystem, element btnmrcm 
-            , element btn2d, element btn3d, element btnLambda, element btnCombinator, element btnScratch]
+            [ element btnScheme, element btnVector, element btnComplex, element btnLsystem
+            , element btn2d, element btn3d, element btnMrcm, element btnLambda, element btnCombinator, element btnScratch]
         , element divScheme 
         , element divVector
             # set UI.style [("display", "none")]
+        , element divComplex
+            # set UI.style [("display", "none")]
+        , element divLsystem
+            # set UI.style [("display", "none")]  
+        , element div2d
+            # set UI.style [("display", "none")]
+        , element div3d
+            # set UI.style [("display", "none")] 
+        , element divLambda
+            # set UI.style [("display", "none")]
+        , element divCombinator
+            # set UI.style [("display", "none")]    
+        , element divScratch
+            # set UI.style [("display", "none")]                                                           
         ]
 
+    let tabs :: [(UI.Element, UI.Element)]
+        tabs = 
+            [ (divScheme, btnScheme)
+            , (divVector, btnVector)
+            , (div2d, btn2d)
+            , (div3d, btn3d)
+            , (divLsystem, btnLsystem)
+            , (divLambda, btnLambda)
+            , (divCombinator, btnCombinator)
+            , (divScratch, btnScratch)
+            , (divComplex, btnComplex)
+            , (divMrcm, btnMrcm) ]
+
     on UI.click btnScheme $ const $ do
-        element divScheme 
-            # set UI.style [("display", "block")] 
-        element divVector
-            # set UI.style [("display", "none")]
-        element btnScheme
-            # set UI.style [("color", "blue")]
-        element btnVector
-            # set UI.style [("color", "black")]
+        toggleTabs tabs
+        toggleTab divScheme btnScheme
     
     on UI.click btnVector $ const $ do
-        element divScheme 
-            # set UI.style [("display", "none")]
-        element divVector
-            # set UI.style [("display", "block")]
-        element btnScheme
-            # set UI.style [("color", "black")]
-        element btnVector
-            # set UI.style [("color", "blue")]            
+        toggleTabs tabs
+        toggleTab divVector btnVector          
+
+    on UI.click btn2d $ const $ do
+        toggleTabs tabs
+        toggleTab div2d btn2d
+
+    on UI.click btn3d $ const $ do
+        toggleTabs tabs
+        toggleTab div3d btn3d
+
+    on UI.click btnLsystem $ const $ do
+        toggleTabs tabs
+        toggleTab divLsystem btnLsystem
+        
+    on UI.click btnLambda $ const $ do
+        toggleTabs tabs
+        toggleTab divLambda btnLambda
+
+    on UI.click btnCombinator $ const $ do
+        toggleTabs tabs
+        toggleTab divCombinator btnCombinator
+
+    on UI.click btnScratch $ const $ do
+        toggleTabs tabs
+        toggleTab divScratch btnScratch
+
+    on UI.click btnComplex $ const $ do
+        toggleTabs tabs
+        toggleTab divComplex btnComplex   
+        
+    on UI.click btnMrcm $ const $ do
+        toggleTabs tabs
+        toggleTab divMrcm btnMrcm          
 
     on UI.click btnTokenize $ const $ do
         expression <- get value txtInput
