@@ -1,6 +1,8 @@
 module Vector where
 
 -- {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+
 import Scheme
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -169,6 +171,10 @@ data VectorColorizer =
 
 --to do:  bookmark here
 
+data DrawF = DrawF 
+    { lines :: [(UI.Point, UI.Point)]
+    , color :: UI.Color }
+
 -- //to do:  push function
 -- //keep track of number of line segments
 -- //coloring algorithm
@@ -307,42 +313,41 @@ data VecRule = VecRule
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }  
-
---         //rule 9 (list len-div-3 project1.2 project3.4 1 1) ; 9
---         {   lenf = vecLen.BuiltIn lenDiv3; 
---             anglef = vecAngle.BuiltIn project1of2;
---             originf = vecOrigin.BuiltIn project3of4;
---             flipAngle = vecFlip.BuiltIn 1;
---             flipRules = vecFlip.BuiltIn 1; 
---             };
---         //rule 10 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 1 1) ; 10
---         {   lenf = vecLen.BuiltIn lenDiv3sqrt3; 
---             anglef = vecAngle.BuiltIn angleLess5PiOver6;
---             originf = vecOrigin.BuiltIn project3of4;
---             flipAngle = vecFlip.BuiltIn 1;
---             flipRules = vecFlip.BuiltIn 1; 
---             };
---         //rule 11 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 11
---         {   lenf = vecLen.BuiltIn lenDiv3sqrt3; 
---             anglef = vecAngle.BuiltIn angleLess5PiOver6;
---             originf = vecOrigin.BuiltIn project3of4;
---             flipAngle = vecFlip.BuiltIn -1;
---             flipRules = vecFlip.BuiltIn 1;
---             };
---         //rule 12 (list len-div-3 project1.2 project3.4 -1 1) ; 12
---         {   lenf = vecLen.BuiltIn lenDiv3; 
---             anglef = vecAngle.BuiltIn project1of2;
---             originf = vecOrigin.BuiltIn project3of4;
---             flipAngle = vecFlip.BuiltIn -1;
---             flipRules = vecFlip.BuiltIn 1; 
---             };
---         //rule 13 (list len-div-3 project1.2 project3.4 1 1)) ; 13
---         {   lenf = vecLen.BuiltIn lenDiv3; 
---             anglef = vecAngle.BuiltIn project1of2;
---             originf = vecOrigin.BuiltIn project3of4;
---             flipAngle = vecFlip.BuiltIn 1;
---             flipRules = vecFlip.BuiltIn 1; 
---             };                
+            , VecRule --rule 9 (list len-div-3 project1.2 project3.4 1 1) ; 9
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuildtIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn 1
+                , vrlFlipRules = FlpBuiltIn 1
+                }  
+            , VecRule --rule 10 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 1 1) ; 10
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuildtIn angleLess5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn 1
+                , vrlFlipRules = FlpBuiltIn 1
+                }  
+            , VecRule --rule 11 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 11
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuildtIn angleLess5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }  
+            , VecRule --rule 12 (list len-div-3 project1.2 project3.4 -1 1) ; 12
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuildtIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }  
+            , VecRule --rule 13 (list len-div-3 project1.2 project3.4 1 1)) ; 13
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuildtIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn 1
+                , vrlFlipRules = FlpBuiltIn 1
+                }            
             ]
     in
         (initiator, generator)
@@ -470,6 +475,8 @@ data VecRule = VecRule
 --             ]
 --     initiator, generator
 
+--to do:  not highest priority, but must be done
+
 -- let xmlPalette (xml : XElement) =
 --     xml.Elements ()
 --     |> Seq.map                    
@@ -491,6 +498,11 @@ data VecRule = VecRule
 --             | _ -> 
 --                 failwith "bad color specification") 
 --     |> Seq.toArray
+
+-- data PlotObject = PlotObject 
+--     { 
+--         xml
+--         }
 
 -- type plotObject = {
 --     xml : XElement; 

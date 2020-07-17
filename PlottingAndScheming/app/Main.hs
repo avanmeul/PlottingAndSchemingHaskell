@@ -61,6 +61,7 @@ setup window = do
     btnCombinator <- UI.button #+ [string "combinator"]
     btnmrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
+    -- cbxVector <- UI.select #+ [UI.option #+ [string "1"], UI.option #+ [string "2"]] 
     cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
     canVec <- UI.canvas
     divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
