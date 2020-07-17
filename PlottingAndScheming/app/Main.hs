@@ -28,6 +28,10 @@ to do:  put all debug buttons in a debug tab
     Main
 ------------------------------------------------------------------------------}
 
+-- foo = UI.option #+ [UI.element "1"]
+
+cbx = UI.select #+ [string "hey"]
+
 main :: IO ()
 main = do
     -- putStrLn $ "caller is " ++ (errCaller testError)
@@ -54,10 +58,10 @@ setup window = do
     btn3d <- UI.button #+ [string "3d"]
     btnlsystem <- UI.button #+ [string "l-system"]
     btnLambda <- UI.button #+ [string "lambda"]
-    btnski <- UI.button #+ [string "ski"]
-    btnx <- UI.button #+ [string "x"]
+    btnCombinator <- UI.button #+ [string "combinator"]
     btnmrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
+    cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
     canVec <- UI.canvas
     divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
         [grid
@@ -68,20 +72,19 @@ setup window = do
         ]
     divVector <- UI.div #+ -- #. -- "header" #+ [string "vector"] #+
         [grid
-            [ [row [element canVec]]
-            , [row [element btnVecPlot]]]
+            [ [row [element cbxVector]]
+            , [row [element canVec]]
+            , [row [element btnVecPlot]] 
+            ]
         ]
     divScratch <- UI.div #+
         [grid [[row [element txtScratch]]]]
-        -- [grid 
-        --     -- [ [row [element UI.select #+ UI.option [string "foo", string "fido"] [string "3", string "5"]]]]
-        -- ]
-    elResult <- UI.span --to do:  remove this?
+    -- elResult <- UI.span --to do:  remove this?
 
     getBody window #+ 
         [ UI.div #+ 
             [ element btnScheme, element btnVector, element btnComplex, element btnlsystem, element btnmrcm 
-            , element btn2d, element btn3d, element btnLambda, element btnski, element btnx, element btnScratch]
+            , element btn2d, element btn3d, element btnLambda, element btnCombinator, element btnScratch]
         , element divScheme 
         , element divVector
             # set UI.style [("display", "none")]

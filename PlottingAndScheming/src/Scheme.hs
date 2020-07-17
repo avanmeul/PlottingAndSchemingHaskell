@@ -10,7 +10,7 @@ File:  Scheme.hs
 
 -}
 
-module Scheme (evalResults, heapifyResults, parseTests, parseTest', strToTok, ScmBlock) where
+module Scheme (evalResults, heapifyResults, parseTests, parseTest', strToTok, ScmObject) where
 
 import Text.Regex.Posix
 import Text.Read

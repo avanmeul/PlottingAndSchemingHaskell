@@ -189,7 +189,7 @@ data VectorColorizer =
 
 data VecLen =
     VlnBuiltIn (Double -> Double) |
-    VlnScheme  ScmBlock
+    VlnScheme  ScmObject
     
 -- type vecAngle = //angle -> flip rule -> computed angle
 --     | BuiltIn of (double -> int -> double) 
@@ -197,16 +197,25 @@ data VecLen =
 
 data VecAngle =
     VanBuildtIn (Double -> Int -> Double) |
-    VanScheme ScmBlock
+    VanScheme ScmObject
 
 -- //to do:  should be length -> angle -> flip -> origin -> computed origin
 -- type vecOrigin = //length -> angle -> origin -> flip -> computed origin
 --     | BuiltIn of (double -> double -> (double * double) -> int -> (double * double)) 
 --     | Scheme of scmBlock
+
+data VecOrigin =
+    VorBuiltIn (Double -> Double -> (Double, Double) -> Int -> (Double, Double)) |
+    VorScheme ScmObject
+
 -- type vecFlip =
 --     | BuiltIn of int
 --     | Scheme of scmAtom
     
+data VecFlip =
+    FlpBuiltIn Int |
+    FlpScheme ScmObject
+
 -- type vectorRule = {
 --     lenf : vecLen;
 --     anglef : vecAngle;
@@ -214,8 +223,129 @@ data VecAngle =
 --     flipAngle : vecFlip;
 --     flipRules : vecFlip; }
 
--- data VectorRule = VectorRule
---     { lenf :: }
+data VecRule = VecRule 
+    { vrlLenf :: VecLen
+    , vrlAnglef :: VecAngle
+    , vrlOriginf :: VecOrigin
+    , vrlFlipAngle :: VecFlip
+    , vrlFlipRules :: VecFlip
+    }
+
+(seed, rules) = 
+    let project1of2 x y = x
+        project3of4 w x y z = y
+        lenDiv3 len = len / 3.0
+        degrees60 = pi / 3.0
+        anglePlus60 angle flip = angle + (degrees60 * (fromIntegral flip))
+        degreesLess60 angle flip = angle - (degrees60 * (fromIntegral flip))
+        fivePiOver6 = 5.0 * pi / 6.0
+        anglePlus5PiOver6 angle flip = angle + (fivePiOver6 * (fromIntegral flip))
+        angleLess5PiOver6 angle flip = angle - (fivePiOver6 * (fromIntegral flip))
+        lenDiv3sqrt3 len = len / (3.0 * sqrt 3.0)
+        angleLessPiHalves angle flip = angle - ((fromIntegral flip) * pi / 2.0)
+        initiator = VecRule 
+            { vrlLenf = VlnBuiltIn id
+            , vrlAnglef = VanBuildtIn project1of2
+            , vrlOriginf = VorBuiltIn project3of4
+            , vrlFlipAngle = FlpBuiltIn 1
+            , vrlFlipRules = FlpBuiltIn 1
+            }
+        generator = 
+            [ VecRule --rule 1 (list len-div-3 angle-plus-60 project3.4 -1 1) ; 1
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuildtIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn 1
+                , vrlFlipRules = FlpBuiltIn 1
+                }
+            , VecRule --rule 2 (list len-div-3 angle-plus-60 project3.4 1 1) ; 2
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuildtIn anglePlus60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }
+            , VecRule --rule 3 (list len-div-3 project1.2 project3.4 1 1) ; 3
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuildtIn anglePlus60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn 1
+                , vrlFlipRules = FlpBuiltIn 1
+                }
+            , VecRule --rule 4 (list len-div-3 angle-less-60 project3.4 1 1) ; 4
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuildtIn anglePlus60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }
+            , VecRule --rule 5 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 1 1) ; 5
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuildtIn anglePlus5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }
+            , VecRule --rule 6 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 -1 1) ; 6
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuildtIn anglePlus5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }
+            , VecRule --rule 7 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 7
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuildtIn angleLess5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }                              
+            , VecRule --rule 8 (list len-div-3sqrt3 angle-less-pi-halves project3.4 -1 1) ; 8
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuildtIn angleLessPiHalves
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipRules = FlpBuiltIn 1
+                }  
+
+--         //rule 9 (list len-div-3 project1.2 project3.4 1 1) ; 9
+--         {   lenf = vecLen.BuiltIn lenDiv3; 
+--             anglef = vecAngle.BuiltIn project1of2;
+--             originf = vecOrigin.BuiltIn project3of4;
+--             flipAngle = vecFlip.BuiltIn 1;
+--             flipRules = vecFlip.BuiltIn 1; 
+--             };
+--         //rule 10 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 1 1) ; 10
+--         {   lenf = vecLen.BuiltIn lenDiv3sqrt3; 
+--             anglef = vecAngle.BuiltIn angleLess5PiOver6;
+--             originf = vecOrigin.BuiltIn project3of4;
+--             flipAngle = vecFlip.BuiltIn 1;
+--             flipRules = vecFlip.BuiltIn 1; 
+--             };
+--         //rule 11 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 11
+--         {   lenf = vecLen.BuiltIn lenDiv3sqrt3; 
+--             anglef = vecAngle.BuiltIn angleLess5PiOver6;
+--             originf = vecOrigin.BuiltIn project3of4;
+--             flipAngle = vecFlip.BuiltIn -1;
+--             flipRules = vecFlip.BuiltIn 1;
+--             };
+--         //rule 12 (list len-div-3 project1.2 project3.4 -1 1) ; 12
+--         {   lenf = vecLen.BuiltIn lenDiv3; 
+--             anglef = vecAngle.BuiltIn project1of2;
+--             originf = vecOrigin.BuiltIn project3of4;
+--             flipAngle = vecFlip.BuiltIn -1;
+--             flipRules = vecFlip.BuiltIn 1; 
+--             };
+--         //rule 13 (list len-div-3 project1.2 project3.4 1 1)) ; 13
+--         {   lenf = vecLen.BuiltIn lenDiv3; 
+--             anglef = vecAngle.BuiltIn project1of2;
+--             originf = vecOrigin.BuiltIn project3of4;
+--             flipAngle = vecFlip.BuiltIn 1;
+--             flipRules = vecFlip.BuiltIn 1; 
+--             };                
+            ]
+    in
+        (initiator, generator)
 
 -- //to do:
 -- (*
