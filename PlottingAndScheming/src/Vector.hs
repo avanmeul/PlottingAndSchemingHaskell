@@ -499,10 +499,15 @@ data VecRule = VecRule
 --                 failwith "bad color specification") 
 --     |> Seq.toArray
 
--- data PlotObject = PlotObject 
---     { 
---         xml
---         }
+data PlotObject = PlotObject 
+    { xml :: String
+    , initiator :: [VecRule]
+    , generator :: [VecRule]
+    , generations :: Int
+    , length :: Double
+    , coloring :: VectorColorizer
+    , continuous :: Bool
+    }
 
 -- type plotObject = {
 --     xml : XElement; 
