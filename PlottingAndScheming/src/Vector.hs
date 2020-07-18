@@ -13,13 +13,22 @@ import Text.XML.Light
 Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
 -}
 
-line :: UI.Point -> UI.Point -> UI.Element -> UI ()
+-- # set UI.strokeStyle "gray"
+-- # set UI.fillStyle   (UI.htmlColor "black")
+
+line :: UI.Point -> UI.Point -> UI.Element -> UI () --to do:  pass in color as argument
 line xy1 xy2 c = do
+    c # set' UI.strokeStyle "green" --this is how you set the line's color
+    -- c # set UI.fillStyle (UI.htmlColor "yellow")
+    -- c # set' UI.fillStyle (UI.htmlColor "yellow")
+    -- c # set' UI.fillStyle (UI.htmlColor color)
     c # UI.beginPath
     c # UI.moveTo xy1
     c # UI.lineTo xy2
     c # UI.closePath
-    c # UI.stroke
+    -- c # UI.fill "blue"\
+    -- c # set' UI.fillStyle (UI.htmlColor "darkblue")
+    c # UI.stroke 
 
 drawLines :: [(UI.Point, UI.Point)] -> UI.Element -> UI ()
 drawLines lines c = iter lines where
