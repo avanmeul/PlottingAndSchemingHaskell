@@ -199,5 +199,8 @@ setup window = do
     on UI.click btnVecPlot $ const $ do
         canVec # drawLines [((0,0), (20, 20)), ((20, 20), (80, 20)), ((80, 20), (50, 50)) ]
         -- canVec # line (0, 0) (20, 20)
-        canVec # UI.fillRect (50, 50) 1 1 --set pixel; to do:  package this up as function
+        -- canVec # UI.fillRect (50, 50) 1 1 --set pixel; to do:  package this up as function
+        canVec # setPixel (50, 50) "maroon"
+        canVec # setPixel (51, 51) "maroon"
+        canVec # setPixel (52, 52) "maroon"
         return canVec

@@ -16,6 +16,12 @@ Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  A
 -- # set UI.strokeStyle "gray"
 -- # set UI.fillStyle   (UI.htmlColor "black")
 
+setPixel :: UI.Point -> String -> UI.Element -> UI ()
+setPixel pt clr can = do
+    -- c # set' UI.strokeStyle "yellow"
+    can # set' UI.fillStyle (UI.htmlColor clr)
+    can # UI.fillRect pt 1 1
+
 line :: UI.Point -> UI.Point -> UI.Element -> UI () --to do:  pass in color as argument
 line xy1 xy2 c = do
     c # set' UI.strokeStyle "green" --this is how you set the line's color
