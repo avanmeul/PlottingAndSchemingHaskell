@@ -548,6 +548,31 @@ ctorPlotObject xml =
 --     length : float; 
 --     coloring : vectorColorizer; 
 --     continuous : bool; } with 
+
+{-
+main :: IO ()
+main = do
+    doc <- readFile def "PlottingAndScheming/xml/vector.xml" 
+    let cursor = fromDocument doc
+        vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
+        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+    -- print $ T.concat $ 
+        -- plots = child cursor >>= C.element vector >>= child >>= descendant >>= content
+        -- plots = child cursor >>= C.element vector >>= child >>= C.element info >>= child >>= descendant >>= content
+        plots = child cursor >>= C.element vector >>= child >>= C.element info >>= child >>= C.element nm >>= child >>= content
+        -- plots = child cursor >>= C.element vector >>= child >>= descendant >>= C.element info
+        -- names = plots >>= child >>= C.element info >>= child >>= descendant >>= content
+        -- plots = child cursor >>= C.element info >>= child >>= descendant >>=  content
+    putStrLn $ show plots
+    startGUI defaultConfig $ setup $ map T.unpack plots
+-}
+
+parseXmlVector :: String -> IO () --to do:  change () to plot object
+parseXmlVector fname = do
+    return ()
+    
+-- vectorXml :: String -> 
 --     static member create (xml : XElement) =
 --         let parameters = xml.Element (xname "parameters")
 --         let generations = PlottingAndScheming.xml.fetchInt parameters "generations"

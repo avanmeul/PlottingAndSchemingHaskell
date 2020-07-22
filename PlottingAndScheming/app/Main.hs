@@ -18,6 +18,7 @@ import qualified Data.Text as T
 
 {-
 
+to do:  package up all xml
 to do:  lambda calculus should use lambda symbol
 to do:  add text box for success/failure (or radio button)
 to do:  add time stamp for latest run
@@ -30,6 +31,8 @@ to do:  possibly add untokenize button?
 to do:  put all debug buttons in a debug tab
 
 -}
+
+--to do:  use explicit recursion to go through the tabs only once, setting the one of interest, and resetting the ones not of interest
 
 toggleTabs :: [(UI.Element, UI.Element)] -> UI ()
 toggleTabs [] = return ()
@@ -61,15 +64,23 @@ main = do
         vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
         info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
         nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
-    -- print $ T.concat $ 
-        -- plots = child cursor >>= C.element vector >>= child >>= descendant >>= content
-        -- plots = child cursor >>= C.element vector >>= child >>= C.element info >>= child >>= descendant >>= content
-        plots = child cursor >>= C.element vector >>= child >>= C.element info >>= child >>= C.element nm >>= child >>= content
-        -- plots = child cursor >>= C.element vector >>= child >>= descendant >>= C.element info
-        -- names = plots >>= child >>= C.element info >>= child >>= descendant >>= content
-        -- plots = child cursor >>= C.element info >>= child >>= descendant >>=  content
-    putStrLn $ show plots
-    startGUI defaultConfig $ setup $ map T.unpack plots
+        desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
+        params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
+        gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
+        len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
+
+        plots = child cursor >>= C.element vector >>= child
+        infoXml = plots >>= C.element info >>= child
+        
+        names = infoXml >>= C.element nm >>= child >>= content
+        descriptions = infoXml >>= C.element desc >>= child >>= content
+
+        paramsXml = plots >>= C.element params >>= child 
+        genXml = paramsXml >>= C.element gen >>= child >>= content
+        lenXml = paramsXml >>= C.element len >>= child >>= content
+        
+    putStrLn $ show lenXml
+    startGUI defaultConfig $ setup $ map T.unpack names
  
 setup :: [String] -> Window -> UI ()
 setup plots window = do
