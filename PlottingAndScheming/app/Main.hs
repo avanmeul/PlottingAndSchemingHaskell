@@ -1,11 +1,20 @@
 module Main where
 
+{-# LANGUAGE OverloadedStrings #-}
+-- {-# LANGUAGE QuasiQuotes #-}
+
 import Scheme
 import Vector
+import Prelude hiding (readFile, writeFile)
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
+-- import Data.Map as M
+-- import Text.Hamlet.XML
+import Text.XML
+import Text.XML.Cursor as C
+import qualified Data.Text as T
 
 {-
 
@@ -25,17 +34,17 @@ to do:  put all debug buttons in a debug tab
 toggleTabs :: [(UI.Element, UI.Element)] -> UI ()
 toggleTabs [] = return ()
 toggleTabs ((d, b) : t) = do
-    element d
+    UI.element d
         # set UI.style [("display", "none")]
-    element b
+    UI.element b
         # set UI.style [("color", "black")]
     toggleTabs t
 
 toggleTab :: UI.Element -> UI.Element -> UI ()
 toggleTab d b = do
-    element d
+    UI.element d
         # set UI.style [("display", "block")]
-    element b
+    UI.element b
         # set UI.style [("color", "blue")]
     return ()
 
@@ -43,13 +52,27 @@ toggleTab d b = do
     Main
 ------------------------------------------------------------------------------}
 
+canvasSize = 400
+
 main :: IO ()
 main = do
-    -- putStrLn $ "caller is " ++ (errCaller testError)
-    startGUI defaultConfig setup
+    doc <- readFile def "PlottingAndScheming/xml/vector.xml" 
+    let cursor = fromDocument doc
+        vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
+        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+    -- print $ T.concat $ 
+        -- plots = child cursor >>= C.element vector >>= child >>= descendant >>= content
+        -- plots = child cursor >>= C.element vector >>= child >>= C.element info >>= child >>= descendant >>= content
+        plots = child cursor >>= C.element vector >>= child >>= C.element info >>= child >>= C.element nm >>= child >>= content
+        -- plots = child cursor >>= C.element vector >>= child >>= descendant >>= C.element info
+        -- names = plots >>= child >>= C.element info >>= child >>= descendant >>= content
+        -- plots = child cursor >>= C.element info >>= child >>= descendant >>=  content
+    putStrLn $ show plots
+    startGUI defaultConfig $ setup $ map T.unpack plots
  
-setup :: Window -> UI ()
-setup window = do
+setup :: [String] -> Window -> UI ()
+setup plots window = do
     return window # set title "Plotting and Scheming in Haskell"
     txtInput  <- UI.textarea #. "send-textarea"
     txtOutput  <- UI.textarea #. "send-textarea"
@@ -73,20 +96,27 @@ setup window = do
     btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
     -- cbxVector <- UI.select #+ [UI.option #+ [string "1"], UI.option #+ [string "2"]] 
-    cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
+    -- cbxVector <- UI.select #+ map (\i -> UI.option #+ [i]) ["one", "two", "three"]
+    -- let plots = do
+        -- getVectorPlots
+    cbxVector <- UI.select #+ map (\i -> UI.option #+ [string i]) plots --["one", "two", "three"]
+    -- cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
+    -- cbxVector <- UI.select #+ map (\i -> UI.option #+ [i]) plots --[(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
     canVec <- UI.canvas
+        # set UI.height canvasSize
+        # set UI.width  canvasSize
     divScheme <- UI.div #+ -- #. -- "header" #+ [string "scheme"] #+
         [grid
-            [ [row [element txtInput]]
-            , [row [element btnClearInput, element btnTokenize, element btnAst, element btnEval, element btnTest, element btnClear]]
-            , [row [element txtOutput]]
+            [ [row [UI.element txtInput]]
+            , [row [UI.element btnClearInput, UI.element btnTokenize, UI.element btnAst, UI.element btnEval, UI.element btnTest, UI.element btnClear]]
+            , [row [UI.element txtOutput]]
             ]
         ]
     divVector <- UI.div #+ -- #. -- "header" #+ [string "vector"] #+
         [grid
-            [ [row [element cbxVector]]
-            , [row [element canVec]]
-            , [row [element btnVecPlot]] 
+            [ [row [UI.element cbxVector]]
+            , [row [UI.element canVec]]
+            , [row [UI.element btnVecPlot]] 
             ]
         ]
     divComplex <- UI.div
@@ -97,28 +127,28 @@ setup window = do
     divLambda <- UI.div
     divCombinator <- UI.div
     divScratch <- UI.div #+
-        [grid [[row [element txtScratch]]]]
+        [grid [[row [UI.element txtScratch]]]]
 
     getBody window #+ 
         [ UI.div #+ 
-            [ element btnScheme, element btnVector, element btnComplex, element btnLsystem
-            , element btn2d, element btn3d, element btnMrcm, element btnLambda, element btnCombinator, element btnScratch]
-        , element divScheme 
-        , element divVector
+            [ UI.element btnScheme, UI.element btnVector, UI.element btnComplex, UI.element btnLsystem
+            , UI.element btn2d, UI.element btn3d, UI.element btnMrcm, UI.element btnLambda, UI.element btnCombinator, UI.element btnScratch]
+        , UI.element divScheme 
+        , UI.element divVector
             # set UI.style [("display", "none")]
-        , element divComplex
+        , UI.element divComplex
             # set UI.style [("display", "none")]
-        , element divLsystem
+        , UI.element divLsystem
             # set UI.style [("display", "none")]  
-        , element div2d
+        , UI.element div2d
             # set UI.style [("display", "none")]
-        , element div3d
+        , UI.element div3d
             # set UI.style [("display", "none")] 
-        , element divLambda
+        , UI.element divLambda
             # set UI.style [("display", "none")]
-        , element divCombinator
+        , UI.element divCombinator
             # set UI.style [("display", "none")]    
-        , element divScratch
+        , UI.element divScratch
             # set UI.style [("display", "none")]                                                           
         ]
 
@@ -177,30 +207,30 @@ setup window = do
 
     on UI.click btnTokenize $ const $ do
         expression <- get value txtInput
-        element txtOutput # set UI.text (strToTok expression)
+        UI.element txtOutput # set UI.text (strToTok expression)
 
     on UI.click btnTest $ const $ do
-        element txtOutput # set UI.text (show $ parseTest' parseTests)
+        UI.element txtOutput # set UI.text (show $ parseTest' parseTests)
 
     on UI.click btnAst $ const $ do
         expression <- get value txtInput
-        element txtOutput # set UI.text (heapifyResults expression)
+        UI.element txtOutput # set UI.text (heapifyResults expression)
 
     on UI.click btnEval $ const $ do
         expression <- get value txtInput
-        element txtOutput # set UI.text (evalResults expression)
+        UI.element txtOutput # set UI.text (evalResults expression)
 
     on UI.click btnClear $ const $ do
-        element txtOutput # set UI.text ""
+        UI.element txtOutput # set UI.text ""
 
     on UI.click btnClearInput $ const $ do
-        element txtInput # set value ""
+        UI.element txtInput # set value ""
 
     on UI.click btnVecPlot $ const $ do
         canVec # drawLines [((0,0), (20, 20)), ((20, 20), (80, 20)), ((80, 20), (50, 50)) ]
         -- canVec # line (0, 0) (20, 20)
         -- canVec # UI.fillRect (50, 50) 1 1 --set pixel; to do:  package this up as function
-        canVec # setPixel (50, 50) "maroon"
-        canVec # setPixel (51, 51) "maroon"
-        canVec # setPixel (52, 52) "maroon"
+        canVec # setPixel (50, 50) "grey"
+        canVec # setPixel (51, 51) "grey"
+        canVec # setPixel (52, 52) "grey"
         return canVec

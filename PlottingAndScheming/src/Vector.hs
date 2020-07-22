@@ -6,7 +6,8 @@ module Vector where
 import Scheme
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import Text.XML.Light
+-- import Text.XML.Light
+import Text.XML
 -- import Data.Color
 
 {-
@@ -16,7 +17,15 @@ Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  A
 -- # set UI.strokeStyle "gray"
 -- # set UI.fillStyle   (UI.htmlColor "black")
 
-setPixel :: UI.Point -> String -> UI.Element -> UI ()
+-- setPixel :: UI.Point -> String -> UI.Element -> UI () --to do:  pass color as UI.Color
+-- setPixel pt clr can = do
+--     -- c # set' UI.strokeStyle "yellow"
+--     can # set' UI.fillStyle (UI.htmlColor clr)
+--     can # UI.fillRect pt 1 1
+
+type Color = String 
+
+setPixel :: UI.Point -> Color -> UI.Element -> UI () --to do:  pass color as UI.Color, make first arg
 setPixel pt clr can = do
     -- c # set' UI.strokeStyle "yellow"
     can # set' UI.fillStyle (UI.htmlColor clr)
@@ -523,6 +532,13 @@ data PlotObject = PlotObject
     , coloring :: VectorColorizer
     , continuous :: Bool
     }
+
+--to do:  create function
+
+ctorPlotObject :: String -> PlotObject
+ctorPlotObject xml = 
+
+    undefined
 
 -- type plotObject = {
 --     xml : XElement; 
