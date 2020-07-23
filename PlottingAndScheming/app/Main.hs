@@ -1,20 +1,13 @@
 module Main where
 
 {-# LANGUAGE OverloadedStrings #-}
--- {-# LANGUAGE QuasiQuotes #-}
 
 import Scheme
 import Vector
-import Prelude hiding (readFile, writeFile)
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
--- import Data.Map as M
--- import Text.Hamlet.XML
-import Text.XML
-import Text.XML.Cursor as C
-import qualified Data.Text as T
 
 {-
 
@@ -59,28 +52,8 @@ canvasSize = 400
 
 main :: IO ()
 main = do
-    doc <- readFile def "PlottingAndScheming/xml/vector.xml" 
-    let cursor = fromDocument doc
-        vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
-        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
-        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
-        desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
-        params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
-        gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
-        len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
-
-        plots = child cursor >>= C.element vector >>= child
-        infoXml = plots >>= C.element info >>= child
-        
-        names = infoXml >>= C.element nm >>= child >>= content
-        descriptions = infoXml >>= C.element desc >>= child >>= content
-
-        paramsXml = plots >>= C.element params >>= child 
-        genXml = paramsXml >>= C.element gen >>= child >>= content
-        lenXml = paramsXml >>= C.element len >>= child >>= content
-        
-    putStrLn $ show lenXml
-    startGUI defaultConfig $ setup $ map T.unpack names
+    names <- getXmlVector "PlottingAndScheming/xml/vector.xml"
+    startGUI defaultConfig $ setup names -- $ map T.unpack names
  
 setup :: [String] -> Window -> UI ()
 setup plots window = do

@@ -1,14 +1,15 @@
 module Vector where
 
--- {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 import Scheme
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
--- import Text.XML.Light
 import Text.XML
--- import Data.Color
+import Prelude hiding (readFile, writeFile)
+import Text.XML
+import Text.XML.Cursor as C
+import qualified Data.Text as T
 
 {-
 Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
@@ -52,6 +53,38 @@ drawLines lines c = iter lines where
     iter (h : t) = do
         line (fst h) (snd h) c
         iter t    
+
+getXmlVector :: String -> IO [String]
+getXmlVector fname = do
+    doc <- readFile def fname
+    let cursor = fromDocument doc
+        vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
+        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+        desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
+        params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
+        gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
+        len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
+        color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
+
+        plots = child cursor >>= C.element vector >>= child
+        -- plotsXml =  [head plots]
+        plotsXml = plots
+        infoXml = plotsXml >>= C.element info >>= child
+        
+        names = infoXml >>= C.element nm >>= child >>= content
+        descriptions = infoXml >>= C.element desc >>= child >>= content
+
+        paramsXml = plotsXml >>= C.element params >>= child 
+        genXml = paramsXml >>= C.element gen >>= child >>= content
+        lenXml = paramsXml >>= C.element len >>= child >>= content
+        colorXml = paramsXml >>= C.element color >>= child 
+
+    return $ map T.unpack names
+
+        -- putStrLn $ show $ head plotsXml
+        -- putStrLn $ show genXml
+        -- startGUI defaultConfig $ setup $ map T.unpack names
 
 -- //namespace vanmeule.FSharp.PlottingAndScheming
 
@@ -568,10 +601,10 @@ main = do
     startGUI defaultConfig $ setup $ map T.unpack plots
 -}
 
-parseXmlVector :: String -> IO () --to do:  change () to plot object
+parseXmlVector :: String -> IO String --to do:  change () to plot object
 parseXmlVector fname = do
-    return ()
-    
+    return "hey you!"
+
 -- vectorXml :: String -> 
 --     static member create (xml : XElement) =
 --         let parameters = xml.Element (xname "parameters")
