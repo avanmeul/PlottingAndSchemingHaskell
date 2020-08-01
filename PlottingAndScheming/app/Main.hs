@@ -52,10 +52,10 @@ canvasSize = 400
 
 main :: IO ()
 main = do
-    names <- getXmlVector "PlottingAndScheming/xml/vector.xml"
+    names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     startGUI defaultConfig $ setup names -- $ map T.unpack names
  
-setup :: [String] -> Window -> UI ()
+setup :: [XmlObj] -> Window -> UI ()
 setup plots window = do
     return window # set title "Plotting and Scheming in Haskell"
     txtInput  <- UI.textarea #. "send-textarea"
@@ -83,7 +83,7 @@ setup plots window = do
     -- cbxVector <- UI.select #+ map (\i -> UI.option #+ [i]) ["one", "two", "three"]
     -- let plots = do
         -- getVectorPlots
-    cbxVector <- UI.select #+ map (\i -> UI.option #+ [string i]) plots --["one", "two", "three"]
+    cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) plots --["one", "two", "three"]
     -- cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
     -- cbxVector <- UI.select #+ map (\i -> UI.option #+ [i]) plots --[(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
     canVec <- UI.canvas

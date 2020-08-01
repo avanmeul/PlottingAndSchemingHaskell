@@ -1,13 +1,14 @@
 module Vector where
 
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Scheme
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Text.XML
 import Prelude hiding (readFile, writeFile)
-import Text.XML
+import Text.XML as X
 import Text.XML.Cursor as C
 import qualified Data.Text as T
 
@@ -42,7 +43,7 @@ line xy1 xy2 c = do
     c # UI.moveTo xy1
     c # UI.lineTo xy2
     c # UI.closePath
-    -- c # UI.fill "blue"\
+    -- c # UI.fill "blue"
     -- c # set' UI.fillStyle (UI.htmlColor "darkblue")
     c # UI.stroke 
 
@@ -54,8 +55,82 @@ drawLines lines c = iter lines where
         line (fst h) (snd h) c
         iter t    
 
-getXmlVector :: String -> IO [String]
-getXmlVector fname = do
+{-
+main = do
+    doc <- readFile def "test.xml"
+    let cursor = fromDocument doc
+    print $ T.concat $
+        cursor $/ element "head" &/ element "title" &// content
+-}
+
+-- parseXmlVector2 :: String -> IO [String] --to do:  remove this (not used)
+-- parseXmlVector2 fname = do
+--     doc <- readFile def fname
+--     let cursor = fromDocument doc
+--         vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
+--         info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+--         nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+--         names = cursor $/ C.element vector &/ C.element info &/ C.element nm &// content
+
+
+--         -- desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
+--         -- params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
+--         -- gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
+--         -- len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
+--         -- color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
+
+--         -- plots = child cursor >>= C.element vector >>= child
+--         -- plotsXml = plots
+--         -- infoXml = plotsXml >>= C.element info >>= child
+        
+--         -- names = infoXml >>= C.element nm >>= child >>= content
+--         -- descriptions = infoXml >>= C.element desc >>= child >>= content
+
+--         -- paramsXml = plotsXml >>= C.element params >>= child 
+--         -- genXml = paramsXml >>= C.element gen >>= child >>= content
+--         -- lenXml = paramsXml >>= C.element len >>= child >>= content
+--         -- colorXml = paramsXml >>= C.element color >>= child 
+
+--         -- test = [head plotsXml] >>= C.element info
+
+--     -- putStrLn $ show test
+--     return $ map T.unpack names
+
+data XmlObj = XmlObj
+    { xobName :: String
+    , xobDesc :: String
+    -- , xobGenerations :: Int
+    -- , xobLength :: Double
+    }
+
+-- ctorXmlObj :: Node -> XmlObj --can't figure out what the type of node is that it wants, so I didn't include a signature
+ctorXmlObj el =
+    let vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
+        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+        desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
+        params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
+        gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
+        len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
+        color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
+        vec1desc = el >>= descendant
+        info1 = vec1desc >>= C.element info >>= child
+        name1 = info1 >>= C.element nm >>= child >>= content
+        desc1 = info1 >>= C.element nm >>= child >>= content
+        params1 = vec1desc >>= C.element params >>= child
+        gen1 = params1 >>= C.element gen >>= child >>= content
+        len1 = params1 >>= C.element len >>= child >>= content
+        color1 = params1 >>= C.element color >>= child
+    in
+        XmlObj 
+            { xobName = head $ map T.unpack name1
+            , xobDesc = head $ map T.unpack desc1
+            -- , xobGenerations = gen1
+            -- , xobLength = len1 
+            }
+
+parseXmlVector :: String -> IO [XmlObj]
+parseXmlVector fname = do
     doc <- readFile def fname
     let cursor = fromDocument doc
         vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
@@ -67,9 +142,36 @@ getXmlVector fname = do
         len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
         color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
 
+        vecs = child cursor >>= C.element vector
+
+        plotObjects = map (\x -> ctorXmlObj [x]) vecs
+
+        vec1 = [head vecs]
+        vec1desc = vec1 >>= descendant
+        info1 = vec1desc >>= C.element info >>= child
+        name1 = info1 >>= C.element nm >>= child >>= content
+        desc1 = info1 >>= C.element nm >>= child >>= content
+        params1 = vec1desc >>= C.element params >>= child
+        gen1 = params1 >>= C.element gen >>= child >>= content
+        len1 = params1 >>= C.element len >>= child >>= content
+        color1 = params1 >>= C.element color >>= child
+
+        test = ctorXmlObj vec1
+            -- XmlObj 
+            --     { xobName = head $ map T.unpack name1
+            --     -- , xobDesc = desc1
+            --     -- , xobGenerations = gen1
+            --     -- , xobLength = len1 
+            --     }
+
+        --to do:  finish above
+
         plots = child cursor >>= C.element vector >>= child
-        -- plotsXml =  [head plots]
-        plotsXml = plots
+        plotsXml = [head plots] -- plots -- Text.XML.Cursor.Generic.Cursor Node
+        -- desc = plotsXml 
+
+        infoHead = plotsXml >>= content
+
         infoXml = plotsXml >>= C.element info >>= child
         
         names = infoXml >>= C.element nm >>= child >>= content
@@ -80,11 +182,16 @@ getXmlVector fname = do
         lenXml = paramsXml >>= C.element len >>= child >>= content
         colorXml = paramsXml >>= C.element color >>= child 
 
-    return $ map T.unpack names
+        -- Text.XML.Cursor.Generic.Cursor Node
+        -- test = [head plotsXml] -- >>= C.element info
 
-        -- putStrLn $ show $ head plotsXml
-        -- putStrLn $ show genXml
-        -- startGUI defaultConfig $ setup $ map T.unpack names
+    putStrLn $ show params1
+    -- return $ map T.unpack names
+    -- return $ map T.unpack name1
+    -- return [test]
+    -- return [T.unpack name1]
+    -- return names
+    return plotObjects
 
 -- //namespace vanmeule.FSharp.PlottingAndScheming
 
@@ -124,7 +231,7 @@ getXmlVector fname = do
 -- *)
 
 data PalettePicker = PalettePicker
-    { ppkPalette :: [UI.Color] 
+    { ppkPalette :: [UI.Color] --this comes from xml
     , ppkLoc :: Int }
 
 -- type palettePicker = {
@@ -549,7 +656,7 @@ data VecRule = VecRule
 --                 let b = el.Element (xname "blue")
 --                 let r = Convert.ToByte (r.Value)
 --                 let g = Convert.ToByte (g.Value)
---                 let b = Convert.ToByte (b.Value)
+--                 let b = Convert.ToByte (b.Value)zzzz
 --                 let clr = Color.FromRgb(r, g, b)
 --                 clr
 --             | _ -> 
@@ -600,10 +707,6 @@ main = do
     putStrLn $ show plots
     startGUI defaultConfig $ setup $ map T.unpack plots
 -}
-
-parseXmlVector :: String -> IO String --to do:  change () to plot object
-parseXmlVector fname = do
-    return "hey you!"
 
 -- vectorXml :: String -> 
 --     static member create (xml : XElement) =
