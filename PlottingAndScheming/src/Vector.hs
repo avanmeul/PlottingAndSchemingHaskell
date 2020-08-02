@@ -11,6 +11,7 @@ import Prelude hiding (readFile, writeFile)
 import Text.XML as X
 import Text.XML.Cursor as C
 import qualified Data.Text as T
+import Text.Read
 
 {-
 Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
@@ -99,8 +100,8 @@ main = do
 data XmlObj = XmlObj
     { xobName :: String
     , xobDesc :: String
-    -- , xobGenerations :: Int
-    -- , xobLength :: Double
+    , xobGenerations :: Int
+    , xobLength :: Double
     }
 
 -- ctorXmlObj :: Node -> XmlObj --can't figure out what the type of node is that it wants, so I didn't include a signature
@@ -119,14 +120,18 @@ ctorXmlObj el =
         desc1 = info1 >>= C.element nm >>= child >>= content
         params1 = vec1desc >>= C.element params >>= child
         gen1 = params1 >>= C.element gen >>= child >>= content
+        genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
+        generations = maybe 1 id genMaybe
         len1 = params1 >>= C.element len >>= child >>= content
+        lenMaybe = readMaybe (head $ map T.unpack len1) :: Maybe Double
+        length = maybe 1.0 id lenMaybe
         color1 = params1 >>= C.element color >>= child
     in
         XmlObj 
             { xobName = head $ map T.unpack name1
             , xobDesc = head $ map T.unpack desc1
-            -- , xobGenerations = gen1
-            -- , xobLength = len1 
+            , xobGenerations = generations --gen1
+            , xobLength = length 
             }
 
 parseXmlVector :: String -> IO [XmlObj]

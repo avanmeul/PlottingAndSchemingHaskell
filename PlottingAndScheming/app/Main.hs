@@ -79,13 +79,7 @@ setup plots window = do
     btnCombinator <- UI.button #+ [string "combinator"]
     btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
-    -- cbxVector <- UI.select #+ [UI.option #+ [string "1"], UI.option #+ [string "2"]] 
-    -- cbxVector <- UI.select #+ map (\i -> UI.option #+ [i]) ["one", "two", "three"]
-    -- let plots = do
-        -- getVectorPlots
     cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) plots --["one", "two", "three"]
-    -- cbxVector <- UI.select #+ map (\(i, _) -> UI.option #+ [i]) [(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
-    -- cbxVector <- UI.select #+ map (\i -> UI.option #+ [i]) plots --[(string "choice1", 1), (string "choice2", 2), (string "choice3", 3)]
     canVec <- UI.canvas
         # set UI.height canvasSize
         # set UI.width  canvasSize
