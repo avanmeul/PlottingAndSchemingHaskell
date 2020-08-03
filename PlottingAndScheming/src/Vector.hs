@@ -97,6 +97,8 @@ main = do
 --     -- putStrLn $ show test
 --     return $ map T.unpack names
 
+--to do:  rules should be an or type builtin of type string (name), and lisp of type string; for builtins, the name comes from element content
+
 data XmlObj = XmlObj
     { xobName :: String
     , xobDesc :: String
@@ -104,21 +106,26 @@ data XmlObj = XmlObj
     , xobLength :: Double
     }
 
--- ctorXmlObj :: Node -> XmlObj --can't figure out what the type of node is that it wants, so I didn't include a signature
+ctorXmlObj :: [Cursor] -> XmlObj
 ctorXmlObj el =
     let vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
         info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
         nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
         desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
         params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
+        rules = Name { nameLocalName = T.pack "rules", nameNamespace = Nothing, namePrefix = Nothing }
         gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
         len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
         color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
+        ruleType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
         vec1desc = el >>= descendant
         info1 = vec1desc >>= C.element info >>= child
         name1 = info1 >>= C.element nm >>= child >>= content
         desc1 = info1 >>= C.element nm >>= child >>= content
         params1 = vec1desc >>= C.element params >>= child
+        rules1 = vec1desc >>= C.element rules -- >>= child
+        rulesType1 = rules1 >>= C.attribute ruleType
+        rulesContent1 = rules1 >>= child >>= content
         gen1 = params1 >>= C.element gen >>= child >>= content
         genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
         generations = maybe 1 id genMaybe
@@ -146,17 +153,21 @@ parseXmlVector fname = do
         gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
         len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
         color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
-
+        rules = Name { nameLocalName = T.pack "rules", nameNamespace = Nothing, namePrefix = Nothing }
+        ruleType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
         vecs = child cursor >>= C.element vector
 
         plotObjects = map (\x -> ctorXmlObj [x]) vecs
 
-        vec1 = [head vecs]
+        vec1 = [head $ tail vecs]
         vec1desc = vec1 >>= descendant
         info1 = vec1desc >>= C.element info >>= child
         name1 = info1 >>= C.element nm >>= child >>= content
         desc1 = info1 >>= C.element nm >>= child >>= content
         params1 = vec1desc >>= C.element params >>= child
+        rules1 = vec1desc >>= C.element rules >>= child
+        rulesContent1 = rules1 >>= content
+        rulesType1 = vec1desc >>= C.element rules >>= C.attribute ruleType
         gen1 = params1 >>= C.element gen >>= child >>= content
         len1 = params1 >>= C.element len >>= child >>= content
         color1 = params1 >>= C.element color >>= child
@@ -190,7 +201,10 @@ parseXmlVector fname = do
         -- Text.XML.Cursor.Generic.Cursor Node
         -- test = [head plotsXml] -- >>= C.element info
 
-    putStrLn $ show params1
+    --to do:  show attribute (just to see what it looks like)
+    --to do:  show rules (just to see what it looks like)
+    -- putStrLn ("content = " ++ (show rulesContent1))
+    putStrLn ("rule type = " ++ (show rulesType1))
     -- return $ map T.unpack names
     -- return $ map T.unpack name1
     -- return [test]
@@ -406,7 +420,7 @@ data VecRule = VecRule
     , vrlFlipRules :: VecFlip
     }
 
-(seed, rules) = 
+mandelbrotPeanoCurveIntervals13 = 
     let project1of2 x y = x
         project3of4 w x y z = y
         lenDiv3 len = len / 3.0

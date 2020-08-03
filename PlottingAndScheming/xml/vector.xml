@@ -28,7 +28,7 @@
         </algorithm>
       </coloring>
     </parameters>
-		<rules type="builtin"></rules></vector>
+		<rules type="builtin">mandelbrotPeanoCurveIntervals13</rules></vector>
 	<!-- mandelbrot peano curve:  13 intervals -->
 	<vector>
     <info>
