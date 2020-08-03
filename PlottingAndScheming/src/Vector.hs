@@ -56,59 +56,18 @@ drawLines lines c = iter lines where
         line (fst h) (snd h) c
         iter t    
 
-{-
-main = do
-    doc <- readFile def "test.xml"
-    let cursor = fromDocument doc
-    print $ T.concat $
-        cursor $/ element "head" &/ element "title" &// content
--}
-
--- parseXmlVector2 :: String -> IO [String] --to do:  remove this (not used)
--- parseXmlVector2 fname = do
---     doc <- readFile def fname
---     let cursor = fromDocument doc
---         vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
---         info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
---         nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
---         names = cursor $/ C.element vector &/ C.element info &/ C.element nm &// content
-
-
---         -- desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
---         -- params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
---         -- gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
---         -- len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
---         -- color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
-
---         -- plots = child cursor >>= C.element vector >>= child
---         -- plotsXml = plots
---         -- infoXml = plotsXml >>= C.element info >>= child
-        
---         -- names = infoXml >>= C.element nm >>= child >>= content
---         -- descriptions = infoXml >>= C.element desc >>= child >>= content
-
---         -- paramsXml = plotsXml >>= C.element params >>= child 
---         -- genXml = paramsXml >>= C.element gen >>= child >>= content
---         -- lenXml = paramsXml >>= C.element len >>= child >>= content
---         -- colorXml = paramsXml >>= C.element color >>= child 
-
---         -- test = [head plotsXml] >>= C.element info
-
---     -- putStrLn $ show test
---     return $ map T.unpack names
-
---to do:  rules should be an or type builtin of type string (name), and lisp of type string; for builtins, the name comes from element content
-
 data XmlObj = XmlObj
     { xobName :: String
     , xobDesc :: String
     , xobGenerations :: Int
     , xobLength :: Double
-    }
+    , xobRules :: String
+    , xobBuiltIn :: Bool
+    } deriving (Eq, Show)
 
 ctorXmlObj :: [Cursor] -> XmlObj
 ctorXmlObj el =
-    let vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
+    let 
         info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
         nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
         desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
@@ -138,7 +97,9 @@ ctorXmlObj el =
             { xobName = head $ map T.unpack name1
             , xobDesc = head $ map T.unpack desc1
             , xobGenerations = generations --gen1
-            , xobLength = length 
+            , xobLength = length
+            , xobRules = head $ map T.unpack rulesContent1
+            , xobBuiltIn = "builtin" == (head $ map T.unpack rulesType1)
             }
 
 parseXmlVector :: String -> IO [XmlObj]
@@ -146,70 +107,10 @@ parseXmlVector fname = do
     doc <- readFile def fname
     let cursor = fromDocument doc
         vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
-        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
-        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
-        desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
-        params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
-        gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
-        len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
-        color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
-        rules = Name { nameLocalName = T.pack "rules", nameNamespace = Nothing, namePrefix = Nothing }
-        ruleType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
         vecs = child cursor >>= C.element vector
-
         plotObjects = map (\x -> ctorXmlObj [x]) vecs
-
-        vec1 = [head $ tail vecs]
-        vec1desc = vec1 >>= descendant
-        info1 = vec1desc >>= C.element info >>= child
-        name1 = info1 >>= C.element nm >>= child >>= content
-        desc1 = info1 >>= C.element nm >>= child >>= content
-        params1 = vec1desc >>= C.element params >>= child
-        rules1 = vec1desc >>= C.element rules >>= child
-        rulesContent1 = rules1 >>= content
-        rulesType1 = vec1desc >>= C.element rules >>= C.attribute ruleType
-        gen1 = params1 >>= C.element gen >>= child >>= content
-        len1 = params1 >>= C.element len >>= child >>= content
-        color1 = params1 >>= C.element color >>= child
-
-        test = ctorXmlObj vec1
-            -- XmlObj 
-            --     { xobName = head $ map T.unpack name1
-            --     -- , xobDesc = desc1
-            --     -- , xobGenerations = gen1
-            --     -- , xobLength = len1 
-            --     }
-
-        --to do:  finish above
-
-        plots = child cursor >>= C.element vector >>= child
-        plotsXml = [head plots] -- plots -- Text.XML.Cursor.Generic.Cursor Node
-        -- desc = plotsXml 
-
-        infoHead = plotsXml >>= content
-
-        infoXml = plotsXml >>= C.element info >>= child
-        
-        names = infoXml >>= C.element nm >>= child >>= content
-        descriptions = infoXml >>= C.element desc >>= child >>= content
-
-        paramsXml = plotsXml >>= C.element params >>= child 
-        genXml = paramsXml >>= C.element gen >>= child >>= content
-        lenXml = paramsXml >>= C.element len >>= child >>= content
-        colorXml = paramsXml >>= C.element color >>= child 
-
-        -- Text.XML.Cursor.Generic.Cursor Node
-        -- test = [head plotsXml] -- >>= C.element info
-
-    --to do:  show attribute (just to see what it looks like)
-    --to do:  show rules (just to see what it looks like)
-    -- putStrLn ("content = " ++ (show rulesContent1))
-    putStrLn ("rule type = " ++ (show rulesType1))
-    -- return $ map T.unpack names
-    -- return $ map T.unpack name1
-    -- return [test]
-    -- return [T.unpack name1]
-    -- return names
+        -- po1 = head plotObjects 
+    -- putStrLn ("xml obj = " ++ (show po1))
     return plotObjects
 
 -- //namespace vanmeule.FSharp.PlottingAndScheming
