@@ -56,6 +56,13 @@ drawLines lines c = iter lines where
         line (fst h) (snd h) c
         iter t    
 
+--to do:  level should have Level and Image should have Subtractor
+
+data ColoringAlgorithm =
+    CalLevel Int | --Level
+    CalImage Int --Subtractor
+    deriving (Eq, Show)
+
 data XmlObj = XmlObj
     { xobName :: String
     , xobDesc :: String
@@ -63,7 +70,32 @@ data XmlObj = XmlObj
     , xobLength :: Double
     , xobRules :: String
     , xobBuiltIn :: Bool
+    , xobColors :: [Color]
+    , xobAlgorithm :: ColoringAlgorithm
     } deriving (Eq, Show)
+
+ctorColoringAlgorithm :: String -> [Cursor] -> Maybe ColoringAlgorithm
+ctorColoringAlgorithm typ el =
+    case typ of
+        "level" -> 
+            let nm = Name { nameLocalName = T.pack "level", nameNamespace = Nothing, namePrefix = Nothing }
+                lvlActual = findLevel nm
+            in
+                Just $ CalLevel lvlActual
+        "image" -> 
+            let nm = Name { nameLocalName = T.pack "subtractor", nameNamespace = Nothing, namePrefix = Nothing }
+                lvlActual = findLevel nm
+            in
+                Just $ CalImage  lvlActual
+        otherwise -> 
+            Nothing
+    where 
+        findLevel :: Name -> Int
+        findLevel nm =
+            let lvl = el >>= C.element nm >>= child >>= content
+                lvlUnpack = map T.unpack lvl
+                lvlMaybe = if null lvlUnpack then Nothing else readMaybe (head lvlUnpack) :: Maybe Int
+            in maybe 1 id lvlMaybe     
 
 ctorXmlObj :: [Cursor] -> XmlObj
 ctorXmlObj el =
@@ -75,15 +107,18 @@ ctorXmlObj el =
         rules = Name { nameLocalName = T.pack "rules", nameNamespace = Nothing, namePrefix = Nothing }
         gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
         len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
-        color = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
-        ruleType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
+        coloring = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
+        typeAtt = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
+        palette = Name { nameLocalName = T.pack "palette", nameNamespace = Nothing, namePrefix = Nothing }
+        color = Name { nameLocalName = T.pack "color", nameNamespace = Nothing, namePrefix = Nothing }
+        algorithm = Name { nameLocalName = T.pack "algorithm", nameNamespace = Nothing, namePrefix = Nothing }
         vec1desc = el >>= descendant
         info1 = vec1desc >>= C.element info >>= child
         name1 = info1 >>= C.element nm >>= child >>= content
         desc1 = info1 >>= C.element nm >>= child >>= content
         params1 = vec1desc >>= C.element params >>= child
-        rules1 = vec1desc >>= C.element rules -- >>= child
-        rulesType1 = rules1 >>= C.attribute ruleType
+        rules1 = vec1desc >>= C.element rules
+        rulesType1 = rules1 >>= C.attribute typeAtt
         rulesContent1 = rules1 >>= child >>= content
         gen1 = params1 >>= C.element gen >>= child >>= content
         genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
@@ -91,15 +126,25 @@ ctorXmlObj el =
         len1 = params1 >>= C.element len >>= child >>= content
         lenMaybe = readMaybe (head $ map T.unpack len1) :: Maybe Double
         length = maybe 1.0 id lenMaybe
-        color1 = params1 >>= C.element color >>= child
+        coloring1 = params1 >>= C.element coloring >>= child
+        palette1 = coloring1 >>= C.element palette >>= child
+        color1 = palette1 >>= C.element color >>= child
+        colorName1 = color1 >>= C.element nm >>= child >>= content
+        algorithm1 = coloring1 >>= C.element algorithm
+        algType = algorithm1 >>= C.attribute typeAtt
+        algUnpacked = map T.unpack algType
+        alg = if null algUnpacked then "level" else head algUnpacked
+        colorAlg = ctorColoringAlgorithm alg algorithm1
     in
         XmlObj 
             { xobName = head $ map T.unpack name1
             , xobDesc = head $ map T.unpack desc1
-            , xobGenerations = generations --gen1
+            , xobGenerations = generations
             , xobLength = length
             , xobRules = head $ map T.unpack rulesContent1
             , xobBuiltIn = "builtin" == (head $ map T.unpack rulesType1)
+            , xobColors = map T.unpack colorName1
+            , xobAlgorithm = maybe (CalLevel 1) id colorAlg
             }
 
 parseXmlVector :: String -> IO [XmlObj]
@@ -109,8 +154,8 @@ parseXmlVector fname = do
         vector = Name { nameLocalName = T.pack "vector", nameNamespace = Nothing, namePrefix = Nothing }
         vecs = child cursor >>= C.element vector
         plotObjects = map (\x -> ctorXmlObj [x]) vecs
-        -- po1 = head plotObjects 
-    -- putStrLn ("xml obj = " ++ (show po1))
+        po1 = head plotObjects 
+    putStrLn ("xml obj = " ++ (show po1))
     return plotObjects
 
 -- //namespace vanmeule.FSharp.PlottingAndScheming
@@ -149,6 +194,13 @@ parseXmlVector fname = do
 -- 13) hilbert (can't do this one using, except maybe via adding generation parameter)
 
 -- *)
+
+--to do:  palettePicker takes colors and palette
+{-
+partially apply colors
+when asked for a color, check to see if palette is empty, if so, palette becomes colors (anew)
+return head of palette, and call with tail of palette
+-}
 
 data PalettePicker = PalettePicker
     { ppkPalette :: [UI.Color] --this comes from xml
