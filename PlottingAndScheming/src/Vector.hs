@@ -195,16 +195,21 @@ parseXmlVector fname = do
 
 -- *)
 
---to do:  palettePicker takes colors and palette
-{-
-partially apply colors
-when asked for a color, check to see if palette is empty, if so, palette becomes colors (anew)
-return head of palette, and call with tail of palette
--}
-
 data PalettePicker = PalettePicker
     { ppkPalette :: [UI.Color] --this comes from xml
-    , ppkLoc :: Int }
+    , ppkRotation :: [UI.Color] }
+
+getColorFromPalette :: PalettePicker -> UI.Color
+getColorFromPalette (PalettePicker { ppkPalette = _, ppkRotation = h : _ }) = h
+
+nextColorFromPalette :: PalettePicker -> PalettePicker
+nextColorFromPalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) = 
+    if null t then 
+        PalettePicker { ppkPalette = p, ppkRotation = p }
+    else 
+        PalettePicker { ppkPalette = p, ppkRotation = t }
+
+--to do:  figure out overlap
 
 -- type palettePicker = {
 --     palette : Color array; 
@@ -796,6 +801,9 @@ main = do
 --     (fst vec) + (len * (Math.Cos angle)),
 --     (snd vec) + (len * (Math.Sin angle))
 
+vectorFractal :: PlotObject -> IO ()
+vectorFractal = undefined
+
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator
 --     let rules = plotobj.generator
@@ -1053,6 +1061,8 @@ main = do
 --     scroll.VerticalScrollBarVisibility <- ScrollBarVisibility.Auto
 --     win.Content <- scroll
 --     win.Show()
+
+--to do: this gets the xml from the dropdown, then calls vectorFractal with the plotObj for the given dropdown choice
 
 -- let vectorPlot (txt : TextBox) =
 --     (fun _ -> 
