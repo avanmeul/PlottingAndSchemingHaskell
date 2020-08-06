@@ -53,7 +53,13 @@ canvasSize = 400
 main :: IO ()
 main = do
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
-    startGUI defaultConfig $ setup names -- $ map T.unpack names
+    startGUI defaultConfig $ setup names
+
+fetchVectorPlot :: [XmlObj] -> Maybe Int -> String
+fetchVectorPlot plots i =
+    case i of
+        Just x -> show $ plots !! x
+        otherwise -> ""
  
 setup :: [XmlObj] -> Window -> UI ()
 setup plots window = do
@@ -61,6 +67,7 @@ setup plots window = do
     txtInput  <- UI.textarea #. "send-textarea"
     txtOutput  <- UI.textarea #. "send-textarea"
     txtScratch <- UI.textarea #. "send-textarea"
+    txtVector <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
     btnClearInput <- UI.button #+ [string "clear input"]
     btnTokenize <- UI.button #+ [string "tokenize"]
@@ -79,6 +86,16 @@ setup plots window = do
     btnCombinator <- UI.button #+ [string "combinator"]
     btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
+    {-data XmlObj = XmlObj
+    { xobName :: String
+    , xobDesc :: String
+    , xobGenerations :: Int
+    , xobLength :: Double
+    , xobRules :: String
+    , xobBuiltIn :: Bool
+    , xobColors :: [Color]
+    , xobAlgorithm :: ColoringAlgorithm
+    } deriving (Eq, Show)-}
     cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) plots --["one", "two", "three"]
     canVec <- UI.canvas
         # set UI.height canvasSize
@@ -93,6 +110,7 @@ setup plots window = do
     divVector <- UI.div #+ -- #. -- "header" #+ [string "vector"] #+
         [grid
             [ [row [UI.element cbxVector]]
+            , [row [UI.element txtVector]]
             , [row [UI.element canVec]]
             , [row [UI.element btnVecPlot]] 
             ]
@@ -212,3 +230,7 @@ setup plots window = do
         canVec # setPixel (51, 51) "grey"
         canVec # setPixel (52, 52) "grey"
         return canVec
+
+    on UI.click cbxVector $ const $ do
+        index <- get UI.selection cbxVector
+        UI.element txtVector # set UI.text (fetchVectorPlot plots index)

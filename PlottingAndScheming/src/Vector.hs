@@ -199,11 +199,11 @@ data PalettePicker = PalettePicker
     { ppkPalette :: [UI.Color] --this comes from xml
     , ppkRotation :: [UI.Color] }
 
-getColorFromPalette :: PalettePicker -> UI.Color
-getColorFromPalette (PalettePicker { ppkPalette = _, ppkRotation = h : _ }) = h
+headPalette :: PalettePicker -> UI.Color
+headPalette (PalettePicker { ppkPalette = _, ppkRotation = h : _ }) = h
 
-nextColorFromPalette :: PalettePicker -> PalettePicker
-nextColorFromPalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) = 
+rotatePalette :: PalettePicker -> PalettePicker
+rotatePalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) = 
     if null t then 
         PalettePicker { ppkPalette = p, ppkRotation = p }
     else 
