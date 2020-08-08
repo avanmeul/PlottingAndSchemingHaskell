@@ -167,6 +167,8 @@
           (list len-div-3sqrt3 angle-less-pi-halves project3.4 1 1) ; 9
           (list len-div-3 project1.2 project3.4 1 -1) ; 10
           (list len-div-3 project1.2 project3.4 1 1)))) ; 11
+          (list len-div-3 project1.2 project3.4 -1 1) ; 12
+          (list len-div-3 project1.2 project3.4 1 1)))) ; 13
     	]]>
     </rules>
   </vector>

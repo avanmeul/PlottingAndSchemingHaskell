@@ -12,9 +12,10 @@ import Text.XML as X
 import Text.XML.Cursor as C
 import qualified Data.Text as T
 import Text.Read
+import Data.List
 
 {-
-Copyright, 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
+Copyright (c) 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
 -}
 
 -- # set UI.strokeStyle "gray"
@@ -202,18 +203,34 @@ parseXmlVector fname = do
 -- *)
 
 data PalettePicker = PalettePicker
-    { ppkPalette :: [UI.Color] --this comes from xml
-    , ppkRotation :: [UI.Color] }
+    { ppkPalette :: [Color] --this comes from xml; to do:  change to array
+    , ppkLoc :: Int }
 
-headPalette :: PalettePicker -> UI.Color
-headPalette (PalettePicker { ppkPalette = _, ppkRotation = h : _ }) = h
+ctorPalettePicker :: [Color] -> PalettePicker
+ctorPalettePicker colors =
+    PalettePicker { ppkPalette = colors, ppkLoc = -1 }
 
-tailPalette :: PalettePicker -> PalettePicker
-tailPalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) = 
-    if null t then 
-        PalettePicker { ppkPalette = p, ppkRotation = p }
-    else 
-        PalettePicker { ppkPalette = p, ppkRotation = t }
+paletteColor :: PalettePicker -> Color --to do:  redo
+paletteColor (PalettePicker { ppkPalette = p, ppkLoc = l }) = 
+    p !! l
+
+paletteInc :: PalettePicker -> PalettePicker
+paletteInc (PalettePicker { ppkPalette = pp, ppkLoc = l }) = 
+    PalettePicker { ppkPalette = pp, ppkLoc = (l + 1) `mod` (length pp)}
+
+paletteSetLoc :: PalettePicker -> Int -> PalettePicker
+paletteSetLoc pp i =
+    if i < 0 then
+        error "index cannot be negative:  for -1, use reset"
+    else
+        let palette = ppkPalette pp
+        in 
+            PalettePicker { ppkPalette = palette, ppkLoc = i `mod` (length palette) } 
+
+
+-- tailPalette :: PalettePicker -> PalettePicker --to do:  redo
+-- tailPalette (PalettePicker { ppkPalette = p, ppkLoc = l }) = 
+--     PalettePicker { ppkPalette = p, ppkLoc = l }
 
 -- type palettePicker = {
 --     palette : Color array; 
@@ -244,14 +261,49 @@ tailPalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) =
 --         x.loc <- -1
 
 data SizeColorizer = SizeColorizer 
-    { sczNumberOfRules :: Int
-    , sczPicker :: PalettePicker
+    { sczPicker :: PalettePicker
+    , sczNumberOfRules :: Int
     , sczSubtractor :: Int
     , sczGenerations :: Int
     , sczRuleCount :: Int
     , sczSizes :: [Double]
     , sczCounter :: Int
     }
+
+ctorSizeColorizer :: PalettePicker -> Int -> Int -> Int -> SizeColorizer
+ctorSizeColorizer pp numRules subtractor generations = 
+    let exp = generations - subtractor
+    in 
+        if exp < 0 then
+            error "subtractor should not exceed generations"
+        else
+            SizeColorizer 
+                { sczPicker = pp
+                , sczNumberOfRules = numRules ^ (generations - subtractor)
+                , sczSubtractor = subtractor
+                , sczGenerations = generations
+                , sczRuleCount = numRules
+                , sczSizes = []
+                , sczCounter = 0
+                }
+
+checkSize :: SizeColorizer -> Int -> Double -> SizeColorizer
+checkSize sc i size =
+    if i `mod` (sczNumberOfRules sc) == 0 then
+        -- check to see if we know about this size already
+        case findIndex (==size) (sczSizes sc) of
+            Just x -> 
+                --use size index to set the index of the color picker
+                let pp = paletteSetLoc (sczPicker sc) x
+                in sc { sczPicker = pp }
+            Nothing -> 
+                --add newly found size
+                let newSizes = (sczSizes sc) ++ [size]
+                in sc 
+                    { sczSizes = (sczSizes sc) ++ [size]
+                    , sczPicker = paletteSetLoc (sczPicker sc) ((length newSizes) -1) }
+    else
+        sc
 
 -- //to do:  could put start index into the mix, retrieve from xml
 -- type sizeColorizer = {
@@ -293,9 +345,12 @@ data LevelColorizer = LevelColorizer
     , lczLevel :: Int
     }
 
-checkLevel :: LevelColorizer -> Int -> LevelColorizer
-checkLevel clr lvl = undefined
+--to do:  create method of levelColorizer
 
+ctorLevelColorizer :: PalettePicker -> Int -> Int -> LevelColorizer
+ctorLevelColorizer pp lvl gen = 
+    LevelColorizer { lczPicker = pp, lczLevel = lvl `mod` (gen + 1) }
+ 
 -- type levelColorizer = {
 --     picker : palettePicker; 
 --     level : int; } with
@@ -305,6 +360,11 @@ checkLevel clr lvl = undefined
 --     member x.check level =
 --         if x.level = level then
 --             x.picker.inc ()
+
+--to do:  need picker inc method
+
+checkLevel :: LevelColorizer -> Int -> LevelColorizer
+checkLevel = undefined
 
 data VectorColorizer = 
     VczLevel LevelColorizer |
@@ -648,15 +708,15 @@ mandelbrotPeanoCurveIntervals13 =
 --                 failwith "bad color specification") 
 --     |> Seq.toArray
 
-data PlotObject = PlotObject --to do:  need XmlObj here
-    { initiator :: [VecRule]
-    , generator :: [VecRule]
-    , continuous :: Bool
-    , generations :: Int --in XmlObj
-    , length :: Double --in XmlObj
-    , coloring :: VectorColorizer --in XmlObj
-    -- , xml :: String
-    }
+-- data PlotObject = PlotObject --to do:  need XmlObj here
+--     { initiator :: [VecRule]
+--     , generator :: [VecRule]
+--     , continuous :: Bool --in XmlObj
+--     , generations :: Int --in XmlObj
+--     , poLength :: Double --in XmlObj
+--     , coloring :: VectorColorizer
+--     -- , xml :: String
+--     }
 
 selectBuiltin :: String -> Maybe (VecRule, [VecRule])
 selectBuiltin nm = 
@@ -667,10 +727,10 @@ selectBuiltin nm =
 
 --to do:  create function
 
-ctorPlotObject :: String -> PlotObject --to do:  should take XmlObj?
-ctorPlotObject xml = 
+-- ctorPlotObject :: String -> PlotObject --to do:  should take XmlObj?
+-- ctorPlotObject xml = 
 
-    undefined
+--     undefined
 
 -- type plotObject = {
 --     xml : XElement; 
@@ -699,6 +759,8 @@ main = do
     putStrLn $ show plots
     startGUI defaultConfig $ setup $ map T.unpack plots
 -}
+
+--below created plot obj
 
 -- vectorXml :: String -> 
 --     static member create (xml : XElement) =
@@ -816,9 +878,18 @@ main = do
 --     (fst vec) + (len * (Math.Cos angle)),
 --     (snd vec) + (len * (Math.Sin angle))
 
-vectorFractal :: PlotObject -> IO ()
-vectorFractal = 
-    undefined
+vectorFractal :: XmlObj -> IO ()
+vectorFractal xob = do
+    --to do:  check for builtin true, then get builtin
+    let (seed, rules) = mandelbrotPeanoCurveIntervals13
+        colors = xobColors xob
+        pp = ctorPalettePicker colors
+        colorAlg = (xobAlgorithm xob)
+        gen = (xobGenerations xob)
+        -- subtractor = (xobSubtractor xob)
+        colorizer = 3 
+            -- ctorSizeColorizer pp numRules subtractor generations
+    return ()
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator
