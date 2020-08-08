@@ -70,6 +70,7 @@ data XmlObj = XmlObj
     , xobLength :: Double
     , xobRules :: String
     , xobBuiltIn :: Bool
+    , xobContinuous :: Bool --to do
     , xobColors :: [Color]
     , xobAlgorithm :: ColoringAlgorithm
     } deriving (Eq, Show)
@@ -112,6 +113,7 @@ ctorXmlObj el =
         palette = Name { nameLocalName = T.pack "palette", nameNamespace = Nothing, namePrefix = Nothing }
         color = Name { nameLocalName = T.pack "color", nameNamespace = Nothing, namePrefix = Nothing }
         algorithm = Name { nameLocalName = T.pack "algorithm", nameNamespace = Nothing, namePrefix = Nothing }
+        continuous = Name { nameLocalName = T.pack "continuous", nameNamespace = Nothing, namePrefix = Nothing }
         vec1desc = el >>= descendant
         info1 = vec1desc >>= C.element info >>= child
         name1 = info1 >>= C.element nm >>= child >>= content
@@ -119,6 +121,7 @@ ctorXmlObj el =
         params1 = vec1desc >>= C.element params >>= child
         rules1 = vec1desc >>= C.element rules
         rulesType1 = rules1 >>= C.attribute typeAtt
+        rules1Continuous = rules1 >>= C.attribute continuous
         rulesContent1 = rules1 >>= child >>= content
         gen1 = params1 >>= C.element gen >>= child >>= content
         genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
@@ -134,6 +137,8 @@ ctorXmlObj el =
         algType = algorithm1 >>= C.attribute typeAtt
         algUnpacked = map T.unpack algType
         alg = if null algUnpacked then "level" else head algUnpacked
+        contUnpacked = map T.unpack rules1Continuous
+        cont = if null contUnpacked then True else head contUnpacked == "continuous"
         colorAlg = ctorColoringAlgorithm alg algorithm1
     in
         XmlObj 
@@ -145,6 +150,7 @@ ctorXmlObj el =
             , xobBuiltIn = "builtin" == (head $ map T.unpack rulesType1)
             , xobColors = map T.unpack colorName1
             , xobAlgorithm = maybe (CalLevel 1) id colorAlg
+            , xobContinuous = cont
             }
 
 parseXmlVector :: String -> IO [XmlObj]
@@ -202,14 +208,12 @@ data PalettePicker = PalettePicker
 headPalette :: PalettePicker -> UI.Color
 headPalette (PalettePicker { ppkPalette = _, ppkRotation = h : _ }) = h
 
-rotatePalette :: PalettePicker -> PalettePicker
-rotatePalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) = 
+tailPalette :: PalettePicker -> PalettePicker
+tailPalette (PalettePicker { ppkPalette = p, ppkRotation = h : t }) = 
     if null t then 
         PalettePicker { ppkPalette = p, ppkRotation = p }
     else 
         PalettePicker { ppkPalette = p, ppkRotation = t }
-
---to do:  figure out overlap
 
 -- type palettePicker = {
 --     palette : Color array; 
@@ -288,6 +292,9 @@ data LevelColorizer = LevelColorizer
     { lczPicker :: PalettePicker 
     , lczLevel :: Int
     }
+
+checkLevel :: LevelColorizer -> Int -> LevelColorizer
+checkLevel clr lvl = undefined
 
 -- type levelColorizer = {
 --     picker : palettePicker; 
@@ -378,6 +385,7 @@ data VecRule = VecRule
     , vrlFlipRules :: VecFlip
     }
 
+mandelbrotPeanoCurveIntervals13 :: (VecRule, [VecRule])
 mandelbrotPeanoCurveIntervals13 = 
     let project1of2 x y = x
         project3of4 w x y z = y
@@ -633,26 +641,33 @@ mandelbrotPeanoCurveIntervals13 =
 --                 let b = el.Element (xname "blue")
 --                 let r = Convert.ToByte (r.Value)
 --                 let g = Convert.ToByte (g.Value)
---                 let b = Convert.ToByte (b.Value)zzzz
+--                 let b = Convert.ToByte (b.Value)
 --                 let clr = Color.FromRgb(r, g, b)
 --                 clr
 --             | _ -> 
 --                 failwith "bad color specification") 
 --     |> Seq.toArray
 
-data PlotObject = PlotObject 
-    { xml :: String
-    , initiator :: [VecRule]
+data PlotObject = PlotObject --to do:  need XmlObj here
+    { initiator :: [VecRule]
     , generator :: [VecRule]
-    , generations :: Int
-    , length :: Double
-    , coloring :: VectorColorizer
     , continuous :: Bool
+    , generations :: Int --in XmlObj
+    , length :: Double --in XmlObj
+    , coloring :: VectorColorizer --in XmlObj
+    -- , xml :: String
     }
+
+selectBuiltin :: String -> Maybe (VecRule, [VecRule])
+selectBuiltin nm = 
+    if nm == "mandelbrotPeanoCurveIntervals13" then 
+        Just mandelbrotPeanoCurveIntervals13 
+    else 
+        Nothing
 
 --to do:  create function
 
-ctorPlotObject :: String -> PlotObject
+ctorPlotObject :: String -> PlotObject --to do:  should take XmlObj?
 ctorPlotObject xml = 
 
     undefined
@@ -802,7 +817,8 @@ main = do
 --     (snd vec) + (len * (Math.Sin angle))
 
 vectorFractal :: PlotObject -> IO ()
-vectorFractal = undefined
+vectorFractal = 
+    undefined
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator
