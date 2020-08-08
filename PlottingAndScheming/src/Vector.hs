@@ -878,17 +878,21 @@ main = do
 --     (fst vec) + (len * (Math.Cos angle)),
 --     (snd vec) + (len * (Math.Sin angle))
 
-vectorFractal :: XmlObj -> IO ()
+vectorFractal :: XmlObj -> IO () --should this be in the IO monad?
 vectorFractal xob = do
     --to do:  check for builtin true, then get builtin
     let (seed, rules) = mandelbrotPeanoCurveIntervals13
         colors = xobColors xob
         pp = ctorPalettePicker colors
         colorAlg = (xobAlgorithm xob)
+        numRules = length rules
         gen = (xobGenerations xob)
-        -- subtractor = (xobSubtractor xob)
-        colorizer = 3 
-            -- ctorSizeColorizer pp numRules subtractor generations
+        colorizer =
+            case colorAlg of
+                CalLevel lvl -> 
+                    VczLevel (ctorLevelColorizer pp lvl gen)
+                CalImage subtractor -> 
+                    VczImage (ctorSizeColorizer pp numRules subtractor gen)
     return ()
 
 -- let vectorFractal (plotobj : plotObject) =
