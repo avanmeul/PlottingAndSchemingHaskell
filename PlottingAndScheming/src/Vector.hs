@@ -18,14 +18,12 @@ import Data.List
 Copyright (c) 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
 -}
 
--- # set UI.strokeStyle "gray"
--- # set UI.fillStyle   (UI.htmlColor "black")
+--to do:  line record:  thickness = 2, color, p1, p2
 
--- setPixel :: UI.Point -> String -> UI.Element -> UI () --to do:  pass color as UI.Color
--- setPixel pt clr can = do
---     -- c # set' UI.strokeStyle "yellow"
---     can # set' UI.fillStyle (UI.htmlColor clr)
---     can # UI.fillRect pt 1 1
+data Vector = Vector 
+    { vecP1 :: UI.Point
+    , vecP2 :: UI.Point
+    , vecColor :: Color }
 
 type Color = String 
 
@@ -38,15 +36,10 @@ setPixel pt clr can = do
 line :: UI.Point -> UI.Point -> UI.Element -> UI () --to do:  pass in color as argument
 line xy1 xy2 c = do
     c # set' UI.strokeStyle "green" --this is how you set the line's color
-    -- c # set UI.fillStyle (UI.htmlColor "yellow")
-    -- c # set' UI.fillStyle (UI.htmlColor "yellow")
-    -- c # set' UI.fillStyle (UI.htmlColor color)
     c # UI.beginPath
     c # UI.moveTo xy1
     c # UI.lineTo xy2
     c # UI.closePath
-    -- c # UI.fill "blue"
-    -- c # set' UI.fillStyle (UI.htmlColor "darkblue")
     c # UI.stroke 
 
 drawLines :: [(UI.Point, UI.Point)] -> UI.Element -> UI ()
@@ -210,7 +203,7 @@ ctorPalettePicker :: [Color] -> PalettePicker
 ctorPalettePicker colors =
     PalettePicker { ppkPalette = colors, ppkLoc = -1 }
 
-paletteColor :: PalettePicker -> Color --to do:  redo
+paletteColor :: PalettePicker -> Color --to do:  redo as an array
 paletteColor (PalettePicker { ppkPalette = p, ppkLoc = l }) = 
     p !! l
 
@@ -287,8 +280,8 @@ ctorSizeColorizer pp numRules subtractor generations =
                 , sczCounter = 0
                 }
 
-checkSize :: SizeColorizer -> Int -> Double -> SizeColorizer
-checkSize sc i size =
+checkSizeColorizer :: SizeColorizer -> Int -> Double -> SizeColorizer
+checkSizeColorizer sc i size =
     if i `mod` (sczNumberOfRules sc) == 0 then
         -- check to see if we know about this size already
         case findIndex (==size) (sczSizes sc) of
@@ -304,6 +297,10 @@ checkSize sc i size =
                     , sczPicker = paletteSetLoc (sczPicker sc) ((length newSizes) -1) }
     else
         sc
+
+colorSizeColorizer :: SizeColorizer -> Color
+colorSizeColorizer clz =
+    paletteColor $ sczPicker clz
 
 -- //to do:  could put start index into the mix, retrieve from xml
 -- type sizeColorizer = {
@@ -364,7 +361,8 @@ ctorLevelColorizer pp lvl gen =
 --to do:  need picker inc method
 
 checkLevel :: LevelColorizer -> Int -> LevelColorizer
-checkLevel = undefined
+checkLevel = 
+    undefined
 
 data VectorColorizer = 
     VczLevel LevelColorizer |
@@ -878,7 +876,7 @@ main = do
 --     (fst vec) + (len * (Math.Cos angle)),
 --     (snd vec) + (len * (Math.Sin angle))
 
-vectorFractal :: XmlObj -> IO () --should this be in the IO monad?
+vectorFractal :: XmlObj -> [Vector]
 vectorFractal xob = do
     --to do:  check for builtin true, then get builtin
     let (seed, rules) = mandelbrotPeanoCurveIntervals13
@@ -893,7 +891,27 @@ vectorFractal xob = do
                     VczLevel (ctorLevelColorizer pp lvl gen)
                 CalImage subtractor -> 
                     VczImage (ctorSizeColorizer pp numRules subtractor gen)
-    return ()
+        drawf :: [Vector] -> VectorColorizer -> Double -> Double -> (Double, Double) -> ((Double, Double), [Vector], VectorColorizer)
+        drawf vecs clz len angle origin =
+            let (x, y) = origin
+                pt2 = (x + len * cos angle, y + len * sin angle)
+                ln = (origin, pt2)
+                idx = length vecs
+                chk p i j n = i >= n * p && i < (n + j) * p
+                clz' = --possibly update colorizer
+                    case clz of 
+                        l@(VczLevel _) -> l
+                        VczImage s -> VczImage (checkSizeColorizer s idx len)
+                clr = --pick color from colorizer
+                    case clz' of
+                        VczLevel l -> paletteColor $ lczPicker l
+                        VczImage s -> paletteColor $ sczPicker s
+                vec = Vector { vecP1 =  origin, vecP2 = pt2, vecColor = clr }
+                vecs' = vec : vecs
+            in 
+                (pt2, vecs', clz')
+        twoDvectorFractal = undefined --to do
+    []
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator
