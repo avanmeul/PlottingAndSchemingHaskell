@@ -33,24 +33,24 @@ setPixel pt clr can = do
     can # set' UI.fillStyle (UI.htmlColor clr)
     can # UI.fillRect pt 1 1
 
-line :: UI.Point -> UI.Point -> UI.Element -> UI () --to do:  pass in color as argument
-line xy1 xy2 c = do
-    c # set' UI.strokeStyle "green" --this is how you set the line's color
+drawVec :: Vector -> UI.Element -> UI ()
+drawVec (Vector { vecP1 = p1, vecP2 = p2, vecColor = clr }) c = do
+    c # set' UI.strokeStyle clr
     c # UI.beginPath
-    c # UI.moveTo xy1
-    c # UI.lineTo xy2
+    c # UI.moveTo p1
+    c # UI.lineTo p2
     c # UI.closePath
-    c # UI.stroke 
+    c # UI.stroke
 
-drawLines :: [(UI.Point, UI.Point)] -> UI.Element -> UI ()
-drawLines lines c = iter lines where
-    iter :: [(UI.Point, UI.Point)] -> UI ()
+drawVecs :: [Vector] -> UI.Element -> UI ()
+drawVecs vecs c = iter vecs where
+    iter :: [Vector] -> UI ()
     iter [] = return ()
     iter (h : t) = do
-        line (fst h) (snd h) c
-        iter t    
+        drawVec h c
+        iter t
 
---to do:  level should have Level and Image should have Subtractor
+--to do:  level should have Level and Image should have Subtractor via a newtype
 
 data ColoringAlgorithm =
     CalLevel Int | --Level
@@ -877,7 +877,7 @@ main = do
 --     (snd vec) + (len * (Math.Sin angle))
 
 vectorFractal :: XmlObj -> [Vector]
-vectorFractal xob = do
+vectorFractal xob =
     --to do:  check for builtin true, then get builtin
     let (seed, rules) = mandelbrotPeanoCurveIntervals13
         colors = xobColors xob
@@ -910,8 +910,38 @@ vectorFractal xob = do
                 vecs' = vec : vecs
             in 
                 (pt2, vecs', clz')
-        twoDvectorFractal = undefined --to do
-    []
+        twoDvectorFractal :: --to do:  determine if drawf needs to be passed:  it's visible via scope
+            -- ([Vector] -> VectorColorizer -> Double -> Double -> (Double, Double) -> ((Double, Double), [Vector], VectorColorizer)) -> --drawf
+            [VecRule] -> --seed
+            [VecRule] -> --rules
+            Double -> --len
+            Double -> --angle
+            Double -> --xorigin
+            Double -> --yorigin
+            (Double -> Int -> Bool) -> --quitf --to do:  determine if this needs to be passed as an argument
+            (Double, Double) --origin (return value)
+        twoDvectorFractal
+            -- drawf 
+            seed
+            rules
+            len
+            angle
+            xOrigin
+            yOrigin
+            quitf
+            =  
+            -- //change mapvector to be non-recursive 
+            -- //it will record the end of the vector
+            -- //it will return this end of the vector when the vector is done being walked
+            -- //inside mapvector will be a recursive function that will do the walking
+            -- //do a backup before doing this!!!!
+            -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
+            let across = undefined
+                -- undefined
+            in
+                undefined
+    in
+        []
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator

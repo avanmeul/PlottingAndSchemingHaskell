@@ -223,9 +223,11 @@ setup plots window = do
         UI.element txtInput # set value ""
 
     on UI.click btnVecPlot $ const $ do
-        canVec # drawLines [((0,0), (20, 20)), ((20, 20), (80, 20)), ((80, 20), (50, 50)) ]
-        -- canVec # line (0, 0) (20, 20)
-        -- canVec # UI.fillRect (50, 50) 1 1 --set pixel; to do:  package this up as function
+        canVec # drawVecs 
+            [ Vector { vecP1 = (0, 0), vecP2 = (20, 20), vecColor = "blue" }
+            , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
+            , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
+            ]
         canVec # setPixel (50, 50) "grey"
         canVec # setPixel (51, 51) "grey"
         canVec # setPixel (52, 52) "grey"
