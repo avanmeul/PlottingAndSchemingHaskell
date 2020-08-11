@@ -50,6 +50,63 @@ drawVecs vecs c = iter vecs where
         drawVec h c
         iter t
 
+data Extremes = Extremes
+    { xLo :: Maybe Double
+    , xHi :: Maybe Double
+    , yLo :: Maybe Double
+    , yHi :: Maybe Double }
+
+checkPair :: Double -> Double -> (Maybe Double, Maybe Double) -> (Maybe Double, Maybe Double)
+checkPair arg1 arg2 (Just lo, Just hi) =
+    let sorted = sort [arg1, arg2, lo, hi]
+    in (Just $ head sorted, Just $ last sorted)
+checkPair arg1 arg2 (Nothing, Nothing) = 
+    if arg1 < arg2 then (Just arg1, Just arg2) else (Just arg2, Just arg1)
+checkPair arg1 arg2 (Just lo, Nothing) = 
+    let sorted = sort [arg1, arg2, lo]
+    in (Just $ head sorted, Just $ last sorted)
+checkPair arg1 arg2 (Nothing, Just hi) =
+    let sorted = sort [arg1, arg2, hi]
+    in (Just $ head sorted, Just $ last sorted)
+
+checkExtrema :: Vector -> Extremes -> Extremes
+checkExtrema (Vector { vecP1 = (x1, y1), vecP2 = (x2, y2) }) (Extremes { xLo = xLow, xHi = xHigh, yLo = yLow, yHi = yHigh }) = 
+    let (xlo, xhi) = checkPair x1 x2 (xLow, xHigh)
+        (ylo, yhi) = checkPair y1 y2 (yLow, yHigh)
+    in Extremes { xLo = xlo, xHi = xhi, yLo = ylo, yHi = yhi }
+
+findExtrema :: [Vector] -> Extremes
+findExtrema vecs = 
+    foldr checkExtrema (Extremes { xLo = Nothing, xHi = Nothing, yLo = Nothing, yHi = Nothing }) vecs
+
+{-
+    //find extrema
+    let line = lines.Peek()
+    let loX : float ref = ref line.X1
+    let hiX : float ref = ref line.X1
+    let loY : float ref = ref line.Y1
+    let hiY : float ref = ref line.Y1
+    let checker x y =
+        if x < loX.Value then loX.Value <- x
+        if x > hiX.Value then hiX.Value <- x
+        if y < loY.Value then loY.Value <- y
+        if y > hiY.Value then hiY.Value <- y
+    for line in lines do
+        checker line.X1 line.Y1
+        checker line.X2 line.Y2
+    //set canvas size
+    can.Width <- hiX.Value - loX.Value
+    can.Height <- hiY.Value - loY.Value           
+    for line in lines do
+        //normalize lines
+        line.X1 <- line.X1 - loX.Value 
+        line.Y1 <- hiY.Value - line.Y1
+        line.X2 <- line.X2 - loX.Value
+        line.Y2 <- hiY.Value - line.Y2
+        //add line to canvas
+        can.Children.Add line |> ignore
+-}
+
 --to do:  level should have Level and Image should have Subtractor via a newtype
 
 data ColoringAlgorithm =
@@ -936,10 +993,39 @@ vectorFractal xob =
             -- //inside mapvector will be a recursive function that will do the walking
             -- //do a backup before doing this!!!!
             -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
-            let across = undefined
-                -- undefined
-            in
+            let across :: Double -> Double -> (Double, Double) -> Int -> Int -> Double -> [Vector] -> (Double, Double)
+                across 
+                    len 
+                    angle 
+                    origin
+                    flipAngleFactor
+                    flipRulesFactor
+                    generation
+                    vector
+                    = 
+                    if null vector then 
+                        origin 
+                    else 
+                        let (currentSeed : restSeed) = vector
+                            lenf = undefined
+                            anglef = undefined
+                            originf = undefined
+                            flipAngle = undefined
+                            flipRules = undefined
+                        in 
+                            undefined
+                down = undefined
+            in 
                 undefined
+        quitf generations = 
+            if generations < 0 then
+                undefined
+                -- fun (len : double) (generation : int) -> len < (double generations)
+            else 
+                undefined
+                -- fun (len : double) (generation : int) -> generation = generations                 
+        -- in
+        --     undefined
     in
         []
 
