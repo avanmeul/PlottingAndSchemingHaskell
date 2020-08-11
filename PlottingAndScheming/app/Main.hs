@@ -52,6 +52,12 @@ canvasSize = 400
 
 main :: IO ()
 main = do
+    -- let vecs = 
+    --         [ Vector { vecP1 = (0, 0), vecP2 = (20, 20), vecColor = "blue" }
+    --         , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
+    --         , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
+    --         ]
+    -- putStrLn (show (findExtrema vecs))
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     startGUI defaultConfig $ setup names
 
@@ -223,11 +229,12 @@ setup plots window = do
         UI.element txtInput # set value ""
 
     on UI.click btnVecPlot $ const $ do
-        canVec # drawVecs 
-            [ Vector { vecP1 = (0, 0), vecP2 = (20, 20), vecColor = "blue" }
-            , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
-            , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
-            ]
+        let vecs = 
+                [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
+                , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
+                , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
+                ]
+        canVec # drawVecs vecs
         canVec # setPixel (50, 50) "grey"
         canVec # setPixel (51, 51) "grey"
         canVec # setPixel (52, 52) "grey"

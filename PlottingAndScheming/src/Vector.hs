@@ -13,6 +13,7 @@ import Text.XML.Cursor as C
 import qualified Data.Text as T
 import Text.Read
 import Data.List
+import Data.Maybe
 
 {-
 Copyright (c) 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
@@ -24,6 +25,7 @@ data Vector = Vector
     { vecP1 :: UI.Point
     , vecP2 :: UI.Point
     , vecColor :: Color }
+    deriving (Show)
 
 type Color = String 
 
@@ -55,6 +57,12 @@ data Extremes = Extremes
     , xHi :: Maybe Double
     , yLo :: Maybe Double
     , yHi :: Maybe Double }
+    deriving (Show)
+
+--to do:  use x,y from point 1 for initial values of extrema
+
+checkCoordinate :: Double -> (Maybe Double, Maybe Double) -> (Maybe Double, Maybe Double)
+checkCoordinate = undefined
 
 checkPair :: Double -> Double -> (Maybe Double, Maybe Double) -> (Maybe Double, Maybe Double)
 checkPair arg1 arg2 (Just lo, Just hi) =
@@ -78,34 +86,23 @@ checkExtrema (Vector { vecP1 = (x1, y1), vecP2 = (x2, y2) }) (Extremes { xLo = x
 findExtrema :: [Vector] -> Extremes
 findExtrema vecs = 
     foldr checkExtrema (Extremes { xLo = Nothing, xHi = Nothing, yLo = Nothing, yHi = Nothing }) vecs
-
-{-
-    //find extrema
-    let line = lines.Peek()
-    let loX : float ref = ref line.X1
-    let hiX : float ref = ref line.X1
-    let loY : float ref = ref line.Y1
-    let hiY : float ref = ref line.Y1
-    let checker x y =
-        if x < loX.Value then loX.Value <- x
-        if x > hiX.Value then hiX.Value <- x
-        if y < loY.Value then loY.Value <- y
-        if y > hiY.Value then hiY.Value <- y
-    for line in lines do
-        checker line.X1 line.Y1
-        checker line.X2 line.Y2
-    //set canvas size
-    can.Width <- hiX.Value - loX.Value
-    can.Height <- hiY.Value - loY.Value           
-    for line in lines do
-        //normalize lines
-        line.X1 <- line.X1 - loX.Value 
-        line.Y1 <- hiY.Value - line.Y1
-        line.X2 <- line.X2 - loX.Value
-        line.Y2 <- hiY.Value - line.Y2
-        //add line to canvas
-        can.Children.Add line |> ignore
--}
+    
+normalizeVectors :: [Vector] -> ([Vector], (Maybe Double, Maybe Double))
+normalizeVectors vecs =
+    case (findExtrema vecs) of
+        (Extremes { xLo = Just xl, xHi = Just xh, yLo = Just yl, yHi = Just yh }) ->
+            let width = xh - xl
+                height = yh - yl
+                adjust = \(Vector { vecP1 = (x1, y1), vecP2 = (x2,y2), vecColor = c }) -> 
+                    let x1' = x1 - xl
+                        y1' = yh - y1
+                        x2' = x2 - xl
+                        y2' = yh - y2
+                    in Vector { vecP1 = (x1', y1'), vecP2 = (x2', y2'), vecColor = c }
+                vecs' = map adjust vecs
+            in (vecs', (Just width, Just height))
+        otherwise -> 
+            (vecs, (Nothing, Nothing))
 
 --to do:  level should have Level and Image should have Subtractor via a newtype
 
