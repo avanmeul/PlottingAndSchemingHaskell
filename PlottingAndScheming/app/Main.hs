@@ -234,10 +234,14 @@ setup plots window = do
                 , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
                 , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
                 ]
-        canVec # drawVecs vecs
-        canVec # setPixel (50, 50) "grey"
-        canVec # setPixel (51, 51) "grey"
-        canVec # setPixel (52, 52) "grey"
+            (vecs', (width, height)) = normalizeVectors vecs
+        UI.element canVec # set UI.width (maybe 200 id width)
+        UI.element canVec # set UI.height (maybe 200 id height)                
+        canVec # drawVecs vecs'
+        -- canVec # drawVecs vecs
+        -- canVec # setPixel (50, 50) "grey"
+        -- canVec # setPixel (51, 51) "grey"
+        -- canVec # setPixel (52, 52) "grey"
         return canVec
 
     on UI.click cbxVector $ const $ do

@@ -87,7 +87,7 @@ findExtrema :: [Vector] -> Extremes
 findExtrema vecs = 
     foldr checkExtrema (Extremes { xLo = Nothing, xHi = Nothing, yLo = Nothing, yHi = Nothing }) vecs
     
-normalizeVectors :: [Vector] -> ([Vector], (Maybe Double, Maybe Double))
+normalizeVectors :: [Vector] -> ([Vector], (Maybe Int, Maybe Int))
 normalizeVectors vecs =
     case (findExtrema vecs) of
         (Extremes { xLo = Just xl, xHi = Just xh, yLo = Just yl, yHi = Just yh }) ->
@@ -95,12 +95,14 @@ normalizeVectors vecs =
                 height = yh - yl
                 adjust = \(Vector { vecP1 = (x1, y1), vecP2 = (x2,y2), vecColor = c }) -> 
                     let x1' = x1 - xl
-                        y1' = yh - y1
+                        -- y1' = yh - y1
+                        y1' = y1 - yl
                         x2' = x2 - xl
-                        y2' = yh - y2
+                        y2' = y2 - yl
+                        -- y2' = yh - y2
                     in Vector { vecP1 = (x1', y1'), vecP2 = (x2', y2'), vecColor = c }
                 vecs' = map adjust vecs
-            in (vecs', (Just width, Just height))
+            in (vecs', (Just $ ceiling width, Just $ ceiling height))
         otherwise -> 
             (vecs, (Nothing, Nothing))
 
