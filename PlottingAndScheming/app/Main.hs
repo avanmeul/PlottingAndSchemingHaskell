@@ -61,11 +61,14 @@ main = do
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     startGUI defaultConfig $ setup names
 
-fetchVectorPlot :: [XmlObj] -> Maybe Int -> String
-fetchVectorPlot plots i =
+fetchVectorXmlObj :: [XmlObj] -> Maybe Int -> Maybe XmlObj
+fetchVectorXmlObj plots i = 
     case i of
-        Just x -> show $ plots !! x
-        otherwise -> ""
+        Just x -> Just $ plots !! x
+        otherwise -> Nothing
+
+fetchVectorPlot :: [XmlObj] -> Maybe Int -> String
+fetchVectorPlot plots i = maybe "" show $ fetchVectorXmlObj plots i
  
 setup :: [XmlObj] -> Window -> UI ()
 setup plots window = do
@@ -229,11 +232,12 @@ setup plots window = do
         UI.element txtInput # set value ""
 
     on UI.click btnVecPlot $ const $ do
-        let vecs = 
-                [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
-                , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
-                , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
-                ]
+        index <- get UI.selection cbxVector
+        let plotObj = fetchVectorXmlObj plots index
+            vecs = 
+                case plotObj of
+                    Just x -> vectorFractal x
+                    otherwise -> []
             (vecs', (width, height)) = normalizeVectors vecs
         UI.element canVec # set UI.width (maybe 200 id width)
         UI.element canVec # set UI.height (maybe 200 id height)                
@@ -246,4 +250,5 @@ setup plots window = do
 
     on UI.click cbxVector $ const $ do
         index <- get UI.selection cbxVector
-        UI.element txtVector # set UI.text (fetchVectorPlot plots index)
+        let plotObj = fetchVectorPlot plots index
+        UI.element txtVector # set UI.text plotObj

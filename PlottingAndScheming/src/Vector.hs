@@ -1026,7 +1026,10 @@ vectorFractal xob =
         -- in
         --     undefined
     in
-        []
+        [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
+        , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
+        , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
+        ]
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator
