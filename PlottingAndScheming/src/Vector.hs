@@ -992,7 +992,7 @@ vectorFractal xob =
             -- //inside mapvector will be a recursive function that will do the walking
             -- //do a backup before doing this!!!!
             -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
-            let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> (UI.Point, [Vector], VectorColorizer)
+            let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 across 
                     len 
                     angle 
@@ -1001,6 +1001,8 @@ vectorFractal xob =
                     flipRulesFactor
                     generation
                     vector
+                    vectors
+                    colorizers
                     = 
                     if null vector then 
                         (origin, [], colorizer)
@@ -1026,6 +1028,8 @@ vectorFractal xob =
                                             flipRulesFactor
                                             generation 
                                             restSeed
+                                            vectors
+                                            colorizer
                                 in 
                                     case (vrlOriginf currentSeed) of
                                         VorBuiltIn f -> 
@@ -1048,9 +1052,11 @@ vectorFractal xob =
                                 (0, 0) -- (fst originf)
                                 (flipAngleFactor * flipAngle)
                                 (flipRulesFactor * flipRules)
-                                (generation + 1) 
-                down :: Double -> Double -> (Double, Double) -> Int -> Int -> Int -> ((Double, Double), [Vector], VectorColorizer)
-                down len angle origin flipAngleFactor flipRulesFactor generation =
+                                (generation + 1)
+                                vectors
+                                colorizer
+                down :: Double -> Double -> (Double, Double) -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> ((Double, Double), [Vector], VectorColorizer)
+                down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     undefined --to do
             in
                 across
@@ -1061,6 +1067,8 @@ vectorFractal xob =
                     1 -- rule flip
                     (-1) -- generation
                     (reverse seed)
+                    []
+                    colorizer
         quitf generations = 
             if generations < 0 then
                 undefined --to do
