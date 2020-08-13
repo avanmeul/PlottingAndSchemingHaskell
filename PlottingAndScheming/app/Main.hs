@@ -52,12 +52,6 @@ canvasSize = 400
 
 main :: IO ()
 main = do
-    -- let vecs = 
-    --         [ Vector { vecP1 = (0, 0), vecP2 = (20, 20), vecColor = "blue" }
-    --         , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
-    --         , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
-    --         ]
-    -- putStrLn (show (findExtrema vecs))
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     startGUI defaultConfig $ setup names
 

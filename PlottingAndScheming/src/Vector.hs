@@ -464,7 +464,7 @@ data VecLen =
 --     | Scheme of scmBlock
 
 data VecAngle =
-    VanBuildtIn (Double -> Int -> Double) |
+    VanBuiltIn (Double -> Int -> Double) |
     VanScheme ScmObject
 
 -- //to do:  should be length -> angle -> flip -> origin -> computed origin
@@ -514,7 +514,7 @@ mandelbrotPeanoCurveIntervals13 =
         angleLessPiHalves angle flip = angle - ((fromIntegral flip) * pi / 2.0)
         initiator = VecRule 
             { vrlLenf = VlnBuiltIn id
-            , vrlAnglef = VanBuildtIn project1of2
+            , vrlAnglef = VanBuiltIn project1of2
             , vrlOriginf = VorBuiltIn project3of4
             , vrlFlipAngle = FlpBuiltIn 1
             , vrlFlipRules = FlpBuiltIn 1
@@ -522,91 +522,91 @@ mandelbrotPeanoCurveIntervals13 =
         generator = 
             [ VecRule --rule 1 (list len-div-3 angle-plus-60 project3.4 -1 1) ; 1
                 { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuildtIn project1of2
+                , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 2 (list len-div-3 angle-plus-60 project3.4 1 1) ; 2
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuildtIn anglePlus60
+                , vrlAnglef = VanBuiltIn anglePlus60
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 3 (list len-div-3 project1.2 project3.4 1 1) ; 3
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuildtIn anglePlus60
+                , vrlAnglef = VanBuiltIn anglePlus60
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 4 (list len-div-3 angle-less-60 project3.4 1 1) ; 4
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuildtIn anglePlus60
+                , vrlAnglef = VanBuiltIn anglePlus60
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 5 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 1 1) ; 5
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
-                , vrlAnglef = VanBuildtIn anglePlus5PiOver6
+                , vrlAnglef = VanBuiltIn anglePlus5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 6 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 -1 1) ; 6
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
-                , vrlAnglef = VanBuildtIn anglePlus5PiOver6
+                , vrlAnglef = VanBuiltIn anglePlus5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 7 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 7
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
-                , vrlAnglef = VanBuildtIn angleLess5PiOver6
+                , vrlAnglef = VanBuiltIn angleLess5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }                              
             , VecRule --rule 8 (list len-div-3sqrt3 angle-less-pi-halves project3.4 -1 1) ; 8
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
-                , vrlAnglef = VanBuildtIn angleLessPiHalves
+                , vrlAnglef = VanBuiltIn angleLessPiHalves
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }  
             , VecRule --rule 9 (list len-div-3 project1.2 project3.4 1 1) ; 9
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuildtIn project1of2
+                , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }  
             , VecRule --rule 10 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 1 1) ; 10
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
-                , vrlAnglef = VanBuildtIn angleLess5PiOver6
+                , vrlAnglef = VanBuiltIn angleLess5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }  
             , VecRule --rule 11 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 11
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
-                , vrlAnglef = VanBuildtIn angleLess5PiOver6
+                , vrlAnglef = VanBuiltIn angleLess5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }  
             , VecRule --rule 12 (list len-div-3 project1.2 project3.4 -1 1) ; 12
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuildtIn project1of2
+                , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }  
             , VecRule --rule 13 (list len-div-3 project1.2 project3.4 1 1)) ; 13
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuildtIn project1of2
+                , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
@@ -975,7 +975,7 @@ vectorFractal xob =
             Double -> --xorigin
             Double -> --yorigin
             (Double -> Int -> Bool) -> --quitf --to do:  determine if this needs to be passed as an argument
-            (Double, Double) --origin (return value)
+            ((Double, Double), [Vector], VectorColorizer) --origin (return value)
         twoDvectorFractal
             -- drawf 
             seed
@@ -992,7 +992,7 @@ vectorFractal xob =
             -- //inside mapvector will be a recursive function that will do the walking
             -- //do a backup before doing this!!!!
             -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
-            let across :: Double -> Double -> (Double, Double) -> Int -> Int -> Double -> [Vector] -> (Double, Double)
+            let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> (UI.Point, [Vector], VectorColorizer)
                 across 
                     len 
                     angle 
@@ -1003,33 +1003,92 @@ vectorFractal xob =
                     vector
                     = 
                     if null vector then 
-                        origin 
+                        (origin, [], colorizer)
                     else 
                         let (currentSeed : restSeed) = vector
-                            lenf = undefined
-                            anglef = undefined
-                            originf = undefined
-                            flipAngle = undefined
-                            flipRules = undefined
-                        in 
-                            undefined
-                down = undefined
-            in 
-                undefined
+                            lenf = 
+                                case (vrlLenf currentSeed) of
+                                    VlnBuiltIn f -> f len
+                                    VlnScheme g -> --to do
+                                        undefined
+                                        -- let res = apply g
+                            anglef =
+                                case (vrlAnglef currentSeed) of
+                                    VanBuiltIn f -> f angle flipAngleFactor
+                                    VanScheme s -> undefined 
+                            originf = 
+                                let (newOrigin, vecs, colorizer) =                             
+                                        across 
+                                            len 
+                                            angle 
+                                            origin 
+                                            flipAngleFactor
+                                            flipRulesFactor
+                                            generation 
+                                            restSeed
+                                in 
+                                    case (vrlOriginf currentSeed) of
+                                        VorBuiltIn f -> 
+                                            let origin = f len angle newOrigin flipAngleFactor
+                                            in (origin, vecs, colorizer)
+                                        VorScheme g -> 
+                                            undefined
+                            flipAngle = 
+                                case (vrlFlipAngle currentSeed) of
+                                    FlpBuiltIn d -> d
+                                    FlpScheme s -> error "not implemented yet"                            
+                            flipRules = 
+                                case (vrlFlipRules currentSeed) of
+                                    FlpBuiltIn d -> d
+                                    FlpScheme s -> error "not implemented yet"
+                        in --undefined
+                            down 
+                                lenf
+                                anglef
+                                (0, 0) -- (fst originf)
+                                (flipAngleFactor * flipAngle)
+                                (flipRulesFactor * flipRules)
+                                (generation + 1) 
+                down :: Double -> Double -> (Double, Double) -> Int -> Int -> Int -> ((Double, Double), [Vector], VectorColorizer)
+                down len angle origin flipAngleFactor flipRulesFactor generation =
+                    undefined --to do
+            in
+                across
+                    len 
+                    angle 
+                    (xOrigin, yOrigin) -- origin
+                    1 -- angle flip
+                    1 -- rule flip
+                    (-1) -- generation
+                    (reverse seed)
         quitf generations = 
             if generations < 0 then
-                undefined
+                undefined --to do
                 -- fun (len : double) (generation : int) -> len < (double generations)
             else 
-                undefined
+                undefined --to do
                 -- fun (len : double) (generation : int) -> generation = generations                 
-        -- in
-        --     undefined
+
     in
-        [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
-        , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
-        , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
-        ]
+        let len = xobLength xob
+            generations = xobGenerations xob
+        in 
+            -- let (_, vectors, _) = 
+            --         twoDvectorFractal 
+            --             -- drawf          
+            --             [seed] --initiator
+            --             rules --generator
+            --             len --len
+            --             0.0 --start angle
+            --             0.0 --flip angle
+            --             0.0 --flip rules
+            --             (quitf generations)
+            -- in vectors
+            [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
+            , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
+            , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
+            , Vector { vecP1 = (0, 50), vecP2 = (200, 150), vecColor = "maroon" }
+            ]
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator
