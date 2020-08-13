@@ -417,8 +417,12 @@ ctorLevelColorizer pp lvl gen =
 --to do:  need picker inc method
 
 checkLevel :: LevelColorizer -> Int -> LevelColorizer
-checkLevel = 
-    undefined
+checkLevel l lvl = 
+    if lczLevel l == lvl then
+        let palette' = paletteInc $ lczPicker l
+        in LevelColorizer { lczPicker = palette', lczLevel = lczLevel l }
+    else
+        l
 
 data VectorColorizer = 
     VczLevel LevelColorizer |
@@ -947,7 +951,7 @@ vectorFractal xob =
                     VczLevel (ctorLevelColorizer pp lvl gen)
                 CalImage subtractor -> 
                     VczImage (ctorSizeColorizer pp numRules subtractor gen)
-        drawf :: [Vector] -> VectorColorizer -> Double -> Double -> (Double, Double) -> ((Double, Double), [Vector], VectorColorizer)
+        drawf :: [Vector] -> VectorColorizer -> Double -> Double -> UI.Point -> (UI.Point, [Vector], VectorColorizer)
         drawf vecs clz len angle origin =
             let (x, y) = origin
                 pt2 = (x + len * cos angle, y + len * sin angle)
@@ -1011,7 +1015,7 @@ vectorFractal xob =
                             lenf = 
                                 case (vrlLenf currentSeed) of
                                     VlnBuiltIn f -> f len
-                                    VlnScheme g -> --to do
+                                    VlnScheme g -> --to do phase 2
                                         undefined
                                         -- let res = apply g
                             anglef =
@@ -1040,11 +1044,11 @@ vectorFractal xob =
                             flipAngle = 
                                 case (vrlFlipAngle currentSeed) of
                                     FlpBuiltIn d -> d
-                                    FlpScheme s -> error "not implemented yet"                            
+                                    FlpScheme s -> error "flip angle not implemented yet"                            
                             flipRules = 
                                 case (vrlFlipRules currentSeed) of
                                     FlpBuiltIn d -> d
-                                    FlpScheme s -> error "not implemented yet"
+                                    FlpScheme s -> error "flip rules not implemented yet"
                         in --undefined
                             down 
                                 lenf
@@ -1057,7 +1061,49 @@ vectorFractal xob =
                                 colorizer
                 down :: Double -> Double -> (Double, Double) -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> ((Double, Double), [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
-                    undefined --to do
+                    let colorizer' =
+                            case colorizer of
+                                VczLevel l -> 
+                                    VczLevel $ checkLevel l generation
+                                otherwise -> colorizer
+                    in 
+                        if quitf len generation then --to do vecs clz len angle origin
+                            drawf vectors colorizer len angle origin
+                            -- let res = drawf len angle origin
+                            -- in res
+                        else
+                            undefined
+--             match colorizer with
+--                 | vectorColorizer.Level l ->
+--                     l.check (int generation)
+--                     ()
+--                 | _ -> 
+--                     ()
+--             if quitf len generation then
+--                 (drawf 
+--                     len 
+--                     angle 
+--                     origin)
+--             else 
+--                 let rules = 
+--                     if flipRulesFactor > 0 then 
+--                         (List.rev rules)
+--                     else
+--                         rules
+--                 let newOrigin =
+--                     across
+--                         len
+--                         angle
+--                         origin
+--                         flipAngleFactor
+--                         flipRulesFactor
+--                         generation
+--                         rules
+--                 if plotobj.continuous then
+--                     newOrigin
+--                 else 
+--                     vectorEndPoint origin len angle                    
+                    -- undefined --to do
             in
                 across
                     len 
