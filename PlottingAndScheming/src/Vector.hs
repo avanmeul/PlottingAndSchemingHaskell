@@ -211,7 +211,6 @@ parseXmlVector fname = do
         vecs = child cursor >>= C.element vector
         plotObjects = map (\x -> ctorXmlObj [x]) vecs
         po1 = head plotObjects 
-    putStrLn ("xml obj = " ++ (show po1))
     return plotObjects
 
 -- //namespace vanmeule.FSharp.PlottingAndScheming
@@ -1112,22 +1111,24 @@ vectorFractal xob =
             -- gens :: Double 
             -- gens = fromIntegral generations
         in 
-            -- let (_, vectors, _) = 
-            --         twoDvectorFractal 
-            --             -- drawf          
-            --             [seed] --initiator
-            --             rules --generator
-            --             len --len
-            --             0.0 --start angle
-            --             0.0 --flip angle
-            --             0.0 --flip rules
-            --             (quitf generations)
-            -- in vectors
-            [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
-            , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
-            , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
-            , Vector { vecP1 = (0, 50), vecP2 = (200, 150), vecColor = "maroon" }
-            ]
+            let (_, vectors, _) = 
+                    twoDvectorFractal 
+                        -- drawf          
+                        [seed] --initiator
+                        rules --generator
+                        len --len
+                        0.0 --start angle
+                        0.0 --flip angle
+                        0.0 --flip rules
+                        (quitf generations)
+            in --vectors
+                if length vectors <= 0 then
+                    [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
+                    , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
+                    , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
+                    , Vector { vecP1 = (0, 50), vecP2 = (200, 150), vecColor = "maroon" }
+                    ]
+                else vectors
 
 -- let vectorFractal (plotobj : plotObject) =
 --     let seed = plotobj.initiator

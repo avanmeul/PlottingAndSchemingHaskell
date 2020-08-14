@@ -52,8 +52,14 @@ canvasSize = 100
 
 main :: IO ()
 main = do
+    putStrLn "hi"
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
-    startGUI defaultConfig $ setup names
+    -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
+        -- vecs = vectorFractal obj
+    putStrLn "going to call vector fractal"
+    putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
+    -- return ()
+    -- startGUI defaultConfig $ setup names
 
 fetchVectorXmlObj :: [XmlObj] -> Maybe Int -> Maybe XmlObj
 fetchVectorXmlObj plots i = 
@@ -233,6 +239,7 @@ setup plots window = do
                     Just x -> vectorFractal x
                     otherwise -> []
             (vecs', (width, height)) = normalizeVectors vecs
+        -- UI.element txtVector # set UI.text "hi" -- $ show vecs
         UI.element canVec # set UI.width (maybe 200 id width)
         UI.element canVec # set UI.height (maybe 200 id height)                
         canVec # drawVecs vecs'
