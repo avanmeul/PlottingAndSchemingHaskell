@@ -48,18 +48,17 @@ toggleTab d b = do
     Main
 ------------------------------------------------------------------------------}
 
+canvasSize :: Int
 canvasSize = 100
 
 main :: IO ()
 main = do
-    putStrLn "hi"
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
         -- vecs = vectorFractal obj
-    putStrLn "going to call vector fractal"
+    -- putStrLn "going to call vector fractal"
     putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
-    -- return ()
-    -- startGUI defaultConfig $ setup names
+    startGUI defaultConfig $ setup names
 
 fetchVectorXmlObj :: [XmlObj] -> Maybe Int -> Maybe XmlObj
 fetchVectorXmlObj plots i = 

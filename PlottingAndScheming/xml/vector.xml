@@ -6,7 +6,7 @@
 			<name>mandelbrot peano curve:  13 intervals (built-in)</name>
 			<description>From "the Fractal Geometry of Nature" (Mandelbrot).</description></info>
     <parameters>
-      <generations>3</generations>
+      <generations>1</generations>
       <length>400.0</length>
       <coloring>
         <palette>
