@@ -48,7 +48,7 @@ toggleTab d b = do
     Main
 ------------------------------------------------------------------------------}
 
-canvasSize = 400
+canvasSize = 100
 
 main :: IO ()
 main = do

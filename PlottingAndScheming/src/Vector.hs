@@ -477,7 +477,7 @@ data VecAngle =
 --     | Scheme of scmBlock
 
 data VecOrigin =
-    VorBuiltIn (Double -> Double -> (Double, Double) -> Int -> (Double, Double)) |
+    VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) |
     VorScheme ScmObject
 
 -- type vecFlip =
@@ -932,19 +932,18 @@ main = do
 --             coloring = colorizer; 
 --             continuous = continuous; } 
 
--- let vectorEndPoint vec len angle =
---     (fst vec) + (len * (Math.Cos angle)),
---     (snd vec) + (len * (Math.Sin angle))
+vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
+vectorEndPoint vec len angle =
+    (((fst vec) + (len * cos angle)), ((snd vec) + (len * sin angle)))
 
 vectorFractal :: XmlObj -> [Vector]
 vectorFractal xob =
-    --to do:  check for builtin true, then get builtin
     let (seed, rules) = mandelbrotPeanoCurveIntervals13
         colors = xobColors xob
         pp = ctorPalettePicker colors
         colorAlg = (xobAlgorithm xob)
         numRules = length rules
-        gen = (xobGenerations xob)
+        gen = xobGenerations xob
         colorizer =
             case colorAlg of
                 CalLevel lvl -> 
@@ -979,7 +978,7 @@ vectorFractal xob =
             Double -> --xorigin
             Double -> --yorigin
             (Double -> Int -> Bool) -> --quitf --to do:  determine if this needs to be passed as an argument
-            ((Double, Double), [Vector], VectorColorizer) --origin (return value)
+            (UI.Point, [Vector], VectorColorizer) --origin (return value)
         twoDvectorFractal
             -- drawf 
             seed
@@ -1040,7 +1039,7 @@ vectorFractal xob =
                                             let origin = f len angle newOrigin flipAngleFactor
                                             in (origin, vecs, colorizer)
                                         VorScheme g -> 
-                                            undefined
+                                            undefined --to do phase 2
                             flipAngle = 
                                 case (vrlFlipAngle currentSeed) of
                                     FlpBuiltIn d -> d
@@ -1049,61 +1048,42 @@ vectorFractal xob =
                                 case (vrlFlipRules currentSeed) of
                                     FlpBuiltIn d -> d
                                     FlpScheme s -> error "flip rules not implemented yet"
-                        in --undefined
-                            down 
-                                lenf
-                                anglef
-                                (0, 0) -- (fst originf)
-                                (flipAngleFactor * flipAngle)
-                                (flipRulesFactor * flipRules)
-                                (generation + 1)
-                                vectors
-                                colorizer
-                down :: Double -> Double -> (Double, Double) -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> ((Double, Double), [Vector], VectorColorizer)
+                        in
+                            let (o, v, c) = originf
+                            in 
+                                down 
+                                    lenf
+                                    anglef
+                                    o
+                                    (flipAngleFactor * flipAngle)
+                                    (flipRulesFactor * flipRules)
+                                    (generation + 1)
+                                    vectors
+                                    colorizer
+                down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
                             case colorizer of
                                 VczLevel l -> 
                                     VczLevel $ checkLevel l generation
-                                otherwise -> colorizer
+                                otherwise -> 
+                                    colorizer
                     in 
                         if quitf len generation then --to do vecs clz len angle origin
                             drawf vectors colorizer len angle origin
-                            -- let res = drawf len angle origin
-                            -- in res
                         else
-                            undefined
---             match colorizer with
---                 | vectorColorizer.Level l ->
---                     l.check (int generation)
---                     ()
---                 | _ -> 
---                     ()
---             if quitf len generation then
---                 (drawf 
---                     len 
---                     angle 
---                     origin)
---             else 
---                 let rules = 
---                     if flipRulesFactor > 0 then 
---                         (List.rev rules)
---                     else
---                         rules
---                 let newOrigin =
---                     across
---                         len
---                         angle
---                         origin
---                         flipAngleFactor
---                         flipRulesFactor
---                         generation
---                         rules
---                 if plotobj.continuous then
---                     newOrigin
---                 else 
---                     vectorEndPoint origin len angle                    
-                    -- undefined --to do
+                            let rules = 
+                                    if flipRulesFactor > 0 then
+                                        reverse rules
+                                    else
+                                        rules
+                                newOrigin = 
+                                    across len angle origin flipAngleFactor flipRulesFactor generation rules vectors colorizer
+                            in 
+                                if xobContinuous xob then
+                                    newOrigin
+                                else 
+                                    (vectorEndPoint origin len angle, vectors, colorizer)
             in
                 across
                     len 
@@ -1115,17 +1095,22 @@ vectorFractal xob =
                     (reverse seed)
                     []
                     colorizer
+        quitf :: Int -> Double -> Int -> Bool
         quitf generations = 
             if generations < 0 then
-                undefined --to do
+                -- undefined --to do
                 -- fun (len : double) (generation : int) -> len < (double generations)
+                \len generation -> len < (fromIntegral generations)
             else 
-                undefined --to do
-                -- fun (len : double) (generation : int) -> generation = generations                 
+                -- undefined --to do
+                -- fun (len : double) (generation : int) -> generation = generations
+                \len generation -> generation == generations                
 
     in
         let len = xobLength xob
             generations = xobGenerations xob
+            -- gens :: Double 
+            -- gens = fromIntegral generations
         in 
             -- let (_, vectors, _) = 
             --         twoDvectorFractal 
