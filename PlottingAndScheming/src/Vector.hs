@@ -582,13 +582,31 @@ vectorFractal xob =
                         , vrlFlipAngle = FlpBuiltIn flipAngle
                         , vrlFlipRules = FlpBuiltIn flipRules } : restSeed) 
                     vectors 
-                    colorizer = --begn function definition
-                        let lenf = l len
-                            anglef = a angle flipAngleFactor
-                            (newOrigin, vectors', colorizer') = across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
-                            originf = o len angle newOrigin flipAngleFactor
-                        in
-                            down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
+                    colorizer 
+                    = --across for builtin
+                    let lenf = l len
+                        anglef = a angle flipAngleFactor
+                        (newOrigin, vectors', colorizer') = across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
+                        originf = o len angle newOrigin flipAngleFactor
+                    in
+                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
+                across 
+                    len 
+                    angle 
+                    origin 
+                    flipAngleFactor 
+                    flipRulesFactor 
+                    generation 
+                    (VecRule 
+                        { vrlLenf = VlnScheme l
+                        , vrlAnglef = VanScheme a
+                        , vrlOriginf = VorScheme o
+                        , vrlFlipAngle = FlpScheme flipAngle
+                        , vrlFlipRules = FlpScheme flipRules } : restSeed) 
+                    vectors 
+                    colorizer 
+                    = --across for lisp
+                    undefined                 
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
