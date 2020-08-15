@@ -1,6 +1,8 @@
 module Main where
 
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS -Wall #-}
 
 import Scheme
 import Vector
@@ -57,7 +59,7 @@ main = do
     -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
         -- vecs = vectorFractal obj
     -- putStrLn "going to call vector fractal"
-    putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
+    -- putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
     startGUI defaultConfig $ setup names
 
 fetchVectorXmlObj :: [XmlObj] -> Maybe Int -> Maybe XmlObj
