@@ -95,11 +95,11 @@ normalizeVectors vecs =
                 height = yh - yl
                 adjust = \(Vector { vecP1 = (x1, y1), vecP2 = (x2,y2), vecColor = c }) -> 
                     let x1' = x1 - xl
-                        -- y1' = yh - y1
-                        y1' = y1 - yl
+                        y1' = yh - y1 --quadrant I
+                        -- y1' = y1 - yl
                         x2' = x2 - xl
-                        y2' = y2 - yl
-                        -- y2' = yh - y2
+                        -- y2' = y2 - yl
+                        y2' = yh - y2 --quadrant I
                     in Vector { vecP1 = (x1', y1'), vecP2 = (x2', y2'), vecColor = c }
                 vecs' = map adjust vecs
             in (vecs', (Just $ ceiling width, Just $ ceiling height))
@@ -373,60 +373,61 @@ data VecRule = VecRule
     , vrlFlipRules :: VecFlip
     }
 
-mandelbrotPeanoCurveIntervals13 :: (VecRule, [VecRule])
+mandelbrotPeanoCurveIntervals13 :: ([VecRule], [VecRule])
 mandelbrotPeanoCurveIntervals13 = 
     let project1of2 x y = x
         project3of4 w x y z = y
         lenDiv3 len = len / 3.0
         degrees60 = pi / 3.0
         anglePlus60 angle flip = angle + (degrees60 * (fromIntegral flip))
-        degreesLess60 angle flip = angle - (degrees60 * (fromIntegral flip))
+        angleLess60 angle flip = angle - (degrees60 * (fromIntegral flip))
         fivePiOver6 = 5.0 * pi / 6.0
         anglePlus5PiOver6 angle flip = angle + (fivePiOver6 * (fromIntegral flip))
         angleLess5PiOver6 angle flip = angle - (fivePiOver6 * (fromIntegral flip))
         lenDiv3sqrt3 len = len / (3.0 * sqrt 3.0)
         angleLessPiHalves angle flip = angle - ((fromIntegral flip) * pi / 2.0)
-        initiator = VecRule 
-            { vrlLenf = VlnBuiltIn id
-            , vrlAnglef = VanBuiltIn project1of2
-            , vrlOriginf = VorBuiltIn project3of4
-            , vrlFlipAngle = FlpBuiltIn 1
-            , vrlFlipRules = FlpBuiltIn 1
-            }
-        generator = 
-            [ VecRule --rule 1 (list len-div-3 angle-plus-60 project3.4 -1 1) ; 1
+        initiator = 
+            [ VecRule 
                 { vrlLenf = VlnBuiltIn id
                 , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
+                , vrlFlipRules = FlpBuiltIn 1
+                } ]
+        generator = 
+            [ VecRule --rule 1 (list len-div-3 angle-plus-60 project3.4 -1 1) ; 1
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn anglePlus60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = FlpBuiltIn (-1)
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 2 (list len-div-3 angle-plus-60 project3.4 1 1) ; 2
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn anglePlus60
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 3 (list len-div-3 project1.2 project3.4 1 1) ; 3
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuiltIn anglePlus60
+                , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
                 , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 4 (list len-div-3 angle-less-60 project3.4 1 1) ; 4
                 { vrlLenf = VlnBuiltIn lenDiv3
-                , vrlAnglef = VanBuiltIn anglePlus60
+                , vrlAnglef = VanBuiltIn angleLess60
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 5 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 1 1) ; 5
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn anglePlus5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
+                , vrlFlipAngle = FlpBuiltIn 1
                 , vrlFlipRules = FlpBuiltIn 1
                 }
             , VecRule --rule 6 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 -1 1) ; 6
@@ -496,7 +497,7 @@ mandelbrotPeanoCurveIntervals13 =
 -- step 4:  change plotter to match on type of rule
 -- *)
 
-selectBuiltin :: String -> Maybe (VecRule, [VecRule])
+selectBuiltin :: String -> Maybe ([VecRule], [VecRule])
 selectBuiltin nm = 
     if nm == "mandelbrotPeanoCurveIntervals13" then 
         Just mandelbrotPeanoCurveIntervals13 
@@ -521,13 +522,21 @@ vectorFractal xob =
                     VczLevel (ctorLevelColorizer pp lvl gen)
                 CalImage subtractor -> 
                     VczImage (ctorSizeColorizer pp numRules subtractor gen)
+        {-
+        There are two coloring cases: 
+            1) the same diagram repeats at different sizes
+            2) all diagrams are the same size
+
+        For coloring type #1, look for the sizes of diagrams and color based on size.
+        For type #2, decide how many groups you want and color accordingly
+        -}
         drawFunction :: [Vector] -> VectorColorizer -> Double -> Double -> UI.Point -> (UI.Point, [Vector], VectorColorizer)
         drawFunction vecs clz len angle origin =
             let (x, y) = origin
                 pt2 = (x + len * cos angle, y + len * sin angle)
                 ln = (origin, pt2)
                 idx = length vecs
-                chk p i j n = i >= n * p && i < (n + j) * p
+                -- chk p i j n = i >= n * p && i < (n + j) * p --probably experimental code artifact
                 clz' = --possibly update colorizer
                     case clz of 
                         l@(VczLevel _) -> l
@@ -589,7 +598,7 @@ vectorFractal xob =
                             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
                         originf = o len angle newOrigin flipAngleFactor
                     in --(newOrigin, vectors', colorizer')
-                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer
+                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
                 across --across function for lisp
                     len 
                     angle 
@@ -646,29 +655,20 @@ vectorFractal xob =
                     colorizer
         quitFunction :: Int -> Double -> Int -> Bool
         quitFunction generations = 
-            if generations < 0 then --I think the purpose of this is to stop recursing based on length of the vector rather than generations; don't know if it's used
+            if generations < 0 then --perhaps this is to stop recursing based on length of the vector rather than generations; shouldn't use neg numbers like this (use sum type instead)
                 \len generation -> len < (fromIntegral generations)
             else 
                 \len generation -> generation == generations                
-
     in
         let len = xobLength xob
-        in 
+        in --[ Vector { vecP1 = (0,0), vecP2 = (100, 100), vecColor = "blue" } ]
             let (_, vectors, _) = 
                     twoDvectorFractal 
-                        -- drawf          
-                        [seed] --initiator
+                        seed --initiator
                         rules --generator
                         len --len
                         0.0 --start angle
                         0.0 --flip angle
                         0.0 --flip rules
                         (quitFunction gen)
-            in --vectors
-                if 0 == 1 then
-                    [ Vector { vecP1 = (30, 30), vecP2 = (20, 20), vecColor = "blue" }
-                    , Vector { vecP1 = (20, 20), vecP2 = (80, 20), vecColor = "grey" }
-                    , Vector { vecP1 = (80, 20), vecP2 = (50, 50), vecColor = "orange" }
-                    , Vector { vecP1 = (0, 50), vecP2 = (200, 150), vecColor = "maroon" }
-                    ]
-                else vectors                
+            in vectors          
