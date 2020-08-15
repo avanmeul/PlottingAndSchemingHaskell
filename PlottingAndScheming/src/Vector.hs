@@ -167,7 +167,7 @@ ctorXmlObj el =
         vec1desc = el >>= descendant
         info1 = vec1desc >>= C.element info >>= child
         name1 = info1 >>= C.element nm >>= child >>= content
-        desc1 = info1 >>= C.element nm >>= child >>= content
+        desc1 = info1 >>= C.element desc >>= child >>= content
         params1 = vec1desc >>= C.element params >>= child
         rules1 = vec1desc >>= C.element rules
         rulesType1 = rules1 >>= C.attribute typeAtt
