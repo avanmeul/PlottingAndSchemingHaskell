@@ -27,6 +27,33 @@ to do:  put all debug buttons in a debug tab
 
 -}
 
+{-----------------------------------------------------------------------------
+    Main
+------------------------------------------------------------------------------}
+
+fetchRule :: Maybe XmlObj -> String
+fetchRule plotObj =
+    case plotObj of
+        Just x -> xobRules x
+        otherwise -> ""
+        
+main :: IO ()
+main = do
+    names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
+    -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
+        -- vecs = vectorFractal obj
+    -- putStrLn "going to call vector fractal"
+    -- putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
+    -- let plotObj = fetchVectorPlot names $ Just 1
+    let plotObj = fetchVectorXmlObj names $ Just 1
+        rules = fetchRule plotObj
+        evaled = evalResults rules
+    putStrLn $ "evaled = " ++ evaled
+    -- startGUI defaultConfig $ setup names
+
+canvasSize :: Int
+canvasSize = 100
+
 --to do:  use explicit recursion to go through the tabs only once, setting the one of interest, and resetting the ones not of interest
 
 toggleTabs :: [(UI.Element, UI.Element)] -> UI ()
@@ -44,23 +71,7 @@ toggleTab d b = do
         # set UI.style [("display", "block")]
     UI.element b
         # set UI.style [("color", "blue")]
-    return ()
-
-{-----------------------------------------------------------------------------
-    Main
-------------------------------------------------------------------------------}
-
-canvasSize :: Int
-canvasSize = 100
-
-main :: IO ()
-main = do
-    names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
-    -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
-        -- vecs = vectorFractal obj
-    -- putStrLn "going to call vector fractal"
-    -- putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
-    startGUI defaultConfig $ setup names
+    return ()    
 
 fetchVectorXmlObj :: [XmlObj] -> Maybe Int -> Maybe XmlObj
 fetchVectorXmlObj plots i = 
