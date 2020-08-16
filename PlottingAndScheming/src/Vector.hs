@@ -213,23 +213,6 @@ parseXmlVector fname = do
         po1 = head plotObjects 
     return plotObjects
 
--- //namespace vanmeule.FSharp.PlottingAndScheming
-
--- (* Copyright (c) 2009, 2008, 2007, 2006 by André van Meulebrouck.  All rights reserved worldwide. *)
-
--- //new vs. old
--- module PlottingAndScheming.Vector
-
--- open PlottingAndScheming.Scheme
--- open PlottingAndScheming.xml
--- open System
--- open System.Collections.Generic
--- open System.Windows
--- open System.Windows.Controls
--- open System.Windows.Media
--- open System.Windows.Shapes
--- open System.Xml.Linq
-
 -- (*
 -- to do:
 
@@ -508,14 +491,32 @@ vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
 vectorEndPoint vec len angle =
     (((fst vec) + (len * cos angle)), ((snd vec) + (len * sin angle)))
 
+builtIns :: [ (String, ([VecRule], [VecRule]))]
+builtIns = 
+    [ ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) ]
+
+fetchRules :: String -> Bool -> ([VecRule], [VecRule])
+fetchRules rules builtIn =
+    if builtIn then
+        --to do search for this in builtIns
+        mandelbrotPeanoCurveIntervals13 
+    else --call LISP
+        undefined
+
 vectorFractal :: XmlObj -> [Vector]
-vectorFractal xob =
-    let (seed, rules) = mandelbrotPeanoCurveIntervals13
-        colors = xobColors xob
+vectorFractal xob@(XmlObj 
+    { xobName = _
+    , xobDesc = _
+    , xobGenerations = gen
+    , xobBuiltIn = b
+    , xobContinuous = c
+    , xobLength = l
+    , xobRules = r
+    , xobColors = colors
+    , xobAlgorithm = colorAlg }) =
+    let (seed, rules) = fetchRules r b
         pp = ctorPalettePicker colors
-        colorAlg = (xobAlgorithm xob)
         numRules = length rules
-        gen = xobGenerations xob
         colorizer =
             case colorAlg of
                 CalLevel lvl -> 
