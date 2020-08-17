@@ -11,16 +11,21 @@ File:  Scheme.hs
 -}
 
 module Scheme 
-    ( evalResults
-    , heapifyResults
-    , parseTests
-    , parseTest'
-    , strToTok
-    , ScmObject
-    , evalString
-    , printHeap
-    , safeCar
-    , safeCdr) where
+    -- ( 
+    --   evalResults
+    -- , heapifyResults
+    -- , parseTests
+    -- , parseTest'
+    -- , strToTok
+    -- , ScmObject
+    -- , ScmCons
+    -- -- , ObjCons
+    -- , evalString
+    -- , printHeap
+    -- , safeCar
+    -- , safeCdr
+    -- ) 
+    where
 
 import Text.Regex.Posix
 import Text.Read
@@ -83,7 +88,7 @@ data Token =
 
 data ScmNumber = 
     NumInt Int |
-    NumFloat Float
+    NumFloat Float --to do:  change to double
 
 data ScmImm = 
     ImmSym String |
@@ -1021,13 +1026,6 @@ cnsToRevList x = iter x [] where --lesson learned:  calling without the prime ca
     iter (ObjImmediate (ImmSym "()")) result = Just result
     iter (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = iter t (h : result) 
     iter _ _ = Nothing
-
--- cnsToList :: ScmObject -> Maybe [ScmObject]
--- cnsToList x = cnsToList' x [] where --lesson learned:  calling without the prime can result in a curried result (not intended!)
---     cnsToList' :: ScmObject -> [ScmObject] -> Maybe [ScmObject]
---     cnsToList' (ObjImmediate (ImmSym "()")) result = Just $ reverse result
---     cnsToList' (ObjCons ScmCons { scmCar = h, scmCdr = t}) result = cnsToList' t (h : result) 
---     cnsToList' _ _ = Nothing
 
 cnsToList :: ScmObject -> Maybe [ScmObject]
 cnsToList x = 

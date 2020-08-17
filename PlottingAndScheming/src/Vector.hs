@@ -344,16 +344,16 @@ data VecOrigin =
     VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) |
     VorScheme ScmObject
    
-data VecFlip =
-    FlpBuiltIn Int |
-    FlpScheme ScmObject --must return an int
+-- data VecFlip = --to do:  orphan and remove this
+--     FlpBuiltIn Int |
+--     FlpScheme ScmObject --must return an int
 
 data VecRule = VecRule 
     { vrlLenf :: VecLen
     , vrlAnglef :: VecAngle
     , vrlOriginf :: VecOrigin
-    , vrlFlipAngle :: VecFlip
-    , vrlFlipRules :: VecFlip
+    , vrlFlipAngle :: Int
+    , vrlFlipRules :: Int
     }
 
 mandelbrotPeanoCurveIntervals13 :: ([VecRule], [VecRule])
@@ -374,100 +374,100 @@ mandelbrotPeanoCurveIntervals13 =
                 { vrlLenf = VlnBuiltIn id
                 , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 } ]
         generator = 
             [ VecRule --rule 1 (list len-div-3 angle-plus-60 project3.4 -1 1) ; 1
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn anglePlus60
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
                 }
             , VecRule --rule 2 (list len-div-3 angle-plus-60 project3.4 1 1) ; 2
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn anglePlus60
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }
             , VecRule --rule 3 (list len-div-3 project1.2 project3.4 1 1) ; 3
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }
             , VecRule --rule 4 (list len-div-3 angle-less-60 project3.4 1 1) ; 4
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn angleLess60
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }
             , VecRule --rule 5 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 1 1) ; 5
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn anglePlus5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }
             , VecRule --rule 6 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 -1 1) ; 6
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn anglePlus5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
                 }
             , VecRule --rule 7 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 7
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn angleLess5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
                 }                              
             , VecRule --rule 8 (list len-div-3sqrt3 angle-less-pi-halves project3.4 -1 1) ; 8
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn angleLessPiHalves
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
                 }  
             , VecRule --rule 9 (list len-div-3 project1.2 project3.4 1 1) ; 9
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }  
             , VecRule --rule 10 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 1 1) ; 10
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn angleLess5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }  
             , VecRule --rule 11 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 11
                 { vrlLenf = VlnBuiltIn lenDiv3sqrt3
                 , vrlAnglef = VanBuiltIn angleLess5PiOver6
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
                 }  
             , VecRule --rule 12 (list len-div-3 project1.2 project3.4 -1 1) ; 12
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn (-1)
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
                 }  
             , VecRule --rule 13 (list len-div-3 project1.2 project3.4 1 1)) ; 13
                 { vrlLenf = VlnBuiltIn lenDiv3
                 , vrlAnglef = VanBuiltIn project1of2
                 , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = FlpBuiltIn 1
-                , vrlFlipRules = FlpBuiltIn 1
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
                 }            
             ]
     in
@@ -495,6 +495,84 @@ builtIns :: [ (String, ([VecRule], [VecRule]))]
 builtIns = 
     [ ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) ]
 
+--to do:  iter with index number, determine expected types based on index number, populate VecRule, cons onto accumulator (which will be reversed when completed)
+
+--to do:  maybe just convert to [ScmObject] via cnsToList
+
+parseLispRule :: ScmObject -> VecRule --should return only one rule, not a list
+parseLispRule x = iter x 1 [] [] where
+    iter:: ScmObject -> Int -> [ScmObject] -> [Int] -> VecRule
+    iter (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) n acc ints = 
+        if n /= 5 then
+            error "wrong number of items in LISP rule, should be 5"
+        else
+            --add car to acc, make sure it's an int, then reverse acc and pack into VecRule
+            case h of
+                ObjImmediate (ImmInt n) -> 
+                    undefined
+                otherwise -> error "arg 6 of a LISP rule should be an int"
+    iter (ObjCons ScmCons { scmCar = h, scmCdr = t }) n acc ints= 
+        --if index is 1 .. 3 car must be closure, else int
+        undefined
+    iter _ _ _ _ = error "bad LISP rule"
+
+{-
+Prelude Data.Maybe> catMaybes [Just 3, Just 4, Nothing, Just 5]
+[3,4,5]
+-}
+
+{-
+data VecLen =
+    VlnBuiltIn (Double -> Double) |
+    VlnScheme  ScmObject
+    
+data VecAngle =
+    VanBuiltIn (Double -> Int -> Double) |
+    VanScheme ScmObject
+
+data VecOrigin =
+    VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) |
+    VorScheme ScmObject
+-}
+
+scmToInt :: ScmObject -> Maybe Int
+scmToInt (ObjImmediate (ImmInt x)) = Just x
+scmToInt _ = Nothing
+
+isScmClosure :: ScmObject -> Maybe ScmObject
+isScmClosure x@(ObjClosure _) = Just x
+isScmClosure _ = Nothing
+
+lispToVecRule :: ScmObject -> Maybe VecRule
+lispToVecRule x@(ObjCons _) = 
+    case (cnsToList x) of
+        Just l -> 
+            let flipa = scmToInt $ l !! 3
+                flipr = scmToInt $ l !! 4
+                lenf = isScmClosure $ l !! 0
+                anglef = isScmClosure $ l !! 1
+                originf = isScmClosure $ l !! 2
+            in 
+                case (lenf, anglef, originf, flipa, flipr) of
+                    (Just l, Just a, Just o, Just fa, Just fr) -> 
+                        Just $ VecRule 
+                            { vrlLenf = VlnScheme l
+                            , vrlAnglef = VanScheme a
+                            , vrlOriginf = VorScheme o
+                            , vrlFlipAngle = fa
+                            , vrlFlipRules = fr }
+                    otherwise -> Nothing
+        otherwise -> Nothing
+lispToVecRule _ = Nothing 
+
+--map lispToVecRule over the rulesToList results, check length, do catMaybes on it, check length = 5
+
+rulesToList :: Maybe ScmObject -> Maybe [ScmObject]
+rulesToList (Just x@(ObjCons _)) = cnsToList x
+rulesToList _ = Nothing
+
+--Prelude> fmap (+1) (Just 3)
+-- Just 4
 fetchRules :: String -> Bool -> ([VecRule], [VecRule])
 fetchRules rules builtIn =
     if builtIn then
@@ -506,12 +584,15 @@ fetchRules rules builtIn =
                 case evaled of
                     Right x -> 
                         let exp = Just $ last x
-                            car = safeCar exp
-                            cdr = safeCar $ safeCdr exp
+                            car = rulesToList $ safeCar exp
+                            cdr = rulesToList $ safeCar $ safeCdr exp
                         in --to do:  in progress
-                            case (car, cdr) of
-                                (Just s, Just r) -> (s, r)
-                                otherwise -> error "fetchRules:  bad lisp specification " 
+                            undefined
+                            -- case (car, cdr) of
+                            --     (Just s, Just r) -> 
+                            --         --to do:  need to cnsToList on s and r, then map cnsToList over the results
+                            --         (s, r)
+                            --     otherwise -> error "fetchRules:  bad lisp specification " 
                             
                     Left x -> error $ "scheme eval failed:  " ++ (show x)
         in ([], [])
@@ -604,8 +685,8 @@ vectorFractal xob@(XmlObj
                         { vrlLenf = VlnBuiltIn l
                         , vrlAnglef = VanBuiltIn a
                         , vrlOriginf = VorBuiltIn o
-                        , vrlFlipAngle = FlpBuiltIn flipAngle
-                        , vrlFlipRules = FlpBuiltIn flipRules } : restSeed) 
+                        , vrlFlipAngle = flipAngle
+                        , vrlFlipRules = flipRules } : restSeed) 
                     vectors 
                     colorizer 
                     = --across for builtin
@@ -796,8 +877,8 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                         { vrlLenf = VlnScheme l
                         , vrlAnglef = VanScheme a
                         , vrlOriginf = VorScheme o
-                        , vrlFlipAngle = FlpScheme flipAngle
-                        , vrlFlipRules = FlpScheme flipRules } : restSeed) 
+                        , vrlFlipAngle = flipAngle
+                        , vrlFlipRules = flipRules } : restSeed) 
                     vectors 
                     colorizer 
                     = --across for lisp
