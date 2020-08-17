@@ -10,7 +10,17 @@ File:  Scheme.hs
 
 -}
 
-module Scheme (evalResults, heapifyResults, parseTests, parseTest', strToTok, ScmObject) where
+module Scheme 
+    ( evalResults
+    , heapifyResults
+    , parseTests
+    , parseTest'
+    , strToTok
+    , ScmObject
+    , evalString
+    , printHeap
+    , safeCar
+    , safeCdr) where
 
 import Text.Regex.Posix
 import Text.Read
@@ -1066,6 +1076,38 @@ apply ctx (ObjClosure ScmClosure { clsBody = body, clsCtx = ctxOfClosure, clsPar
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
 apply ctx f args = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
 
+--to do:  need equivalent of this:
+
+{-
+let apply (func : scmBlock) args =
+    let cell = scmCons.create ()
+    let func = Some (scmObject.Block func)  
+    cell.car <- func
+    let rec iter args (scmArgs : scmCons option) (firstCell : scmCons option) =
+        match args with
+        | [] -> 
+            firstCell
+        | h :: t -> 
+            if firstCell.IsNone then
+                let cell = scmCons.create ()
+                cell.car <- Some h
+                let cell = Some cell
+                iter t cell cell
+            else 
+                let cell = scmCons.create ()
+                let current = scmArgs.Value
+                current.cdr <- Some (scmObject.Cons cell)
+                cell.car <- Some h
+                let cell = Some cell
+                iter t cell firstCell
+    let args = iter args None None
+    let args = args.Value
+    cell.cdr <- Some (scmObject.Cons args)
+    let obj = scmObject.Cons cell
+    let evaled = eval obj None
+    evaled
+-}
+
 symbolChars :: String
 symbolChars =
     ['a'..'z'] ++
@@ -1270,6 +1312,16 @@ evalHeaps ctx lst = iter ctx lst [] where
             Right x@(ObjContext c) -> iter c t $ (h, x) : res
             Right x -> iter ctx t $ (h, x) : res
             Left x -> Left (ScmError { errCaller = "evalHeaps", errMessage = "failed in evaluating " ++ (show h) } : x)
+
+evalString :: String -> Either [ScmError] [ScmObject]
+evalString str = 
+    case (strToHeaps str) of
+        Right x -> 
+            case (evalHeaps (ScmContext { ctxStk = [], ctxEnv = globalEnv }) x) of
+                Right x -> 
+                    Right $ fmap (\ (_, r) -> r) x
+                Left x -> Left x
+        Left (e, t) -> Left e
 
 evalResults :: String -> String
 evalResults str =

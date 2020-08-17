@@ -346,7 +346,7 @@ data VecOrigin =
    
 data VecFlip =
     FlpBuiltIn Int |
-    FlpScheme ScmObject
+    FlpScheme ScmObject --must return an int
 
 data VecRule = VecRule 
     { vrlLenf :: VecLen
@@ -501,9 +501,23 @@ fetchRules rules builtIn =
         --to do search for this in builtIns
         mandelbrotPeanoCurveIntervals13 
     else --call LISP
-        let evaled = evalResults rules
-        in 
-            error $ show evaled
+        let evaled = evalString rules
+            evaledStr = 
+                case evaled of
+                    Right x -> 
+                        let exp = Just $ last x
+                            car = safeCar exp
+                            cdr = safeCar $ safeCdr exp
+                        in --to do:  in progress
+                            case (car, cdr) of
+                                (Just s, Just r) -> (s, r)
+                                otherwise -> error "fetchRules:  bad lisp specification " 
+                            
+                    Left x -> error $ "scheme eval failed:  " ++ (show x)
+        in ([], [])
+        -- let evaled = evalResults rules
+        -- in 
+        --     error $ show evaled
         
 vectorFractal :: XmlObj -> [Vector]
 vectorFractal xob@(XmlObj 

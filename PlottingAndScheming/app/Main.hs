@@ -45,11 +45,16 @@ main = do
     -- putStrLn "going to call vector fractal"
     -- putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
     -- let plotObj = fetchVectorPlot names $ Just 1
-    let plotObj = fetchVectorXmlObj names $ Just 1
-        rules = fetchRule plotObj
-        evaled = evalResults rules
-    putStrLn $ "evaled = " ++ evaled
-    -- startGUI defaultConfig $ setup names
+    -- let plotObj = fetchVectorXmlObj names $ Just 1
+    --     rules = fetchRule plotObj
+    --     evaled = evalString rules
+    --     evaledStr = 
+    --         case evaled of
+    --             Right x -> printHeap $ last x
+    --             Left x -> show x
+    --     -- evaled' = evalHeaps rules
+    -- putStrLn $ "evaled = " ++ evaledStr
+    startGUI defaultConfig $ setup names
 
 canvasSize :: Int
 canvasSize = 100
