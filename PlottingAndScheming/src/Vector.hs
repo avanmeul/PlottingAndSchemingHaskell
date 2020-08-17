@@ -516,25 +516,6 @@ parseLispRule x = iter x 1 [] [] where
         undefined
     iter _ _ _ _ = error "bad LISP rule"
 
-{-
-Prelude Data.Maybe> catMaybes [Just 3, Just 4, Nothing, Just 5]
-[3,4,5]
--}
-
-{-
-data VecLen =
-    VlnBuiltIn (Double -> Double) |
-    VlnScheme  ScmObject
-    
-data VecAngle =
-    VanBuiltIn (Double -> Int -> Double) |
-    VanScheme ScmObject
-
-data VecOrigin =
-    VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) |
-    VorScheme ScmObject
--}
-
 scmToInt :: ScmObject -> Maybe Int
 scmToInt (ObjImmediate (ImmInt x)) = Just x
 scmToInt _ = Nothing
@@ -567,12 +548,15 @@ lispToVecRule _ = Nothing
 
 --map lispToVecRule over the rulesToList results, check length, do catMaybes on it, check length = 5
 
-rulesToList :: Maybe ScmObject -> Maybe [ScmObject]
-rulesToList (Just x@(ObjCons _)) = cnsToList x
+rulesToList :: Maybe ScmObject -> Maybe [VecRule]
+rulesToList (Just x@(ObjCons _)) = 
+    case (cnsToList x) of
+        Just t -> 
+            Just $ catMaybes $ fmap lispToVecRule t
+        otherwise -> 
+            Nothing
 rulesToList _ = Nothing
 
---Prelude> fmap (+1) (Just 3)
--- Just 4
 fetchRules :: String -> Bool -> ([VecRule], [VecRule])
 fetchRules rules builtIn =
     if builtIn then
@@ -586,19 +570,11 @@ fetchRules rules builtIn =
                         let exp = Just $ last x
                             car = rulesToList $ safeCar exp
                             cdr = rulesToList $ safeCar $ safeCdr exp
-                        in --to do:  in progress
-                            undefined
-                            -- case (car, cdr) of
-                            --     (Just s, Just r) -> 
-                            --         --to do:  need to cnsToList on s and r, then map cnsToList over the results
-                            --         (s, r)
-                            --     otherwise -> error "fetchRules:  bad lisp specification " 
-                            
+                        in case (car, cdr) of
+                            (Just seed, Just rules) -> (seed, rules)
+                            otherwise -> error "couldn't make seed and rules from LISP"
                     Left x -> error $ "scheme eval failed:  " ++ (show x)
-        in ([], [])
-        -- let evaled = evalResults rules
-        -- in 
-        --     error $ show evaled
+        in evaledStr
         
 vectorFractal :: XmlObj -> [Vector]
 vectorFractal xob@(XmlObj 
@@ -696,24 +672,7 @@ vectorFractal xob@(XmlObj
                             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
                         originf = o len angle newOrigin flipAngleFactor
                     in --(newOrigin, vectors', colorizer')
-                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
-                -- across --across function for lisp
-                --     len 
-                --     angle 
-                --     origin 
-                --     flipAngleFactor 
-                --     flipRulesFactor 
-                --     generation 
-                --     (VecRule 
-                --         { vrlLenf = VlnScheme l
-                --         , vrlAnglef = VanScheme a
-                --         , vrlOriginf = VorScheme o
-                --         , vrlFlipAngle = FlpScheme flipAngle
-                --         , vrlFlipRules = FlpScheme flipRules } : restSeed) 
-                --     vectors 
-                --     colorizer 
-                --     = --across for lisp
-                --     error "across for lisp code not implemented yet" --to do phase 2         
+                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'       
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
@@ -843,29 +802,6 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
             -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
             let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 across _ _ origin _ _ _ [] vectors colorizer = (origin, vectors, colorizer) -- to do:  move origin to right before vectors
-                -- across --across for builtin
-                --     len 
-                --     angle 
-                --     origin 
-                --     flipAngleFactor 
-                --     flipRulesFactor 
-                --     generation 
-                --     (VecRule 
-                --         { vrlLenf = VlnBuiltIn l
-                --         , vrlAnglef = VanBuiltIn a
-                --         , vrlOriginf = VorBuiltIn o
-                --         , vrlFlipAngle = FlpBuiltIn flipAngle
-                --         , vrlFlipRules = FlpBuiltIn flipRules } : restSeed) 
-                --     vectors 
-                --     colorizer 
-                --     = --across for builtin
-                --     let lenf = l len
-                --         anglef = a angle flipAngleFactor
-                --         (newOrigin, vectors', colorizer') =
-                --             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
-                --         originf = o len angle newOrigin flipAngleFactor
-                --     in --(newOrigin, vectors', colorizer')
-                --         down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
                 across --across function for lisp
                     len 
                     angle 
@@ -882,6 +818,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp
+                    --to do
                     error "across for lisp code not implemented yet" --to do phase 2         
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
