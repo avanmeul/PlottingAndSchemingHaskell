@@ -1308,12 +1308,16 @@ heapifyResults str =
 listToCons :: [ScmObject] -> ScmObject
 listToCons fcall = revListToCons $ reverse fcall
 
-scmApply :: ScmObject -> [ScmObject] -> ScmObject
+scmApply :: ScmObject -> [ScmObject] -> Either [ScmError] ScmObject
 scmApply func args = 
     let fcall = listToCons $ func : args
+        evaled = evalHeaps (ScmContext { ctxStk = [], ctxEnv = globalEnv }) [fcall]
     in 
-        --call eval
-        undefined    
+        case evaled of
+            Right r -> 
+                let (_, f) = last r
+                in Right f
+            Left x -> Left $ reverse x
         
 {-
 need test for unterminated string
