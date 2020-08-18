@@ -2,6 +2,7 @@ module Vector where
 
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 {-# OPTIONS -Wall #-}
 
 import Scheme
@@ -335,26 +336,25 @@ data DrawF = DrawF
 data VecLen =
     VlnBuiltIn (Double -> Double) |
     VlnScheme  ScmObject
+    deriving (Show)
     
 data VecAngle =
     VanBuiltIn (Double -> Int -> Double) |
-    VanScheme ScmObject
+    VanScheme ScmObject 
+    deriving (Show)
 
 data VecOrigin =
     VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) |
     VorScheme ScmObject
+    deriving (Show)
    
--- data VecFlip = --to do:  orphan and remove this
---     FlpBuiltIn Int |
---     FlpScheme ScmObject --must return an int
-
 data VecRule = VecRule 
     { vrlLenf :: VecLen
     , vrlAnglef :: VecAngle
     , vrlOriginf :: VecOrigin
     , vrlFlipAngle :: Int
     , vrlFlipRules :: Int
-    }
+    } deriving (Show)
 
 mandelbrotPeanoCurveIntervals13 :: ([VecRule], [VecRule])
 mandelbrotPeanoCurveIntervals13 = 
@@ -739,7 +739,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
     , xobRules = r
     , xobColors = colors
     , xobAlgorithm = colorAlg }) =
-    let (seed, rules) = fetchRules r True
+    let (seed, rules) = fetchRules r False
         pp = ctorPalettePicker colors
         numRules = length rules
         colorizer =
@@ -794,77 +794,6 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
             yOrigin
             quitf
             =  
-            --let res = scmApply 
-            -- //change mapvector to be non-recursive 
-            -- //it will record the end of the vector
-            -- //it will return this end of the vector when the vector is done being walked
-            -- //inside mapvector will be a recursive function that will do the walking
-            -- //do a backup before doing this!!!!
-            -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
-            {-
-                let lenf =
-                    match currentSeed.lenf with
-                    | vecLen.BuiltIn f -> 
-                        (f len)
-                    | vecLen.Scheme g -> 
-                        let res = apply g ((toScheme len) :: [])
-                        let res = fromScheme res
-                        let res =
-                            match res with
-                            | :? int as i -> failwith "wanted a double"
-                            | :? double as d -> d
-                            | _ -> failwith "bad result from Scheme"
-                        res
-                let anglef = 
-                    match currentSeed.anglef with
-                    | vecAngle.BuiltIn f -> 
-                        (f angle flipAngleFactor)
-                    | vecAngle.Scheme s -> 
-                        let args = (toScheme angle) :: (toScheme flipAngleFactor) :: []
-                        let res = apply s args
-                        let res = fromScheme res
-                        let res =
-                            match res with
-                            | :? double as d -> d
-                            | :? int as i -> 
-                                (double i)
-                            | _ -> failwith "bad result from Scheme"
-                        res
-                let originf =                    
-                    let newOrigin =                             
-                        across 
-                            len 
-                            angle 
-                            origin 
-                            flipAngleFactor
-                            flipRulesFactor
-                            generation 
-                            restSeed
-                    match currentSeed.originf with
-                    | vecOrigin.BuiltIn f -> 
-                        (f                       
-                            len 
-                            angle
-                            newOrigin
-                            flipAngleFactor)
-                    | vecOrigin.Scheme g -> 
-                        let args = 
-                            (toScheme len) ::
-                            (toScheme angle) ::
-                            (toScheme newOrigin) :: 
-                            (toScheme flipAngleFactor) :: 
-                            []
-                        let res = apply g args
-                        let res = fromScheme res
-                        let res =
-                            match res with
-                            | :? int as i -> failwith "wanted a double * double"
-                            | :? double as d -> failwith "wanted a double * double"
-                            | :? (double * double) as t -> t
-                            | _ -> failwith "bad result from Scheme"
-                        res
-
-            -}
             let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 across _ _ origin _ _ _ [] vectors colorizer = (origin, vectors, colorizer) -- to do:  move origin to right before vectors
                 across --across function for lisp
@@ -883,6 +812,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp
+                    -- error $ "rest of rules = " ++ (show restSeed)
                     let scmLen = toScheme $ SopDouble len
                         lenf =
                             case (scmApply l [scmLen]) of
@@ -909,10 +839,31 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     case (fmScheme o) of
                                         SopTuple x -> x 
                                         otherwise -> error "bad origin returned from Scheme"
-                                Left x -> error "failed call to scheme for origin"   
+                                Left x -> 
+                                    case x of
+                                        [] -> error "barf, no error message"
+                                        (h : t) -> error $ (show h)
+                                    -- let lastError = last x
+                                    --     -- (ScmError { errMessage = m, errCaller = caller }) = lastError
+                                    --     -- lastErrorMessage = "failed call to scheme for origin..." 
+                                    -- in 
+                                    --     case lastError of
+                                    --         (ScmError { errMessage = m, errCaller = c }) -> 
+                                    --             error $ "barf on origin " ++ m
                     in 
                         down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
-                across _ _ _ _ _ _ _ _ _ = error "bad lisp call to across" 
+                across --across function for lisp
+                    len 
+                    angle 
+                    origin 
+                    flipAngleFactor 
+                    flipRulesFactor 
+                    generation 
+                    (currentSeed : restSeed) 
+                    vectors 
+                    colorizer 
+                    = --across for lisp, last pattern
+                    error $ "bad call to across for lisp, current seed = " ++ (show currentSeed)
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
