@@ -794,6 +794,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
             yOrigin
             quitf
             =  
+            --let res = scmApply 
             -- //change mapvector to be non-recursive 
             -- //it will record the end of the vector
             -- //it will return this end of the vector when the vector is done being walked
@@ -882,8 +883,36 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp
-                    --to do
-                    error "across for lisp code not implemented yet" --to do phase 2         
+                    let scmLen = toScheme $ SopDouble len
+                        lenf =
+                            case (scmApply l [scmLen]) of
+                                Right x -> 
+                                    case (fmScheme x) of
+                                        SopDouble d -> d
+                                        otherwise -> error "bad length returned from Scheme"
+                                Left x -> error "failed call to scheme for length"
+                        scmAngle = toScheme $ SopDouble angle
+                        scmFlipFactor = toScheme $ SopInt flipAngleFactor
+                        anglef =
+                            case (scmApply a [scmAngle, scmFlipFactor]) of
+                                Right x -> 
+                                    case (fmScheme x) of
+                                        SopDouble d -> d
+                                        otherwise -> error "bad angle returned from Scheme"
+                                Left x -> error "failed call to scheme for length"
+                        (newOrigin, vectors', colorizer') =
+                            across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
+                        scmNewOrigin = toScheme $ SopTuple newOrigin
+                        originf = 
+                            case (scmApply o [scmLen, scmAngle, scmNewOrigin, scmFlipFactor]) of
+                                Right o -> 
+                                    case (fmScheme o) of
+                                        SopTuple x -> x 
+                                        otherwise -> error "bad origin returned from Scheme"
+                                Left x -> error "failed call to scheme for origin"   
+                    in 
+                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
+                across _ _ _ _ _ _ _ _ _ = error "bad lisp call to across" 
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =

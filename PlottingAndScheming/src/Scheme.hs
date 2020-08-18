@@ -1335,7 +1335,15 @@ fmScheme (ObjImmediate (ImmInt i)) = SopInt i
 fmScheme (ObjImmediate (ImmFloat f)) = SopDouble f
 fmScheme (ObjCons ScmCons { scmCar = ObjImmediate (ImmFloat x), scmCdr = ObjImmediate (ImmFloat y) }) = SopTuple (x, y)
 fmScheme x = error $ "fmScheme:  can't interop type " ++ (show x)
-        
+
+scmGetDouble :: ScmObject -> Double
+scmGetDouble = undefined
+
+scmGetInt :: ScmObject -> Int
+scmGetInt = undefined
+
+scmGetPoint :: ScmObject -> (Double, Double)
+scmGetPoint = undefined
 {-
 need test for unterminated string
 need to create function for paren checking using fold and returns a tuple (current, highest, lefts, rights, errorMaybe); maybe already done a different way
