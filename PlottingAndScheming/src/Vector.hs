@@ -800,6 +800,70 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
             -- //inside mapvector will be a recursive function that will do the walking
             -- //do a backup before doing this!!!!
             -- //to do:  instead of len, angle, origin; create a vector class and use real vectors
+            {-
+                let lenf =
+                    match currentSeed.lenf with
+                    | vecLen.BuiltIn f -> 
+                        (f len)
+                    | vecLen.Scheme g -> 
+                        let res = apply g ((toScheme len) :: [])
+                        let res = fromScheme res
+                        let res =
+                            match res with
+                            | :? int as i -> failwith "wanted a double"
+                            | :? double as d -> d
+                            | _ -> failwith "bad result from Scheme"
+                        res
+                let anglef = 
+                    match currentSeed.anglef with
+                    | vecAngle.BuiltIn f -> 
+                        (f angle flipAngleFactor)
+                    | vecAngle.Scheme s -> 
+                        let args = (toScheme angle) :: (toScheme flipAngleFactor) :: []
+                        let res = apply s args
+                        let res = fromScheme res
+                        let res =
+                            match res with
+                            | :? double as d -> d
+                            | :? int as i -> 
+                                (double i)
+                            | _ -> failwith "bad result from Scheme"
+                        res
+                let originf =                    
+                    let newOrigin =                             
+                        across 
+                            len 
+                            angle 
+                            origin 
+                            flipAngleFactor
+                            flipRulesFactor
+                            generation 
+                            restSeed
+                    match currentSeed.originf with
+                    | vecOrigin.BuiltIn f -> 
+                        (f                       
+                            len 
+                            angle
+                            newOrigin
+                            flipAngleFactor)
+                    | vecOrigin.Scheme g -> 
+                        let args = 
+                            (toScheme len) ::
+                            (toScheme angle) ::
+                            (toScheme newOrigin) :: 
+                            (toScheme flipAngleFactor) :: 
+                            []
+                        let res = apply g args
+                        let res = fromScheme res
+                        let res =
+                            match res with
+                            | :? int as i -> failwith "wanted a double * double"
+                            | :? double as d -> failwith "wanted a double * double"
+                            | :? (double * double) as t -> t
+                            | _ -> failwith "bad result from Scheme"
+                        res
+
+            -}
             let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 across _ _ origin _ _ _ [] vectors colorizer = (origin, vectors, colorizer) -- to do:  move origin to right before vectors
                 across --across function for lisp

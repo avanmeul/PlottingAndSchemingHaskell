@@ -890,8 +890,8 @@ lazyEvalArgs ctx args = iter args [] where
             Right x -> iter t $ x : res
             Left x -> Left $ ScmError { errCaller = "", errMessage = "evaluation failed for:  " ++ (show x) } : x
 
-listToCons :: [ScmObject] -> ScmObject
-listToCons (h : t) = iter t $ ObjCons $ ScmCons { scmCar = h, scmCdr = ObjImmediate $ ImmSym "()" } where
+revListToCons :: [ScmObject] -> ScmObject
+revListToCons (h : t) = iter t $ ObjCons $ ScmCons { scmCar = h, scmCdr = ObjImmediate $ ImmSym "()" } where
     iter :: [ScmObject] -> ScmObject -> ScmObject
     iter [] obj = obj
     iter (h : t) obj = 
@@ -905,7 +905,7 @@ scmList ctx args =
         case (cnsToList args) of
             Just x ->
                 case (lazyEvalArgs ctx x) of
-                    Right x -> Right $ listToCons x
+                    Right x -> Right $ revListToCons x
                     Left x -> 
                         Left $ ScmError { errCaller = "scmList", errMessage = "evaluation of args failed = " ++ (show args) } : x
             Nothing -> 
@@ -1073,38 +1073,6 @@ apply ctx (ObjClosure ScmClosure { clsBody = body, clsCtx = ctxOfClosure, clsPar
                     else
                         Left [ ScmError { errCaller = "apply", errMessage = "closure not implemented yet, and params <> args in length" } ]
 apply ctx f args = Left [ ScmError { errCaller = "apply", errMessage = "bad function " ++ (show f) } ]
-
---to do:  need equivalent of this:
-
-{-
-let apply (func : scmBlock) args =
-    let cell = scmCons.create ()
-    let func = Some (scmObject.Block func)  
-    cell.car <- func
-    let rec iter args (scmArgs : scmCons option) (firstCell : scmCons option) =
-        match args with
-        | [] -> 
-            firstCell
-        | h :: t -> 
-            if firstCell.IsNone then
-                let cell = scmCons.create ()
-                cell.car <- Some h
-                let cell = Some cell
-                iter t cell cell
-            else 
-                let cell = scmCons.create ()
-                let current = scmArgs.Value
-                current.cdr <- Some (scmObject.Cons cell)
-                cell.car <- Some h
-                let cell = Some cell
-                iter t cell firstCell
-    let args = iter args None None
-    let args = args.Value
-    cell.cdr <- Some (scmObject.Cons args)
-    let obj = scmObject.Cons cell
-    let evaled = eval obj None
-    evaled
--}
 
 symbolChars :: String
 symbolChars =
@@ -1335,7 +1303,17 @@ heapifyResults :: String -> String
 heapifyResults str =
     case (strToHeaps str) of
         Right x -> concat $ intersperse "\r\n" $ fmap printHeap x
-        Left x -> show x   
+        Left x -> show x
+
+listToCons :: [ScmObject] -> ScmObject
+listToCons fcall = revListToCons $ reverse fcall
+
+scmApply :: ScmObject -> [ScmObject] -> ScmObject
+scmApply func args = 
+    let fcall = listToCons $ func : args
+    in 
+        --call eval
+        undefined    
         
 {-
 need test for unterminated string
