@@ -88,15 +88,15 @@ data Token =
 
 data ScmNumber = 
     NumInt Int |
-    NumFloat Float --to do:  change to double
+    NumFloat Double --to do:  change to double
 
 data ScmImm = 
     ImmSym String |
     ImmString String |
     ImmRat (Int, Int) |
     ImmInt Int |
-    ImmFloat Float |
-    ImmComplex (Float, Float)
+    ImmFloat Double |
+    ImmComplex (Double, Double)
     deriving (Eq, Show)
 
 --to do:  ScmImm has Symbol, Number, String
@@ -156,6 +156,11 @@ data ScmContext = ScmContext --to do:  ctx prefix
     { ctxStk :: [ScmBlock]
     , ctxEnv :: [(String, ScmObject)] }
     deriving (Show)
+
+data ScmInterop
+    = SopInt Int
+    | SopDouble Double
+    | SopTuple (Double, Double)
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -229,7 +234,7 @@ buildHeap ((TokInteger x) : t) =
         Just i -> Right (ObjImmediate $ ImmInt i, t)
         Nothing -> Right (ObjError $ "buildHeap:  parse fail on int:  " ++ x, t)
 buildHeap ((TokFloat x) : t) =
-    case (readMaybe x :: Maybe Float) of
+    case (readMaybe x :: Maybe Double) of
         Just f -> Right (ObjImmediate $ ImmFloat f, t)
         Nothing -> Right (ObjError $ "buildHeap:  parse fail on float:  " ++ x, t)
 buildHeap (TokLeftParen : TokRightParen : t) =
@@ -392,7 +397,7 @@ scmAdd ctx args =
     case (cnsToList args) of
         Just x -> 
             iter x (Just 0, Just 0.0) where
-                iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
+                iter :: [ScmObject] -> (Maybe Int, Maybe Double) -> Either [ScmError] ScmObject
                 iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
                 iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
                 iter (h : t) (sumi, Just f) = 
@@ -414,7 +419,7 @@ scmMul ctx args =
     case (cnsToList args) of
         Just x -> 
             iter x (Just 1, Just 1.0) where
-                iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
+                iter :: [ScmObject] -> (Maybe Int, Maybe Double) -> Either [ScmError] ScmObject
                 iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
                 iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
                 iter (h : t) (sumi, Just f) = 
@@ -443,7 +448,7 @@ scmSub ctx args =
                 otherwise -> 
                     Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
         Just x@(h : t) -> iter x (Nothing, Nothing) where
-            iter :: [ScmObject] -> (Maybe Int, Maybe Float) -> Either [ScmError] ScmObject
+            iter :: [ScmObject] -> (Maybe Int, Maybe Double) -> Either [ScmError] ScmObject
             iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
             iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
             iter (h : t) (resi, resf) = 
@@ -1318,6 +1323,18 @@ scmApply func args =
                 let (_, f) = last r
                 in Right f
             Left x -> Left $ reverse x
+
+toScheme :: ScmInterop -> ScmObject
+toScheme (SopInt i) = ObjImmediate $ ImmInt i
+toScheme (SopDouble d) = ObjImmediate $ ImmFloat d
+toScheme (SopTuple (x, y)) = 
+    listToCons [ObjImmediate $ ImmFloat x, ObjImmediate $ ImmFloat y]
+
+fmScheme :: ScmObject -> ScmInterop
+fmScheme (ObjImmediate (ImmInt i)) = SopInt i
+fmScheme (ObjImmediate (ImmFloat f)) = SopDouble f
+fmScheme (ObjCons ScmCons { scmCar = ObjImmediate (ImmFloat x), scmCdr = ObjImmediate (ImmFloat y) }) = SopTuple (x, y)
+fmScheme x = error $ "fmScheme:  can't interop type " ++ (show x)
         
 {-
 need test for unterminated string
