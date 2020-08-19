@@ -573,13 +573,24 @@ fetchRules rules builtIn =
                         in case (car, cdr) of
                             (Just seed, Just rules) -> (seed, rules)
                             otherwise -> error "couldn't make seed and rules from LISP"
-                    Left x -> error $ "scheme eval failed:  " ++ (show x)
+                    Left x -> error $ "fetchRules:  scheme eval failed.  Error:  " ++ (show x)
         in evaledStr
-        
+
+{-
+    { xobName :: String
+    , xobDesc :: String
+    , xobGenerations :: Int
+    , xobLength :: Double
+    , xobRules :: String
+    , xobBuiltIn :: Bool
+    , xobContinuous :: Bool --to do
+    , xobColors :: [Color]
+    , xobAlgorithm :: ColoringAlgorithm
+-}
 vectorFractal :: XmlObj -> [Vector]
 vectorFractal xob@(XmlObj 
-    { xobName = _
-    , xobDesc = _
+    { xobName = n
+    , xobDesc = d
     , xobGenerations = gen
     , xobBuiltIn = True
     , xobContinuous = c
@@ -738,7 +749,8 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
     , xobLength = l
     , xobRules = r
     , xobColors = colors
-    , xobAlgorithm = colorAlg }) =
+    , xobAlgorithm = colorAlg }) 
+    =
     let (seed, rules) = fetchRules r False
         pp = ctorPalettePicker colors
         numRules = length rules
@@ -820,7 +832,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     case (fmScheme x) of
                                         SopDouble d -> d
                                         otherwise -> error "bad length returned from Scheme"
-                                Left x -> error "failed call to scheme for length"
+                                Left x -> error $ "failed call to scheme for length, error = :  " ++ (show x)
                         scmAngle = toScheme $ SopDouble angle
                         scmFlipFactor = toScheme $ SopInt flipAngleFactor
                         anglef =
@@ -829,27 +841,28 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     case (fmScheme x) of
                                         SopDouble d -> d
                                         otherwise -> error "bad angle returned from Scheme"
-                                Left x -> error "failed call to scheme for length"
+                                Left x -> error $ "failed call to scheme for angle" ++ (show $ last x)
                         (newOrigin, vectors', colorizer') =
                             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
                         scmNewOrigin = toScheme $ SopTuple newOrigin
                         originf = 
                             case (scmApply o [scmLen, scmAngle, scmNewOrigin, scmFlipFactor]) of
-                                Right o -> 
-                                    case (fmScheme o) of
+                                Right r -> 
+                                    case (fmScheme r) of
                                         SopTuple x -> x 
                                         otherwise -> error "bad origin returned from Scheme"
                                 Left x -> 
-                                    case x of
-                                        [] -> error "barf, no error message"
-                                        (h : t) -> error $ (show h)
+                                    -- case (reverse x) of
+                                        -- [] -> error "barf, no error message"
+                                        -- (h : t) -> error $ "barf " ++ (show lenf)
                                     -- let lastError = last x
-                                    --     -- (ScmError { errMessage = m, errCaller = caller }) = lastError
-                                    --     -- lastErrorMessage = "failed call to scheme for origin..." 
+                                        -- (ScmError { errMessage = m, errCaller = caller }) = lastError
+                                        -- lastErrorMessage = "failed call to scheme for origin..." 
                                     -- in 
-                                    --     case lastError of
-                                    --         (ScmError { errMessage = m, errCaller = c }) -> 
-                                    --             error $ "barf on origin " ++ m
+                                    case x of
+                                        [] -> error "bad origin, but no error in left"
+                                        (h : t) -> 
+                                            error $ "barf on origin " ++ (show h)
                     in 
                         down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
                 across --across function for lisp

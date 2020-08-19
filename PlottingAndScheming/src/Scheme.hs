@@ -1020,6 +1020,7 @@ eval ctx (ObjThunk (ScmThunk { thkCtx = c, thkEvaled = e, thkValue = v })) =
         env = ctxEnv ctx --env comes from eval (which has the latest version of the global env)
         ectx = ScmContext { ctxStk = stk, ctxEnv = env }
     in eval ectx v
+eval ctx c@(ObjClosure _) = Right c
 eval ctx (ObjError e) = Left [ ScmError { errCaller = "eval", errMessage = e }]
 eval _ obj = Left [ ScmError { errCaller = "eval", errMessage = "could not evaluate " ++ (show obj) }]
 
