@@ -161,6 +161,7 @@ data ScmInterop
     = SopInt Int
     | SopDouble Double
     | SopTuple (Double, Double)
+    deriving (Show)
 
 getToken :: [Token] -> (Maybe Token, [Token])
 getToken [] = (Nothing, [])
@@ -1329,12 +1330,17 @@ toScheme :: ScmInterop -> ScmObject
 toScheme (SopInt i) = ObjImmediate $ ImmInt i
 toScheme (SopDouble d) = ObjImmediate $ ImmFloat d
 toScheme (SopTuple (x, y)) = 
-    listToCons [ObjImmediate $ ImmFloat x, ObjImmediate $ ImmFloat y]
+    let tup = listToCons [ObjImmediate $ ImmFloat x, ObjImmediate $ ImmFloat y]
+    in listToCons [ObjSymbol "quote", tup]
 
 fmScheme :: ScmObject -> ScmInterop
 fmScheme (ObjImmediate (ImmInt i)) = SopInt i
 fmScheme (ObjImmediate (ImmFloat f)) = SopDouble f
-fmScheme (ObjCons ScmCons { scmCar = ObjImmediate (ImmFloat x), scmCdr = ObjImmediate (ImmFloat y) }) = SopTuple (x, y)
+fmScheme x@(ObjCons _) =
+    case (cnsToList x) of
+        Just ((ObjImmediate (ImmFloat x)) : (ObjImmediate (ImmFloat y)) : []) -> 
+            SopTuple (x, y)
+        otherwise -> error "bad tuple from lisp"
 fmScheme x = error $ "fmScheme:  can't interop type " ++ (show x)
 
 scmGetDouble :: ScmObject -> Double

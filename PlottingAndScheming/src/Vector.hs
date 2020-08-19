@@ -587,6 +587,43 @@ fetchRules rules builtIn =
     , xobColors :: [Color]
     , xobAlgorithm :: ColoringAlgorithm
 -}
+
+{-
+There are two coloring cases: 
+    1) the same diagram repeats at different sizes
+    2) all diagrams are the same size
+
+For coloring type #1, look for the sizes of diagrams and color based on size.
+For type #2, decide how many groups you want and color accordingly
+-}
+
+drawFunction :: [Vector] -> VectorColorizer -> Double -> Double -> UI.Point -> (UI.Point, [Vector], VectorColorizer)
+drawFunction vecs clz len angle origin =
+    let (x, y) = origin
+        pt2 = (x + len * cos angle, y + len * sin angle)
+        ln = (origin, pt2)
+        idx = length vecs
+        -- chk p i j n = i >= n * p && i < (n + j) * p --probably experimental code artifact
+        clz' = --possibly update colorizer
+            case clz of 
+                l@(VczLevel _) -> l
+                VczImage s -> VczImage (checkSizeColorizer s idx len)
+        clr = --pick color from colorizer
+            case clz' of
+                VczLevel l -> paletteColor $ lczPicker l
+                VczImage s -> paletteColor $ sczPicker s
+        vec = Vector { vecP1 =  origin, vecP2 = pt2, vecColor = clr }
+        vecs' = vec : vecs
+    in 
+        (pt2, vecs', clz')
+
+quitFunction :: Int -> Double -> Int -> Bool --in common
+quitFunction generations = 
+    if generations < 0 then --perhaps this is to stop recursing based on length of the vector rather than generations; shouldn't use neg numbers like this (use sum type instead)
+        \len generation -> len < (fromIntegral generations)
+    else 
+        \len generation -> generation == generations     
+
 vectorFractal :: XmlObj -> [Vector]
 vectorFractal xob@(XmlObj 
     { xobName = n
@@ -607,33 +644,6 @@ vectorFractal xob@(XmlObj
                     VczLevel (ctorLevelColorizer pp lvl gen)
                 CalImage subtractor -> 
                     VczImage (ctorSizeColorizer pp numRules subtractor gen)
-        {-
-        There are two coloring cases: 
-            1) the same diagram repeats at different sizes
-            2) all diagrams are the same size
-
-        For coloring type #1, look for the sizes of diagrams and color based on size.
-        For type #2, decide how many groups you want and color accordingly
-        -}
-        drawFunction :: [Vector] -> VectorColorizer -> Double -> Double -> UI.Point -> (UI.Point, [Vector], VectorColorizer) --in common 
-        drawFunction vecs clz len angle origin =
-            let (x, y) = origin
-                pt2 = (x + len * cos angle, y + len * sin angle)
-                ln = (origin, pt2)
-                idx = length vecs
-                -- chk p i j n = i >= n * p && i < (n + j) * p --probably experimental code artifact
-                clz' = --possibly update colorizer
-                    case clz of 
-                        l@(VczLevel _) -> l
-                        VczImage s -> VczImage (checkSizeColorizer s idx len)
-                clr = --pick color from colorizer
-                    case clz' of
-                        VczLevel l -> paletteColor $ lczPicker l
-                        VczImage s -> paletteColor $ sczPicker s
-                vec = Vector { vecP1 =  origin, vecP2 = pt2, vecColor = clr }
-                vecs' = vec : vecs
-            in 
-                (pt2, vecs', clz')
         twoDvectorFractal ::
             -- ([Vector] -> VectorColorizer -> Double -> Double -> (Double, Double) -> ((Double, Double), [Vector], VectorColorizer)) -> --drawf
             [VecRule] -> --seed
@@ -720,13 +730,7 @@ vectorFractal xob@(XmlObj
                     (-1) -- generation
                     (reverse seed)
                     []
-                    colorizer
-        quitFunction :: Int -> Double -> Int -> Bool --in common
-        quitFunction generations = 
-            if generations < 0 then --perhaps this is to stop recursing based on length of the vector rather than generations; shouldn't use neg numbers like this (use sum type instead)
-                \len generation -> len < (fromIntegral generations)
-            else 
-                \len generation -> generation == generations                
+                    colorizer            
     in
         let len = xobLength xob
         in --[ Vector { vecP1 = (0,0), vecP2 = (100, 100), vecColor = "blue" } ]
@@ -760,33 +764,6 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     VczLevel (ctorLevelColorizer pp lvl gen)
                 CalImage subtractor -> 
                     VczImage (ctorSizeColorizer pp numRules subtractor gen)
-        {-
-        There are two coloring cases: 
-            1) the same diagram repeats at different sizes
-            2) all diagrams are the same size
-
-        For coloring type #1, look for the sizes of diagrams and color based on size.
-        For type #2, decide how many groups you want and color accordingly
-        -}
-        drawFunction :: [Vector] -> VectorColorizer -> Double -> Double -> UI.Point -> (UI.Point, [Vector], VectorColorizer)
-        drawFunction vecs clz len angle origin =
-            let (x, y) = origin
-                pt2 = (x + len * cos angle, y + len * sin angle)
-                ln = (origin, pt2)
-                idx = length vecs
-                -- chk p i j n = i >= n * p && i < (n + j) * p --probably experimental code artifact
-                clz' = --possibly update colorizer
-                    case clz of 
-                        l@(VczLevel _) -> l
-                        VczImage s -> VczImage (checkSizeColorizer s idx len)
-                clr = --pick color from colorizer
-                    case clz' of
-                        VczLevel l -> paletteColor $ lczPicker l
-                        VczImage s -> paletteColor $ sczPicker s
-                vec = Vector { vecP1 =  origin, vecP2 = pt2, vecColor = clr }
-                vecs' = vec : vecs
-            in 
-                (pt2, vecs', clz')
         twoDvectorFractal :: --to do:  determine if drawf needs to be passed:  it's visible via scope
             -- ([Vector] -> VectorColorizer -> Double -> Double -> (Double, Double) -> ((Double, Double), [Vector], VectorColorizer)) -> --drawf
             [VecRule] -> --seed
@@ -824,7 +801,6 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp
-                    -- error $ "rest of rules = " ++ (show restSeed)
                     let scmLen = toScheme $ SopDouble len
                         lenf =
                             case (scmApply l [scmLen]) of
@@ -841,7 +817,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     case (fmScheme x) of
                                         SopDouble d -> d
                                         otherwise -> error "bad angle returned from Scheme"
-                                Left x -> error $ "failed call to scheme for angle" ++ (show $ last x)
+                                Left x -> error $ "failed call to scheme for angle" ++ (show x)
                         (newOrigin, vectors', colorizer') =
                             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
                         scmNewOrigin = toScheme $ SopTuple newOrigin
@@ -852,14 +828,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                         SopTuple x -> x 
                                         otherwise -> error "bad origin returned from Scheme"
                                 Left x -> 
-                                    -- case (reverse x) of
-                                        -- [] -> error "barf, no error message"
-                                        -- (h : t) -> error $ "barf " ++ (show lenf)
-                                    -- let lastError = last x
-                                        -- (ScmError { errMessage = m, errCaller = caller }) = lastError
-                                        -- lastErrorMessage = "failed call to scheme for origin..." 
-                                    -- in 
-                                    case x of
+                                    case (reverse x) of
                                         [] -> error "bad origin, but no error in left"
                                         (h : t) -> 
                                             error $ "barf on origin " ++ (show h)
@@ -913,13 +882,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     (-1) -- generation
                     (reverse seed)
                     []
-                    colorizer
-        quitFunction :: Int -> Double -> Int -> Bool
-        quitFunction generations = 
-            if generations < 0 then --perhaps this is to stop recursing based on length of the vector rather than generations; shouldn't use neg numbers like this (use sum type instead)
-                \len generation -> len < (fromIntegral generations)
-            else 
-                \len generation -> generation == generations                
+                    colorizer              
     in --undefined
         let len = xobLength xob
         in --[ Vector { vecP1 = (0,0), vecP2 = (100, 100), vecColor = "blue" } ]
