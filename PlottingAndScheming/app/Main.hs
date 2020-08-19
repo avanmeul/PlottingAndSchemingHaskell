@@ -13,18 +13,22 @@ import Data.List
 
 {-
 
-to do:  vector button should be above plot
-to do:  package up all xml
-to do:  lambda calculus should use lambda symbol
-to do:  add text box for success/failure (or radio button)
-to do:  add time stamp for latest run
-to do:  add text box for transcript window
-to do:  research how to do a tab control
-to do:  add table
-to do:  add scrolling to text boxes for expression and result
-to do:  parse failures should return Left (string, [Token])
-to do:  possibly add untokenize button?
-to do:  put all debug buttons in a debug tab
+to do:  
+
+bee hive broken
+coloring for monkeys tree doesn't match F# version
+vector button should be above plot
+package up all xml
+lambda calculus should use lambda symbol
+add text box for success/failure (or radio button)
+add time stamp for latest run
+add text box for transcript window
+research how to do a tab control
+add table
+add scrolling to text boxes for expression and result
+parse failures should return Left (string, [Token])
+possibly add untokenize button?
+put all debug buttons in a debug tab
 
 -}
 

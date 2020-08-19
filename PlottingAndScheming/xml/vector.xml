@@ -108,7 +108,7 @@
     </info>
     <parameters>
       <generations>3</generations>
-      <length>400.0</length>
+      <length>300.0</length>
       <coloring>
         <palette>
           <color>
@@ -166,9 +166,7 @@
           (list len-div-3sqrt3 angle-less-pi-halves project3.4 1 -1) ; 8
           (list len-div-3sqrt3 angle-less-pi-halves project3.4 1 1) ; 9
           (list len-div-3 project1.2 project3.4 1 -1) ; 10
-          (list len-div-3 project1.2 project3.4 1 1) ; 11
-          (list len-div-3 project1.2 project3.4 -1 1) ; 12
-          (list len-div-3 project1.2 project3.4 1 1)))) ; 13
+          (list len-div-3 project1.2 project3.4 1 1)))) ; 11
     	]]>
     </rules>
   </vector>
