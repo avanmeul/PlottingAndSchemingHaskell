@@ -13,6 +13,7 @@ import Data.List
 
 {-
 
+to do:  vector button should be above plot
 to do:  package up all xml
 to do:  lambda calculus should use lambda symbol
 to do:  add text box for success/failure (or radio button)

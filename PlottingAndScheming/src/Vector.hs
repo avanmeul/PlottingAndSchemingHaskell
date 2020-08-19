@@ -144,10 +144,10 @@ ctorColoringAlgorithm typ el =
     where 
         findLevel :: Name -> Int
         findLevel nm =
-            let lvl = el >>= C.element nm >>= child >>= content
+            let lvl = el >>= child >>= C.element nm >>= child >>= content
                 lvlUnpack = map T.unpack lvl
                 lvlMaybe = if null lvlUnpack then Nothing else readMaybe (head lvlUnpack) :: Maybe Int
-            in maybe 1 id lvlMaybe     
+            in maybe 1 id lvlMaybe
 
 ctorXmlObj :: [Cursor] -> XmlObj
 ctorXmlObj el =
