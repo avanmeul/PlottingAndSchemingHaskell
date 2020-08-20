@@ -486,7 +486,7 @@
       <description>to do:  look up what book this came from</description>
     </info>
     <parameters>
-      <generations>6</generations>
+      <generations>1</generations>
       <length>300</length>
       <coloring>
         <palette>
