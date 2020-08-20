@@ -15,8 +15,19 @@ import Data.List
 
 to do:  
 
-bee hive broken
-coloring for monkeys tree doesn't match F# version
+fix plots that are broken:  
+    bee hive (0 vectors),
+    sierpinski's carpet (fails), 
+    island generator (fails) 
+    island and lakes (fails), 
+    islands #2 (fails), 
+    sierpinski's gasket #2 (0 vectors), 
+    peano gosper (broken in original), 
+    peano gosper #2 (broken in original, fails in Haskell),
+    tiles (0 vectors)
+    tiles 2
+    sierpinski carpet #2
+coloring for monkeys tree and mandelbrot doesn't match F# version
 vector button should be above plot
 package up all xml
 lambda calculus should use lambda symbol
@@ -45,8 +56,15 @@ fetchRule plotObj =
 main :: IO ()
 main = do
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
+    -- index <- Just 8 --get UI.selection cbxVector
+    let plotObj = fetchVectorXmlObj names $ Just 8
+        vecs = 
+            case plotObj of
+                Just x -> vectorFractal x
+                otherwise -> []
+    -- putStrLn $ show vecs
     -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
-        -- vecs = vectorFractal obj
+    -- vecs = vectorFractal obj
     -- putStrLn "going to call vector fractal"
     -- putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
     -- let plotObj = fetchVectorPlot names $ Just 1
@@ -58,7 +76,8 @@ main = do
     --             Right x -> printHeap $ last x
     --             Left x -> show x
     --     -- evaled' = evalHeaps rules
-    -- putStrLn $ "evaled = " ++ evaledStr
+    -- putStrLn $ "evaled = " ++ evaledStr    
+    -- putStrLn $ show $ names !! 11
     startGUI defaultConfig $ setup names
 
 canvasSize :: Int
@@ -99,6 +118,7 @@ setup plots window = do
     txtOutput  <- UI.textarea #. "send-textarea"
     txtScratch <- UI.textarea #. "send-textarea"
     txtVector <- UI.textarea #. "send-textarea"
+    txtVectorTranscript <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
     btnClearInput <- UI.button #+ [string "clear input"]
     btnTokenize <- UI.button #+ [string "tokenize"]
@@ -117,16 +137,6 @@ setup plots window = do
     btnCombinator <- UI.button #+ [string "combinator"]
     btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
-    {-data XmlObj = XmlObj
-    { xobName :: String
-    , xobDesc :: String
-    , xobGenerations :: Int
-    , xobLength :: Double
-    , xobRules :: String
-    , xobBuiltIn :: Bool
-    , xobColors :: [Color]
-    , xobAlgorithm :: ColoringAlgorithm
-    } deriving (Eq, Show)-}
     cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) plots --["one", "two", "three"]
     canVec <- UI.canvas
         # set UI.height canvasSize
@@ -142,8 +152,9 @@ setup plots window = do
         [grid
             [ [row [UI.element cbxVector]]
             , [row [UI.element txtVector]]
-            , [row [UI.element canVec]]
             , [row [UI.element btnVecPlot]] 
+            , [row [UI.element canVec]]
+            , [row [UI.element txtVectorTranscript]]
             ]
         ]
     divComplex <- UI.div
@@ -261,17 +272,15 @@ setup plots window = do
                     Just x -> vectorFractal x
                     otherwise -> []
             (vecs', (width, height)) = normalizeVectors vecs
-        -- UI.element txtVector # set UI.text "hi" -- $ show vecs
+            msg = "number of vectors:  " ++ (show $ length vecs')
         UI.element canVec # set UI.width (maybe 200 id width)
-        UI.element canVec # set UI.height (maybe 200 id height)                
+        UI.element canVec # set UI.height (maybe 200 id height)
         canVec # drawVecs vecs'
-        -- canVec # drawVecs vecs
-        -- canVec # setPixel (50, 50) "grey"
-        -- canVec # setPixel (51, 51) "grey"
-        -- canVec # setPixel (52, 52) "grey"
+        UI.element txtVectorTranscript # set UI.text msg
         return canVec
 
     on UI.click cbxVector $ const $ do
         index <- get UI.selection cbxVector
         let plotObj = fetchVectorPlot plots index
         UI.element txtVector # set UI.text plotObj
+        UI.element txtVectorTranscript # set UI.text (show index)

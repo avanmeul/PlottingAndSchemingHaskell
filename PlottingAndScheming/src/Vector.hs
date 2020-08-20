@@ -168,12 +168,15 @@ ctorXmlObj el =
         vec1desc = el >>= descendant
         info1 = vec1desc >>= C.element info >>= child
         name1 = info1 >>= C.element nm >>= child >>= content
+        fractalName = if null name1 then "" else head $ map T.unpack name1
         desc1 = info1 >>= C.element desc >>= child >>= content
+        description = if null desc1 then "" else head $ map T.unpack desc1
         params1 = vec1desc >>= C.element params >>= child
         rules1 = vec1desc >>= C.element rules
         rulesType1 = rules1 >>= C.attribute typeAtt
         rules1Continuous = rules1 >>= C.attribute continuous
         rulesContent1 = rules1 >>= child >>= content
+        rulesValue = if null rulesContent1 then "" else head $ map T.unpack rulesContent1
         gen1 = params1 >>= C.element gen >>= child >>= content
         genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
         generations = maybe 1 id genMaybe
@@ -188,17 +191,25 @@ ctorXmlObj el =
         algType = algorithm1 >>= C.attribute typeAtt
         algUnpacked = map T.unpack algType
         alg = if null algUnpacked then "level" else head algUnpacked
-        contUnpacked = map T.unpack rules1Continuous
-        cont = if null contUnpacked then True else head contUnpacked == "continuous"
+        cont = 
+            if null rules1Continuous then
+                True
+            else
+                "continuous" == (head $ map T.unpack rules1Continuous)
+        builtin =
+            if null rulesType1 then 
+                True
+            else 
+                "builtin" == (head $ map T.unpack rulesType1)
         colorAlg = ctorColoringAlgorithm alg algorithm1
     in
         XmlObj 
-            { xobName = head $ map T.unpack name1
-            , xobDesc = head $ map T.unpack desc1
+            { xobName = fractalName
+            , xobDesc = description
             , xobGenerations = generations
             , xobLength = length
-            , xobRules = head $ map T.unpack rulesContent1
-            , xobBuiltIn = "builtin" == (head $ map T.unpack rulesType1)
+            , xobRules = rulesValue
+            , xobBuiltIn = builtin
             , xobColors = map T.unpack colorName1
             , xobAlgorithm = maybe (CalLevel 1) id colorAlg
             , xobContinuous = cont

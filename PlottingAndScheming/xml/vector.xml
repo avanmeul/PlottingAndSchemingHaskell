@@ -178,7 +178,7 @@
     </info>
     <parameters>
       <generations>4</generations>
-      <length>400.0</length>
+      <length>300.0</length>
       <coloring>
         <palette>
           <color>
@@ -236,7 +236,7 @@
 			<description>From Winston's book.</description></info>
     <parameters>
       <generations>11</generations>
-      <length>400.0</length>
+      <length>225</length>
       <coloring>
         <palette>
           <color>
@@ -288,7 +288,7 @@
     </info>
     <parameters>
       <generations>12</generations>
-      <length>325</length>
+      <length>175</length>
       <coloring>
         <palette>
           <color>
@@ -345,7 +345,7 @@
 			<description>From Winston's book.</description></info>
     <parameters>
       <generations>10</generations>
-      <length>300.0</length>
+      <length>250</length>
       <coloring>
         <palette>
           <color>
@@ -483,11 +483,11 @@
   <vector>
     <info>
       <name>bee hive</name>
-      <description></description>
+      <description>to do:  look up what book this came from</description>
     </info>
     <parameters>
       <generations>6</generations>
-      <length>325</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -600,7 +600,7 @@
     </info>
     <parameters>
       <generations>6</generations>
-      <length>450.0</length>
+      <length>350</length>
       <coloring>
         <palette>
           <color>
@@ -650,7 +650,7 @@
     </info>
     <parameters>
       <generations>4</generations>
-      <length>700</length>
+      <length>350</length>
       <coloring>
         <palette>
           <color>
@@ -796,7 +796,7 @@
             (list len-div-3 project1.2 project3.4 1 1) ; 9 (backtrack)
 	          (list len-div-3 project1.2 revert-origin 1 1) ; 10
             (list len-div-3 project1.2 project3.4 1 1) ; 11
-            (list len-div-3 project1.2 project3.4 1 1)))) ; 12                              
+            (list len-div-3 project1.2 project3.4 1 1)))) ; 12
       ]]></rules></vector>
   <!-- island generator -->
   <vector>
@@ -1110,7 +1110,7 @@
     </info>
     <parameters>
       <generations>3</generations>
-      <length>450</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -1191,7 +1191,7 @@
     </info>
     <parameters>
       <generations>5</generations>
-      <length>500</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -1284,7 +1284,7 @@
     </info>
     <parameters>
       <generations>4</generations>
-      <length>400</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -1876,7 +1876,7 @@
     </info>
     <parameters>
       <generations>4</generations>
-      <length>400</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -1984,7 +1984,7 @@
     </info>
     <parameters>
       <generations>2</generations>
-      <length>400</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -2198,7 +2198,7 @@
     </info>
     <parameters>
       <generations>3</generations>
-      <length>430</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -2278,7 +2278,7 @@
     </info>
     <parameters>
       <generations>3</generations>
-      <length>450</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
