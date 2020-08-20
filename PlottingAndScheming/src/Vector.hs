@@ -491,13 +491,6 @@ mandelbrotPeanoCurveIntervals13 =
 -- step 4:  change plotter to match on type of rule
 -- *)
 
--- selectBuiltin :: String -> Maybe ([VecRule], [VecRule])
--- selectBuiltin nm = 
---     if nm == "mandelbrotPeanoCurveIntervals13" then 
---         Just mandelbrotPeanoCurveIntervals13 
---     else 
---         Nothing
-
 vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
 vectorEndPoint vec len angle =
     (((fst vec) + (len * cos angle)), ((snd vec) + (len * sin angle)))
@@ -545,11 +538,18 @@ rulesToList (Just x@(ObjCons _)) =
             Nothing
 rulesToList _ = Nothing
 
+findBuiltin :: [ (String, ([VecRule], [VecRule])) ] -> String -> Maybe ([VecRule], [VecRule])
+findBuiltin alist tgt =
+    case (find (\(c, _) -> c == tgt) alist) of
+        Just (_, v) -> Just v
+        Nothing -> Nothing
+
 fetchRules :: String -> Bool -> ([VecRule], [VecRule])
 fetchRules rules builtIn =
     if builtIn then
-        --to do search for this in builtIns
-        mandelbrotPeanoCurveIntervals13 
+        case (findBuiltin builtIns rules) of
+            Just x -> x
+            Nothing -> error $ "couldn't find built-in rule for " ++ rules
     else --call LISP
         let evaled = evalString rules
             evaledStr = 

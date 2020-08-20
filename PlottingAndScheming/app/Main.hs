@@ -47,11 +47,11 @@ put all debug buttons in a debug tab
     Main
 ------------------------------------------------------------------------------}
 
-fetchRule :: Maybe XmlObj -> String
-fetchRule plotObj =
-    case plotObj of
-        Just x -> xobRules x
-        otherwise -> ""
+-- fetchRule :: Maybe XmlObj -> String
+-- fetchRule plotObj =
+--     case plotObj of
+--         Just x -> xobRules x
+--         otherwise -> ""
 
 getVectors :: [XmlObj] -> Maybe Int -> (([Vector], (Maybe Int, Maybe Int)), String)
 getVectors plots i = 
