@@ -483,7 +483,7 @@
   <vector>
     <info>
       <name>bee hive (built-in)</name>
-      <description>to do:  look up what book this came from</description>
+      <description>0 vectors when run</description>
     </info>
     <parameters>
       <generations>1</generations>
@@ -514,7 +514,7 @@
   <vector>
     <info>
       <name>bee hive</name>
-      <description>to do:  look up what book this came from</description>
+      <description>0 vectors when run</description>
     </info>
     <parameters>
       <generations>6</generations>
@@ -729,11 +729,44 @@
       ]]>
     </rules>
   </vector>
+    <!-- Sierpiński's carpet (built-in)-->
+  <vector>
+    <info>
+      <name>Sierpiński's carpet (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144; fails</description>
+    </info>
+    <parameters>
+      <generations>2</generations>
+      <length>100</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>0</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin">sierpinskiCarpet</rules></vector>
   <!-- Sierpiński's carpet -->
   <vector>
     <info>
       <name>Sierpiński's carpet</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144; fails</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -831,7 +864,7 @@
   <vector>
     <info>
       <name>island generator</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117; fails</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -937,7 +970,7 @@
   <vector>
     <info>
       <name>islands and lakes</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121; fails</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -1037,7 +1070,7 @@
   <vector>
     <info>
       <name>islands #2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118; fails</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -1216,7 +1249,7 @@
   <vector>
     <info>
       <name>Sierpiński's gasket #2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144.  This should be fixed to not overwrite vectors.</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144.  This should be fixed to not overwrite vectors.  0 vectors</description>
     </info>
     <parameters>
       <generations>5</generations>
@@ -1533,7 +1566,7 @@
   <vector>
     <info>
       <name>peano-gosper 2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144; fails</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -2008,7 +2041,7 @@
   <vector>
     <info>
       <name>tiles</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
       <comments>implement tan in scheme</comments>
     </info>
     <parameters>
@@ -2117,7 +2150,7 @@
   <vector>
     <info>
       <name>tiles 2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
       <comments>implement tan in scheme</comments>
     </info>
     <parameters>
@@ -2303,7 +2336,7 @@
   <vector>
     <info>
       <name>sierpiński carpet #2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62; fails</description>
     </info>
     <parameters>
       <generations>3</generations>

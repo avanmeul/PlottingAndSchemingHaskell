@@ -53,6 +53,13 @@ put all debug buttons in a debug tab
 --         Just x -> xobRules x
 --         otherwise -> ""
 
+debugPlot :: [XmlObj] -> Int -> Either [ScmError] [Vector]
+debugPlot plots i =
+    let plotObj = fetchVectorXmlObj plots $ Just i
+    in case plotObj of
+        Just x -> vectorFractal x
+        Nothing -> Left [ScmError { errMessage = "barf", errCaller = "debug "}]
+
 getVectors :: [XmlObj] -> Maybe Int -> (([Vector], (Maybe Int, Maybe Int)), String)
 getVectors plots i = 
     let plotObj = fetchVectorXmlObj plots i
@@ -93,7 +100,10 @@ main = do
     --     -- evaled' = evalHeaps rules
     -- putStrLn $ "evaled = " ++ evaledStr    
     -- putStrLn $ show $ names !! 11
+    -- let vecs = debugPlot names 8 
+    -- putStrLn $ show vecs
     startGUI defaultConfig $ setup names
+
 
 canvasSize :: Int
 canvasSize = 100
