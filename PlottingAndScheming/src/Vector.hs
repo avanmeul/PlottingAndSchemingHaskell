@@ -199,7 +199,7 @@ ctorXmlObj el =
             if null rules1Continuous then
                 True
             else
-                "continuous" == (head $ map T.unpack rules1Continuous)
+                "yes" == (head $ map T.unpack rules1Continuous)
         builtin =
             if null rulesType1 then 
                 True
@@ -820,7 +820,7 @@ vectorFractal xob@(XmlObj
     , xobDesc = d
     , xobGenerations = gen
     , xobBuiltIn = True
-    , xobContinuous = c
+    , xobContinuous = continuous
     , xobLength = l
     , xobRules = r
     , xobColors = colors
@@ -906,7 +906,7 @@ vectorFractal xob@(XmlObj
                                     newOrigin =
                                         across len angle origin flipAngleFactor flipRulesFactor generation rules' vectors colorizer'
                                 in 
-                                    if xobContinuous xob then
+                                    if continuous then
                                         newOrigin
                                     else 
                                         (vectorEndPoint origin len angle, vectors, colorizer')
@@ -937,7 +937,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
     , xobDesc = _
     , xobGenerations = gen
     , xobBuiltIn = False
-    , xobContinuous = c
+    , xobContinuous = continuous
     , xobLength = l
     , xobRules = r
     , xobColors = colors
@@ -1060,7 +1060,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     newOrigin = --(origin, vectors, colorizer')
                                         across len angle origin flipAngleFactor flipRulesFactor generation rules' vectors colorizer'
                                 in 
-                                    if xobContinuous xob then
+                                    if continuous then
                                         newOrigin
                                     else 
                                         (vectorEndPoint origin len angle, vectors, colorizer')

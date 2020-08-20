@@ -100,7 +100,7 @@ main = do
     --     -- evaled' = evalHeaps rules
     -- putStrLn $ "evaled = " ++ evaledStr    
     -- putStrLn $ show $ names !! 11
-    -- let vecs = debugPlot names 8 
+    -- let vecs = debugPlot names 8 --8 is bee hive built-in
     -- putStrLn $ show vecs
     startGUI defaultConfig $ setup names
 

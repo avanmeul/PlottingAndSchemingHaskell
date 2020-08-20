@@ -486,7 +486,7 @@
       <description>0 vectors when run</description>
     </info>
     <parameters>
-      <generations>1</generations>
+      <generations>6</generations>
       <length>300</length>
       <coloring>
         <palette>
