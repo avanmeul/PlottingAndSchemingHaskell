@@ -1,12 +1,12 @@
 {- Copyright (c) 2020 by André van Meulebrouck.  All rights reserved worldwide.
 
 File:  Scheme.hs
-2019-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
-2020-03-13:  initial commit to github
-2020-06-15:  single quote implemented
-2020-06-28:  hooked up threepenny-gui
-2020-07-10:  reached parity (and beyond) with F# lazy Scheme interpreter (modulo some math functions that only return floats)
 2020-07-12:  tab control working
+2020-07-10:  reached parity (and beyond) with F# lazy Scheme interpreter (modulo some math functions that only return floats)
+2020-06-28:  hooked up threepenny-gui
+2020-06-15:  single quote implemented
+2020-03-13:  initial commit to github
+2019-08-23:  resumed prototype (used for guiding F# implementation) after termination from Smartronix (8/20/2019)
 
 -}
 
@@ -37,6 +37,7 @@ import Data.IORef
 -- import Data.Aeson
 -- import Test.HSpec
 import Text.Show.Functions
+import Data.Maybe
 
 {-
 Open question:  if true and false were defined as combinators, the user could define if.
@@ -1333,14 +1334,21 @@ toScheme (SopTuple (x, y)) =
     let tup = listToCons [ObjImmediate $ ImmFloat x, ObjImmediate $ ImmFloat y]
     in listToCons [ObjSymbol "quote", tup]
 
-fmScheme :: ScmObject -> ScmInterop
+scmScalarToDouble :: ScmObject -> Maybe Double
+scmScalarToDouble (ObjImmediate (ImmInt x)) = Just $ fromIntegral x
+scmScalarToDouble (ObjImmediate (ImmFloat x)) = Just x
+scmScalarToDouble _ = Nothing
+
+fmScheme :: ScmObject -> ScmInterop --to do:  should be Maybe ScmInterop
 fmScheme (ObjImmediate (ImmInt i)) = SopInt i
 fmScheme (ObjImmediate (ImmFloat f)) = SopDouble f
 fmScheme x@(ObjCons _) =
     case (cnsToList x) of
-        Just ((ObjImmediate (ImmFloat x)) : (ObjImmediate (ImmFloat y)) : []) -> 
-            SopTuple (x, y)
-        otherwise -> error "bad tuple from lisp"
+        Just lst -> 
+            case (catMaybes $ fmap scmScalarToDouble lst) of
+                (p1 : p2 : []) -> SopTuple (p1, p2)
+                otherwise -> error "couldn't convert from Scheme to tuple"
+        Nothing -> error "couldn't convert from Scheme to tuple"
 fmScheme x = error $ "fmScheme:  can't interop type " ++ (show x)
 
 scmGetDouble :: ScmObject -> Double

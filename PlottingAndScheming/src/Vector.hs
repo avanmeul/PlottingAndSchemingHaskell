@@ -19,6 +19,10 @@ import Data.Maybe
 
 {-
 Copyright (c) 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
+
+File:  Vector.hs.
+2020-08-19:  some lisp fractals working
+2020-08-15:  builtin fractal working
 -}
 
 --to do:  line record:  thickness = 2, color, p1, p2
@@ -484,6 +488,139 @@ mandelbrotPeanoCurveIntervals13 =
     in
         (initiator, generator)
 
+beeHive :: ([VecRule], [VecRule])
+beeHive = 
+    let project1of2 x y = x
+        project3of4 w x y z = y
+        piOver4 = pi / 4.0
+        piOver3 = pi / 3.0
+        degrees30 = pi / 6.0
+        cos30 = cos degrees30
+        lenf len = len / 2.0 / cos30
+        degrees60 = pi / 3.0
+        degrees90 = pi / 2.0
+        degrees120 = pi / 3.0
+        degrees150 = 5 * degrees30
+        twoPiOver3 = 2 * piOver3
+        degrees330 = pi + (degrees30 * 5.0)
+        anglePlus30 angle flip = angle + (flip * degrees30)
+        angleMinus30 angle flip = angle - (flip * degrees30)
+        angleMinus90 angle flip = angle - (flip * degrees90)
+
+
+        lenDiv3 len = len / 3.0
+        -- degrees60 = pi / 3.0
+        anglePlus60 angle flip = angle + (degrees60 * (fromIntegral flip))
+        angleLess60 angle flip = angle - (degrees60 * (fromIntegral flip))
+        fivePiOver6 = 5.0 * pi / 6.0
+        anglePlus5PiOver6 angle flip = angle + (fivePiOver6 * (fromIntegral flip))
+        angleLess5PiOver6 angle flip = angle - (fivePiOver6 * (fromIntegral flip))
+        lenDiv3sqrt3 len = len / (3.0 * sqrt 3.0)
+        angleLessPiHalves angle flip = angle - ((fromIntegral flip) * pi / 2.0)
+        initiator = 
+            [ VecRule 
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                } ]
+        generator = 
+            [ VecRule --rule 1 (list len-div-3 angle-plus-60 project3.4 -1 1) ; 1
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn anglePlus60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 2 (list len-div-3 angle-plus-60 project3.4 1 1) ; 2
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn anglePlus60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 3 (list len-div-3 project1.2 project3.4 1 1) ; 3
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 4 (list len-div-3 angle-less-60 project3.4 1 1) ; 4
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn angleLess60
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 5 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 1 1) ; 5
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuiltIn anglePlus5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 6 (list len-div-3sqrt3 angle-plus-5pi-over-6 project3.4 -1 1) ; 6
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuiltIn anglePlus5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 7 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 7
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuiltIn angleLess5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
+                }                              
+            , VecRule --rule 8 (list len-div-3sqrt3 angle-less-pi-halves project3.4 -1 1) ; 8
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuiltIn angleLessPiHalves
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
+                }  
+            , VecRule --rule 9 (list len-div-3 project1.2 project3.4 1 1) ; 9
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }  
+            , VecRule --rule 10 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 1 1) ; 10
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuiltIn angleLess5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }  
+            , VecRule --rule 11 (list len-div-3sqrt3 angle-less-5pi-over-6 project3.4 -1 1) ; 11
+                { vrlLenf = VlnBuiltIn lenDiv3sqrt3
+                , vrlAnglef = VanBuiltIn angleLess5PiOver6
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
+                }  
+            , VecRule --rule 12 (list len-div-3 project1.2 project3.4 -1 1) ; 12
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = (-1)
+                , vrlFlipRules = 1
+                }  
+            , VecRule --rule 13 (list len-div-3 project1.2 project3.4 1 1)) ; 13
+                { vrlLenf = VlnBuiltIn lenDiv3
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }            
+            ]
+    in
+        (initiator, generator)
+            
 -- //to do:
 -- (*
 -- step 2:  parse rules from xml
@@ -497,7 +634,8 @@ vectorEndPoint vec len angle =
 
 builtIns :: [ (String, ([VecRule], [VecRule]))]
 builtIns = 
-    [ ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) ]
+    [ ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) 
+    , ("beeHive", beeHive)]
 
 scmToInt :: ScmObject -> Maybe Int
 scmToInt (ObjImmediate (ImmInt x)) = Just x
@@ -780,6 +918,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                 Right x -> 
                                     case (fmScheme x) of
                                         SopDouble d -> d
+                                        SopInt i -> fromIntegral i
                                         otherwise -> error "bad length returned from Scheme"
                                 Left x -> error $ "failed call to scheme for length, error = :  " ++ (show x)
                         scmAngle = toScheme $ SopDouble angle
@@ -789,6 +928,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                 Right x -> 
                                     case (fmScheme x) of
                                         SopDouble d -> d
+                                        SopInt i -> fromIntegral i
                                         otherwise -> error "bad angle returned from Scheme"
                                 Left x -> error $ "failed call to scheme for angle" ++ (show x)
                         (newOrigin, vectors', colorizer') =

@@ -479,6 +479,37 @@
     	]]>
     </rules>
   </vector>
+  <!-- bee hive (built-in)-->
+  <vector>
+    <info>
+      <name>bee hive (built-in)</name>
+      <description>to do:  look up what book this came from</description>
+    </info>
+    <parameters>
+      <generations>6</generations>
+      <length>300</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>gray</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>1</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin" continuous="no">beeHive</rules>
+  </vector>
   <!-- bee hive -->
   <vector>
     <info>
@@ -515,9 +546,7 @@
         (pi-over-4 (/ pi 4.0))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
-        
         (project3.4 (lambda (w x y z) y))
-        
         (pi-over-3 (/ pi 3))
         (30-degrees (/ pi 6))
         (cos-30 (cos 30-degrees))
