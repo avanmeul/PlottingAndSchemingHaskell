@@ -25,8 +25,8 @@ fix plots that are broken:
     peano gosper (broken in original), 
     peano gosper #2 (broken in original, fails in Haskell),
     tiles (0 vectors)
-    tiles 2
-    sierpinski carpet #2
+    tiles 2 (0 vectors)
+    sierpinski carpet #2 (fails)
 coloring for monkeys tree and mandelbrot doesn't match F# version
 vector button should be above plot
 package up all xml
@@ -52,16 +52,31 @@ fetchRule plotObj =
     case plotObj of
         Just x -> xobRules x
         otherwise -> ""
+
+getVectors :: [XmlObj] -> Maybe Int -> (([Vector], (Maybe Int, Maybe Int)), String)
+getVectors plots i = 
+    let plotObj = fetchVectorXmlObj plots i
+    in 
+        case plotObj of
+            Just x -> 
+                case (vectorFractal x) of
+                    Right x -> 
+                        let v@(vecs', _) = normalizeVectors x
+                        in (v, "number of vectors:  " ++ (show $ length vecs'))
+                    Left x -> 
+                        (([], (Just 100, Just 100)), "failed to get xml for plot, error:  " ++ (show x))
+            otherwise -> 
+               (([], (Just 100, Just 100)), "failed to get vectors for plot")
         
 main :: IO ()
 main = do
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     -- index <- Just 8 --get UI.selection cbxVector
-    let plotObj = fetchVectorXmlObj names $ Just 8
-        vecs = 
-            case plotObj of
-                Just x -> vectorFractal x
-                otherwise -> []
+    -- let plotObj = fetchVectorXmlObj names $ Just 8
+    --     vecs = 
+    --         case plotObj of
+    --             Just x -> vectorFractal x
+    --             otherwise -> Left [ScmError { errMessage = "could not get plot object", errCaller = "main" }]
     -- putStrLn $ show vecs
     -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
     -- vecs = vectorFractal obj
@@ -266,16 +281,10 @@ setup plots window = do
 
     on UI.click btnVecPlot $ const $ do
         index <- get UI.selection cbxVector
-        let plotObj = fetchVectorXmlObj plots index
-            vecs = 
-                case plotObj of
-                    Just x -> vectorFractal x
-                    otherwise -> []
-            (vecs', (width, height)) = normalizeVectors vecs
-            msg = "number of vectors:  " ++ (show $ length vecs')
+        let ((vecs, (width, height)), msg) = getVectors plots index
         UI.element canVec # set UI.width (maybe 200 id width)
         UI.element canVec # set UI.height (maybe 200 id height)
-        canVec # drawVecs vecs'
+        canVec # drawVecs vecs
         UI.element txtVectorTranscript # set UI.text msg
         return canVec
 

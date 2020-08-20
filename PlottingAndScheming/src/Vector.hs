@@ -506,27 +506,6 @@ builtIns :: [ (String, ([VecRule], [VecRule]))]
 builtIns = 
     [ ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) ]
 
---to do:  iter with index number, determine expected types based on index number, populate VecRule, cons onto accumulator (which will be reversed when completed)
-
---to do:  maybe just convert to [ScmObject] via cnsToList
-
-parseLispRule :: ScmObject -> VecRule --should return only one rule, not a list
-parseLispRule x = iter x 1 [] [] where
-    iter:: ScmObject -> Int -> [ScmObject] -> [Int] -> VecRule
-    iter (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) n acc ints = 
-        if n /= 5 then
-            error "wrong number of items in LISP rule, should be 5"
-        else
-            --add car to acc, make sure it's an int, then reverse acc and pack into VecRule
-            case h of
-                ObjImmediate (ImmInt n) -> 
-                    undefined
-                otherwise -> error "arg 6 of a LISP rule should be an int"
-    iter (ObjCons ScmCons { scmCar = h, scmCdr = t }) n acc ints= 
-        --if index is 1 .. 3 car must be closure, else int
-        undefined
-    iter _ _ _ _ = error "bad LISP rule"
-
 scmToInt :: ScmObject -> Maybe Int
 scmToInt (ObjImmediate (ImmInt x)) = Just x
 scmToInt _ = Nothing
@@ -557,8 +536,6 @@ lispToVecRule x@(ObjCons _) =
         otherwise -> Nothing
 lispToVecRule _ = Nothing 
 
---map lispToVecRule over the rulesToList results, check length, do catMaybes on it, check length = 5
-
 rulesToList :: Maybe ScmObject -> Maybe [VecRule]
 rulesToList (Just x@(ObjCons _)) = 
     case (cnsToList x) of
@@ -586,18 +563,6 @@ fetchRules rules builtIn =
                             otherwise -> error "couldn't make seed and rules from LISP"
                     Left x -> error $ "fetchRules:  scheme eval failed.  Error:  " ++ (show x)
         in evaledStr
-
-{-
-    { xobName :: String
-    , xobDesc :: String
-    , xobGenerations :: Int
-    , xobLength :: Double
-    , xobRules :: String
-    , xobBuiltIn :: Bool
-    , xobContinuous :: Bool --to do
-    , xobColors :: [Color]
-    , xobAlgorithm :: ColoringAlgorithm
--}
 
 {-
 There are two coloring cases: 
@@ -635,7 +600,7 @@ quitFunction generations =
     else 
         \len generation -> generation == generations     
 
-vectorFractal :: XmlObj -> [Vector]
+vectorFractal :: XmlObj -> Either [ScmError] [Vector]
 vectorFractal xob@(XmlObj 
     { xobName = n
     , xobDesc = d
@@ -656,7 +621,6 @@ vectorFractal xob@(XmlObj
                 CalImage subtractor -> 
                     VczImage (ctorSizeColorizer pp numRules subtractor gen)
         twoDvectorFractal ::
-            -- ([Vector] -> VectorColorizer -> Double -> Double -> (Double, Double) -> ((Double, Double), [Vector], VectorColorizer)) -> --drawf
             [VecRule] -> --seed
             [VecRule] -> --rules
             Double -> --len
@@ -703,7 +667,7 @@ vectorFractal xob@(XmlObj
                         (newOrigin, vectors', colorizer') =
                             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
                         originf = o len angle newOrigin flipAngleFactor
-                    in --(newOrigin, vectors', colorizer')
+                    in
                         down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'       
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
@@ -715,8 +679,8 @@ vectorFractal xob@(XmlObj
                                     colorizer
                     in 
                         let quit = quitf len generation
-                        in --error $ "quit = " ++ (show quit)
-                            if quit then --to do vecs clz len angle origin
+                        in
+                            if quit then
                                 drawFunction vectors colorizer' len angle origin
                             else
                                 let rules' = 
@@ -724,14 +688,14 @@ vectorFractal xob@(XmlObj
                                             reverse rules
                                         else
                                             rules
-                                    newOrigin = --(origin, vectors, colorizer')
+                                    newOrigin =
                                         across len angle origin flipAngleFactor flipRulesFactor generation rules' vectors colorizer'
                                 in 
                                     if xobContinuous xob then
                                         newOrigin
                                     else 
                                         (vectorEndPoint origin len angle, vectors, colorizer')
-            in --((xOrigin, yOrigin), [], colorizer)
+            in
                 across
                     len
                     angle 
@@ -743,18 +707,16 @@ vectorFractal xob@(XmlObj
                     []
                     colorizer            
     in
-        let len = xobLength xob
-        in --[ Vector { vecP1 = (0,0), vecP2 = (100, 100), vecColor = "blue" } ]
-            let (_, vectors, _) = 
-                    twoDvectorFractal 
-                        seed --initiator
-                        rules --generator
-                        len --len
-                        0.0 --start angle
-                        0.0 --flip angle
-                        0.0 --flip rules
-                        (quitFunction gen)
-            in vectors
+        let (_, vectors, _) = 
+                twoDvectorFractal 
+                    seed --initiator
+                    rules --generator
+                    l --len
+                    0.0 --start angle
+                    0.0 --flip angle
+                    0.0 --flip rules
+                    (quitFunction gen)
+        in Right vectors
 vectorFractal xob@(XmlObj --lisp specified vector fractals
     { xobName = _
     , xobDesc = _
@@ -856,7 +818,9 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp, last pattern
-                    error $ "bad call to across for lisp, current seed = " ++ (show currentSeed)
+                    let msg = "bad call to across for lisp, current seed = " ++ (show currentSeed)
+                    in error msg
+                    -- in Left [ScmError { errMessage = msg, errCaller = "vectorFractal:  across, last pattern" }]
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
@@ -867,8 +831,8 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     colorizer
                     in 
                         let quit = quitf len generation
-                        in --error $ "quit = " ++ (show quit)
-                            if quit then --to do vecs clz len angle origin
+                        in
+                            if quit then
                                 drawFunction vectors colorizer' len angle origin
                             else
                                 let rules' = 
@@ -883,7 +847,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                         newOrigin
                                     else 
                                         (vectorEndPoint origin len angle, vectors, colorizer')
-            in --((xOrigin, yOrigin), [], colorizer)
+            in
                 across
                     len
                     angle 
@@ -894,16 +858,14 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     (reverse seed)
                     []
                     colorizer              
-    in --undefined
-        let len = xobLength xob
-        in --[ Vector { vecP1 = (0,0), vecP2 = (100, 100), vecColor = "blue" } ]
-            let (_, vectors, _) = 
-                    twoDvectorFractal 
-                        seed --initiator
-                        rules --generator
-                        len --len
-                        0.0 --start angle
-                        0.0 --flip angle
-                        0.0 --flip rules
-                        (quitFunction gen)
-            in vectors                      
+    in
+        let (_, vectors, _) = 
+                twoDvectorFractal 
+                    seed --initiator
+                    rules --generator
+                    l --len
+                    0.0 --start angle
+                    0.0 --flip angle
+                    0.0 --flip rules
+                    (quitFunction gen)
+        in Right vectors                      
