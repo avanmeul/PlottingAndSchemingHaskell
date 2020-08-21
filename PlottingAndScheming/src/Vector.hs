@@ -269,7 +269,7 @@ paletteInc (PalettePicker { ppkPalette = pp, ppkLoc = l }) =
 paletteSetLoc :: PalettePicker -> Int -> PalettePicker
 paletteSetLoc pp i =
     if i < 0 then
-        error "index cannot be negative:  for -1, use reset"
+        error "index cannot be negative:  for -1, use reset" --to do:  change this function into a maybe?
     else
         let palette = ppkPalette pp
         in 
@@ -290,7 +290,7 @@ ctorSizeColorizer pp numRules subtractor generations =
     let exp = generations - subtractor
     in 
         if exp < 0 then
-            error "subtractor should not exceed generations"
+            error "subtractor should not exceed generations" --to do:  get rid of this, convert to maybe
         else
             SizeColorizer 
                 { sczPicker = pp
@@ -374,16 +374,432 @@ data VecRule = VecRule
 
 builtIns :: [ (String, ([VecRule], [VecRule]))]
 builtIns = 
-    [ ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) 
-    , ("beeHive", beeHive) 
+    [ ("beeHive", beeHive)
+    , ("islands", islands)
+    , ("islands2", islands2)
+    --islandsAndLakes
+    , ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) 
     , ("sierpinskiCarpet", sierpinskiCarpet)
-    , ("islandGenerator", islandGenerator) ]
+    --sierpinskiCarpet2
+    --sierpinskiGasket2 (0 vectors)
+    --tiles (0 vectors)
+    --tiles2 (0 vectors)
+     ]
 
 findBuiltin :: [ (String, ([VecRule], [VecRule])) ] -> String -> Maybe ([VecRule], [VecRule])
 findBuiltin alist tgt =
     case (find (\(c, _) -> c == tgt) alist) of
         Just (_, v) -> Just v
         Nothing -> Nothing
+
+beeHive :: ([VecRule], [VecRule])
+beeHive = 
+    let project1of2 x y = x
+        project3of4 w x y z = y
+        degrees30 = pi / 6.0
+        cos30 = cos degrees30
+        lenf len = len / 2.0 / cos30
+        degrees90 = pi / 2.0
+        degrees150 = 5 * degrees30
+        degrees330 = pi + (degrees30 * 5.0)
+        anglePlus30 :: Double -> Int -> Double
+        anglePlus30 angle flip = angle + (fromIntegral flip * degrees30)
+        anglePlus150 :: Double -> Int -> Double
+        anglePlus150 angle flip = angle + (fromIntegral flip * degrees150)        
+        angleMinus90 :: Double -> Int -> Double
+        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
+        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        moveOrigin len angle origin flip =
+            let len' = len / 2.0 / cos30
+                angle' = fromIntegral flip * angle + degrees90
+            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
+        moveOriginMinus30 :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        moveOriginMinus30 len angle origin flip =
+            let len' = len / 2.0 / cos30
+                angle' = fromIntegral flip * angle - degrees90
+            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
+        initiator = 
+            [ VecRule 
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                } ]
+        generator = 
+            [ VecRule --rule 1
+                { vrlLenf = VlnBuiltIn lenf
+                , vrlAnglef = VanBuiltIn anglePlus30
+                , vrlOriginf = VorBuiltIn moveOrigin
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 2
+                { vrlLenf = VlnBuiltIn lenf
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 3
+                { vrlLenf = VlnBuiltIn lenf
+                , vrlAnglef = VanBuiltIn anglePlus150
+                , vrlOriginf = VorBuiltIn moveOriginMinus30
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            ]
+    in
+        (initiator, generator)
+
+islands :: ([VecRule], [VecRule])
+islands = 
+    let piOver2 = pi / 2.0
+        piOver4 = pi / 4.0
+        sqrt2 :: Double
+        sqrt2 = sqrt 2.0
+        lenDiv8 :: Double -> Double
+        lenDiv8 len = len / 8.0
+        degrees90 = piOver2
+        anglePlus90 :: Double -> Int -> Double
+        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)
+        angleMinus90 :: Double -> Int -> Double
+        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
+        angleMinus180 :: Double -> Int -> Double
+        angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
+        calcP1 origin len angle = fst origin + (len * (cos angle))
+        calcP2 origin len angle = snd origin + (len * (sin angle))
+        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        moveOrigin len angle origin flip =
+            let len' = lenDiv8 len
+                angle' = fromIntegral flip * angle + piOver2
+            in (calcP1 origin len' angle', calcP2 origin len' angle')        
+        revertOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        revertOrigin len angle origin flip =
+            let len' = lenDiv8 len
+                angle' = fromIntegral flip * angle - piOver2
+            in (calcP1 origin len' angle', calcP2 origin len' angle')                 
+        project1of2 x y = x
+        project3of4 w x y z = y
+        initiator = 
+            [ VecRule --1
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }
+            , VecRule --2
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }
+            , VecRule --3
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn angleMinus180
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }
+            , VecRule --4
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }                             
+            ]
+        generator = 
+            [ VecRule --rule 1
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 2
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn moveOrigin
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 3
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 4
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 5
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }             
+            , VecRule --rule 6
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 7
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus180
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 8
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn revertOrigin
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 9
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 10
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 11
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 12
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 13
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 14
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 15
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 16
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }                                
+            ]
+    in
+        (initiator, generator)
+
+islands2 :: ([VecRule], [VecRule])
+islands2 = 
+    let piOver2 = pi / 2.0
+        piOver4 = pi / 4.0
+        sqrt2 :: Double
+        sqrt2 = sqrt 2.0
+        lenDiv8 :: Double -> Double
+        lenDiv8 len = len / 8.0
+        degrees90 = piOver2
+        anglePlus90 :: Double -> Int -> Double
+        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)
+        angleMinus90 :: Double -> Int -> Double
+        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
+        angleMinus180 :: Double -> Int -> Double
+        angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
+        calcP1 origin len angle = fst origin + (len * (cos angle))
+        calcP2 origin len angle = snd origin + (len * (sin angle))
+        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        moveOrigin len angle origin flip =
+            let len' = lenDiv8 len
+                angle' = fromIntegral flip * angle + piOver2
+            in (calcP1 origin len' angle', calcP2 origin len' angle')        
+        revertOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        revertOrigin len angle origin flip =
+            let len' = lenDiv8 len
+                angle' = fromIntegral flip * angle - piOver2
+            in (calcP1 origin len' angle', calcP2 origin len' angle')                 
+        originScaleBy3 :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        originScaleBy3 len angle origin flip =
+            let angle' = fromIntegral flip * angle
+                len' = 3 * (len / 3)
+            in (calcP1 origin len angle', calcP2 origin len angle')
+        project1of2 x y = x
+        project3of4 w x y z = y
+        initiator = 
+            [ VecRule --1
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }
+            , VecRule --2
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }
+            , VecRule --3
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn angleMinus180
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }
+            , VecRule --4
+                { vrlLenf = VlnBuiltIn id
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1 }                             
+            ]
+        generator = 
+            [ VecRule --rule 1
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 2
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn moveOrigin
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 3
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn anglePlus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 4
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 5
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }             
+            , VecRule --rule 6
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 7
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus90
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 8
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus180
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 9
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn angleMinus180
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 10
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn revertOrigin
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 11
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 12
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 13
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 14
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 15
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }
+            , VecRule --rule 16
+                { vrlLenf = VlnBuiltIn lenDiv8
+                , vrlAnglef = VanBuiltIn project1of2
+                , vrlOriginf = VorBuiltIn project3of4
+                , vrlFlipAngle = 1
+                , vrlFlipRules = 1
+                }                                
+            ]
+    in
+        (initiator, generator)
 
 mandelbrotPeanoCurveIntervals13 :: ([VecRule], [VecRule])
 mandelbrotPeanoCurveIntervals13 = 
@@ -498,66 +914,6 @@ mandelbrotPeanoCurveIntervals13 =
                 , vrlFlipAngle = 1
                 , vrlFlipRules = 1
                 }            
-            ]
-    in
-        (initiator, generator)
-
-beeHive :: ([VecRule], [VecRule])
-beeHive = 
-    let project1of2 x y = x
-        project3of4 w x y z = y
-        degrees30 = pi / 6.0
-        cos30 = cos degrees30
-        lenf len = len / 2.0 / cos30
-        degrees90 = pi / 2.0
-        degrees150 = 5 * degrees30
-        degrees330 = pi + (degrees30 * 5.0)
-        anglePlus30 :: Double -> Int -> Double
-        anglePlus30 angle flip = angle + (fromIntegral flip * degrees30)
-        anglePlus150 :: Double -> Int -> Double
-        anglePlus150 angle flip = angle + (fromIntegral flip * degrees150)        
-        angleMinus90 :: Double -> Int -> Double
-        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
-        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
-        moveOrigin len angle origin flip =
-            let len' = len / 2.0 / cos30
-                angle' = fromIntegral flip * angle + degrees90
-            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
-        moveOriginMinus30 :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
-        moveOriginMinus30 len angle origin flip =
-            let len' = len / 2.0 / cos30
-                angle' = fromIntegral flip * angle - degrees90
-            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
-        initiator = 
-            [ VecRule 
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                } ]
-        generator = 
-            [ VecRule --rule 1
-                { vrlLenf = VlnBuiltIn lenf
-                , vrlAnglef = VanBuiltIn anglePlus30
-                , vrlOriginf = VorBuiltIn moveOrigin
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 2
-                { vrlLenf = VlnBuiltIn lenf
-                , vrlAnglef = VanBuiltIn angleMinus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 3
-                { vrlLenf = VlnBuiltIn lenf
-                , vrlAnglef = VanBuiltIn anglePlus150
-                , vrlOriginf = VorBuiltIn moveOriginMinus30
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
             ]
     in
         (initiator, generator)
@@ -710,190 +1066,6 @@ sierpinskiCarpet =
     in
         (initiator, generator)
 
-islandGenerator :: ([VecRule], [VecRule])
-islandGenerator = 
-    let piOver2 = pi / 2.0
-        piOver4 = pi / 4.0
-        sqrt2 :: Double
-        sqrt2 = sqrt 2.0
-        lenDiv8 :: Double -> Double
-        lenDiv8 len = len / 8.0
-        degrees90 = piOver2
-        anglePlus90 :: Double -> Int -> Double
-        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)
-        angleMinus90 :: Double -> Int -> Double
-        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
-        angleMinus180 :: Double -> Int -> Double
-        angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
-        calcP1 origin len angle = fst origin + (len * (cos angle))
-        calcP2 origin len angle = snd origin + (len * (sin angle))
-        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
-        moveOrigin len angle origin flip =
-            let len' = lenDiv8 len
-                angle' = fromIntegral flip * angle + piOver2
-            in (calcP1 origin len' angle', calcP2 origin len' angle')        
-        revertOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
-        revertOrigin len angle origin flip =
-            let len' = lenDiv8 len
-                angle' = fromIntegral flip * angle - piOver2
-            in (calcP1 origin len' angle', calcP2 origin len' angle')                 
-        originScaleBy3 :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
-        originScaleBy3 len angle origin flip =
-            let angle' = fromIntegral flip * angle
-                len' = 3 * (len / 3)
-            in (calcP1 origin len angle', calcP2 origin len angle')
-        project1of2 x y = x
-        project3of4 w x y z = y
-        initiator = 
-            [ VecRule --1
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }
-            , VecRule --2
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn angleMinus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }
-            , VecRule --3
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn angleMinus180
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }
-            , VecRule --4
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn anglePlus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }                             
-            ]
-        generator = 
-            [ VecRule --rule 1
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 2
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn anglePlus90
-                , vrlOriginf = VorBuiltIn moveOrigin
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 3
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn anglePlus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 4
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 5
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn angleMinus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }             
-            , VecRule --rule 6
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn angleMinus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 7
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn angleMinus180
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 8
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn revertOrigin
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 9
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 10
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn anglePlus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 11
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 12
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn angleMinus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 13
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 14
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 15
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }
-            , VecRule --rule 16
-                { vrlLenf = VlnBuiltIn lenDiv8
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                }                                
-            ]
-    in
-        (initiator, generator)
-
--- //to do:
--- (*
--- step 2:  parse rules from xml
--- step 3:  create scheme rules
--- step 4:  change plotter to match on type of rule
--- *)
-
 vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
 vectorEndPoint vec len angle =
     (((fst vec) + (len * cos angle)), ((snd vec) + (len * sin angle)))
@@ -942,7 +1114,7 @@ fetchRules rules builtIn =
     if builtIn then
         case (findBuiltin builtIns rules) of
             Just x -> x
-            Nothing -> error $ "couldn't find built-in rule for " ++ rules
+            Nothing -> error $ "couldn't find built-in rule for " ++ rules --to do:  remove this
     else --call LISP
         let evaled = evalString rules
             evaledStr = 
@@ -954,7 +1126,7 @@ fetchRules rules builtIn =
                         in case (car, cdr) of
                             (Just seed, Just rules) -> (seed, rules)
                             otherwise -> error "couldn't make seed and rules from LISP"
-                    Left x -> error $ "fetchRules:  scheme eval failed.  Error:  " ++ (show x)
+                    Left x -> error $ "fetchRules:  scheme eval failed.  Error:  " ++ (show x) --to do:  remove error
         in evaledStr
 
 {-

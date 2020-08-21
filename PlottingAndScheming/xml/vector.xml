@@ -336,10 +336,10 @@
       ]]>
     </rules>
   </vector>
-  <!-- island generator -->
+  <!-- islands -->
   <vector>
     <info>
-      <name>island generator</name>
+      <name>islands</name>
       <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117; fails</description>
     </info>
     <parameters>
@@ -442,11 +442,11 @@
       ]]>
     </rules>
   </vector>
-	<!-- island generator (built-in) -->
+	<!-- islands (built-in) -->
 	<vector>
     <info>
-      <name>island generator (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117; fails</description></info>
+      <name>islands (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117</description></info>
     <parameters>
       <generations>2</generations>
       <length>200</length>
@@ -473,7 +473,7 @@
         </algorithm>
       </coloring>
     </parameters>
-		<rules type="builtin">islandGenerator</rules></vector>
+		<rules type="builtin">islands</rules></vector>
   <!-- islands #2 -->
   <vector>
     <info>
@@ -571,6 +571,40 @@
           )))
       ]]>
     </rules>
+  </vector>
+  <!-- islands #2 (built-in)-->
+  <vector>
+    <info>
+      <name>islands #2 (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118; fails</description>
+    </info>
+    <parameters>
+      <generations>2</generations>
+      <length>250</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>0</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin">islands2</rules>
   </vector>
   <!-- islands and lakes -->
   <vector>
