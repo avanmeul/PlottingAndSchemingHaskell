@@ -1339,17 +1339,17 @@ scmScalarToDouble (ObjImmediate (ImmInt x)) = Just $ fromIntegral x
 scmScalarToDouble (ObjImmediate (ImmFloat x)) = Just x
 scmScalarToDouble _ = Nothing
 
-fmScheme :: ScmObject -> ScmInterop --to do:  should be Maybe ScmInterop
-fmScheme (ObjImmediate (ImmInt i)) = SopInt i
-fmScheme (ObjImmediate (ImmFloat f)) = SopDouble f
+fmScheme :: ScmObject -> Maybe ScmInterop
+fmScheme (ObjImmediate (ImmInt i)) = Just $ SopInt i
+fmScheme (ObjImmediate (ImmFloat f)) = Just $ SopDouble f
 fmScheme x@(ObjCons _) =
     case (cnsToList x) of
         Just lst -> 
             case (catMaybes $ fmap scmScalarToDouble lst) of
-                (p1 : p2 : []) -> SopTuple (p1, p2)
+                (p1 : p2 : []) -> Just $ SopTuple (p1, p2)
                 otherwise -> error "couldn't convert from Scheme to tuple"
         Nothing -> error "couldn't convert from Scheme to tuple"
-fmScheme x = error $ "fmScheme:  can't interop type " ++ (show x)
+fmScheme x = Nothing
 
 scmGetDouble :: ScmObject -> Double
 scmGetDouble = undefined

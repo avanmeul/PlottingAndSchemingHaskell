@@ -16,6 +16,7 @@ import qualified Data.Text as T
 import Text.Read
 import Data.List
 import Data.Maybe
+import Data.Either
 
 {-
 Copyright (c) 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
@@ -961,7 +962,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
             Double -> --xorigin
             Double -> --yorigin
             (Double -> Int -> Bool) -> --quitf --to do:  determine if this needs to be passed as an argument
-            (UI.Point, [Vector], VectorColorizer) --origin (return value)
+            Either [ScmError] (UI.Point, [Vector], VectorColorizer) --origin (return value)
         twoDvectorFractal
             seed
             rules
@@ -971,8 +972,9 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
             yOrigin
             quitf
             =  
-            let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
-                across _ _ origin _ _ _ [] vectors colorizer = (origin, vectors, colorizer) -- to do:  move origin to right before vectors
+            let across :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [VecRule] -> [Vector] -> VectorColorizer -> Either [ScmError] (UI.Point, [Vector], VectorColorizer)
+                across _ _ origin _ _ _ [] vectors colorizer = 
+                    Right (origin, vectors, colorizer) -- to do:  move origin to right before vectors
                 across --across function for lisp
                     len 
                     angle 
@@ -989,41 +991,28 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp
-                    let scmLen = toScheme $ SopDouble len
-                        lenf =
-                            case (scmApply l [scmLen]) of
-                                Right x -> 
-                                    case (fmScheme x) of
-                                        SopDouble d -> d
-                                        SopInt i -> fromIntegral i
-                                        otherwise -> error "bad length returned from Scheme"
-                                Left x -> error $ "failed call to scheme for length, error = :  " ++ (show x)
-                        scmAngle = toScheme $ SopDouble angle
-                        scmFlipFactor = toScheme $ SopInt flipAngleFactor
-                        anglef =
-                            case (scmApply a [scmAngle, scmFlipFactor]) of
-                                Right x -> 
-                                    case (fmScheme x) of
-                                        SopDouble d -> d
-                                        SopInt i -> fromIntegral i
-                                        otherwise -> error "bad angle returned from Scheme"
-                                Left x -> error $ "failed call to scheme for angle" ++ (show x)
-                        (newOrigin, vectors', colorizer') =
-                            across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
-                        scmNewOrigin = toScheme $ SopTuple newOrigin
-                        originf = 
-                            case (scmApply o [scmLen, scmAngle, scmNewOrigin, scmFlipFactor]) of
-                                Right r -> 
-                                    case (fmScheme r) of
-                                        SopTuple x -> x 
-                                        otherwise -> error "bad origin returned from Scheme"
-                                Left x -> 
-                                    case (reverse x) of
-                                        [] -> error "bad origin, but no error in left"
-                                        (h : t) -> 
-                                            error $ "barf on origin " ++ (show h)
-                    in 
-                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
+                    case (across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer) of
+                        Right (newOrigin, vectors', colorizer') -> --across is okay, we can attempt down call
+                            let scmLen = toScheme $ SopDouble len
+                                lenf = scmApply l [scmLen]
+                                scmAngle = toScheme $ SopDouble angle
+                                scmFlipFactor = toScheme $ SopInt flipAngleFactor
+                                anglef = scmApply a [scmAngle, scmFlipFactor]
+                                scmNewOrigin = toScheme $ SopTuple newOrigin
+                                originf = scmApply o [scmLen, scmAngle, scmNewOrigin, scmFlipFactor]
+                                scmRights = catMaybes $ fmap fmScheme $ rights [lenf, anglef, originf]
+                                scmLefts = concat $ lefts [lenf, anglef, originf]
+                            in 
+                                if not $ null scmLefts then
+                                    Left scmLefts --to do:  add another error for across, cons in
+                                else
+                                    case scmRights of 
+                                        (SopDouble len' : SopDouble angle' : SopTuple origin' : []) -> --undefined
+                                            down len' angle' origin' (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer' 
+                                        otherwise -> 
+                                            Left [ ScmError { errMessage = "scheme calls for across did not all succeed", errCaller = "across" } ]
+                        e@(Left _) -> --we're toast already
+                            e
                 across --across function for lisp
                     len 
                     angle 
@@ -1035,10 +1024,8 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp, last pattern
-                    let msg = "bad call to across for lisp, current seed = " ++ (show currentSeed)
-                    in error msg
-                    -- in Left [ScmError { errMessage = msg, errCaller = "vectorFractal:  across, last pattern" }]
-                down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
+                    Left [ ScmError { errMessage = "this pattern should never trigger", errCaller = "across" }]
+                down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> Either [ScmError] (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
                             case colorizer of
@@ -1050,7 +1037,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                         let quit = quitf len generation
                         in
                             if quit then
-                                drawFunction vectors colorizer' len angle origin
+                                Right $ drawFunction vectors colorizer' len angle origin
                             else
                                 let rules' = 
                                         if flipRulesFactor > 0 then
@@ -1063,7 +1050,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     if continuous then
                                         newOrigin
                                     else 
-                                        (vectorEndPoint origin len angle, vectors, colorizer')
+                                        Right (vectorEndPoint origin len angle, vectors, colorizer')
             in
                 across
                     len
@@ -1075,8 +1062,8 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     (reverse seed)
                     []
                     colorizer              
-    in
-        let (_, vectors, _) = 
+    in 
+        let res = 
                 twoDvectorFractal 
                     seed --initiator
                     rules --generator
@@ -1085,4 +1072,6 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     0.0 --flip angle
                     0.0 --flip rules
                     (quitFunction gen)
-        in Right vectors                      
+        in case res of 
+            Right (_, vectors, _) -> Right vectors
+            Left e -> Left e                  
