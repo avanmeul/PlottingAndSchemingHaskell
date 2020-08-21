@@ -614,7 +614,7 @@
     </info>
     <parameters>
       <generations>2</generations>
-      <length>250</length>
+      <length>200</length>
       <coloring>
         <palette>
           <color>
@@ -689,22 +689,56 @@
             (list len-div-6 project1.2 project3.4 1 1) ; 3
             (list len-div-6 project1.2 project3.4 1 1) ; 4
             (list len-div-6 angle-minus-90 project3.4 1 1) ; 5
-            (list len-div-6 angle-minus-180 project3.4 1 1)
-            (list len-div-6 angle-minus-180 project3.4 1 1)
-            (list len-div-6 project1.2 revert-origin 1 1)
-            (list len-div-6 project1.2 project3.4 1 1)
-            (list len-div-6 angle-minus-90 revert-origin 1 1)
-            (list len-div-6 project1.2 project3.4 1 1)
-            (list len-div-6 project1.2 project3.4 1 1)
-            (list len-div-6 angle-plus-90 project3.4 1 1)
-            (list len-div-6 angle-minus-180 project3.4 1 1)
-            (list len-div-6 angle-minus-180 project3.4 1 1)
-            (list len-div-6 project1.2 move-origin 1 1)
-            (list len-div-6 project1.2 project3.4 1 1)
-            (list len-div-6 project1.2 project3.4 1 1)           
+            (list len-div-6 angle-minus-180 project3.4 1 1) ;6
+            (list len-div-6 angle-minus-180 project3.4 1 1) ;7
+            (list len-div-6 project1.2 revert-origin 1 1) ;8
+            (list len-div-6 project1.2 project3.4 1 1) ;9
+            (list len-div-6 angle-minus-90 revert-origin 1 1) ;10
+            (list len-div-6 project1.2 project3.4 1 1) ;11
+            (list len-div-6 project1.2 project3.4 1 1) ;12
+            (list len-div-6 angle-plus-90 project3.4 1 1) ;13
+            (list len-div-6 angle-minus-180 project3.4 1 1) ;14
+            (list len-div-6 angle-minus-180 project3.4 1 1) ;15
+            (list len-div-6 project1.2 move-origin 1 1) ;16
+            (list len-div-6 project1.2 project3.4 1 1) ;17
+            (list len-div-6 project1.2 project3.4 1 1) ;18       
           )))
       ]]>
     </rules>
+  </vector>
+  <!-- islands and lakes (built-in)-->
+  <vector>
+    <info>
+      <name>islands and lakes (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121; fails</description>
+    </info>
+    <parameters>
+      <generations>2</generations>
+      <length>200</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>0</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin">islandsAndLakes</rules>
   </vector>
   <!-- koch pyramid -->
   <vector>
