@@ -15,6 +15,7 @@ import Data.List
 
 to do:  
 
+create test harness to try scheme rule functions
 fix plots that are broken:  
     bee hive (0 vectors),
     sierpinski's carpet (fails), 

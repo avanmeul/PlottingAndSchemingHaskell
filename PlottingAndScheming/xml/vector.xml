@@ -860,6 +860,38 @@
             (list len-div-3 project1.2 project3.4 1 1) ; 11
             (list len-div-3 project1.2 project3.4 1 1)))) ; 12
       ]]></rules></vector>
+	<!-- island generator (built-in) -->
+	<vector>
+    <info>
+      <name>island generator (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117; fails</description></info>
+    <parameters>
+      <generations>2</generations>
+      <length>200</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>0</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+		<rules type="builtin">islandGenerator</rules></vector>
   <!-- island generator -->
   <vector>
     <info>
@@ -868,7 +900,7 @@
     </info>
     <parameters>
       <generations>2</generations>
-      <length>250</length>
+      <length>200</length>
       <coloring>
         <palette>
           <color>
