@@ -2134,6 +2134,41 @@
       ]]>
     </rules>
   </vector>
+  <!-- tiles (built-in) -->
+  <vector>
+    <info>
+      <name>tiles (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
+      <comments>implement tan in scheme</comments>
+    </info>
+    <parameters>
+      <generations>2</generations>
+      <length>300</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>0</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin" continuous="no">tiles</rules>
+  </vector>
   <!-- tiles 2 -->
   <vector>
     <info>
