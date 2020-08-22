@@ -2228,9 +2228,7 @@
         (move
           (lambda (len angle origin flip)
             (let (
-              (len (/ len 3))
-
-              )
+              (len (/ len 3)))
               (cons
                 (+ (car origin) (* len (cos angle)))
                 (+ (cdr origin) (* len (sin angle)))))))
@@ -2274,6 +2272,41 @@
             )))
       ]]>
     </rules>
+  </vector>
+<!-- tiles 2 (built-in)-->
+  <vector>
+    <info>
+      <name>tiles 2 (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
+      <comments>implement tan in scheme</comments>
+    </info>
+    <parameters>
+      <generations>1</generations>
+      <length>200</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>0</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin" continuous="no">tiles2</rules>
   </vector>
   <!-- Winston's C Curve (one seed) -->
 	<vector>

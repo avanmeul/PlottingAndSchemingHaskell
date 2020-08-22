@@ -392,9 +392,7 @@ builtIns =
     , ("sierpinskiCarpet2", sierpinskiCarpet2)
     , ("sierpinskiGasket2", sierpinskiGasket2)
     , ("tiles", tiles)
-    --tiles (0 vectors)
-    --tiles2 (0 vectors)
-     ]
+    , ("tiles2", tiles2) ]
 
 findBuiltin :: [ (String, ([VecRule], [VecRule])) ] -> String -> Maybe ([VecRule], [VecRule])
 findBuiltin alist tgt =
@@ -782,7 +780,7 @@ tiles =
         moveOrigin len angle origin flip =
             let len' = lenDiv3 len
                 angle' = fromIntegral flip * angle - degrees90
-            in (fst origin + (len' * (cos angle)), snd origin + (len' * (sin angle)))           
+            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))           
         initiator = 
             fmap ctorVecRule 
                 [ (id, project1of2, project3of4, 1, 1) --1
@@ -798,7 +796,42 @@ tiles =
                 , (lenDiv3, angleMinus90, project3of4, 1, 1) --5
                 , (lenDiv3, anglePlus180, project3of4, 1, 1) --6
                 , (lenDiv3, anglePlus180, project3of4, 1, 1) ] --7
-    in (initiator, generator)         
+    in (initiator, generator)
+
+tiles2 :: ([VecRule], [VecRule])
+tiles2 = 
+    let lenDiv3 :: Double -> Double
+        lenDiv3 len = len / 3.0
+        degrees90 = pi / 2.0
+        degrees180 = pi
+        anglePlus90 :: Double -> Int -> Double
+        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)        
+        angleMinus90 :: Double -> Int -> Double
+        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
+        angleMinus180 :: Double -> Int -> Double
+        angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
+        anglePlus180 :: Double -> Int -> Double
+        anglePlus180 angle flip = angle + (fromIntegral flip * degrees180)
+        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        moveOrigin len angle origin flip =
+            let len' = lenDiv3 len
+            in (fst origin + (len' * (cos angle)), snd origin + (len' * (sin angle)))           
+        initiator = 
+            fmap ctorVecRule 
+                [ (id, project1of2, project3of4, 1, 1) --1
+                , (id, anglePlus90, project3of4, 1, 1) --2
+                , (id, anglePlus180, project3of4, 1, 1) --3
+                , (id, angleMinus90, project3of4, 1, 1) ] --4
+        generator = 
+            fmap ctorVecRule 
+                [ (lenDiv3, project1of2, moveOrigin, 1, 1) -- 1 
+                , (lenDiv3, project1of2, project3of4, 1, 1) --2
+                , (lenDiv3, anglePlus90, project3of4, 1, 1) --3
+                , (lenDiv3, anglePlus180, project3of4, 1, 1) --4
+                , (lenDiv3, anglePlus90, project3of4, 1, 1) --5
+                , (lenDiv3, anglePlus180, project3of4, 1, 1) --6
+                , (lenDiv3, anglePlus180, project3of4, 1, 1) ] --7
+    in (initiator, generator)           
 
 vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
 vectorEndPoint vec len angle =
