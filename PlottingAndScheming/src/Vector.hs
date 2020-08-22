@@ -412,30 +412,31 @@ beeHive =
         lenf len = len / 2.0 / cos30
         degrees90 = pi / 2.0
         degrees150 = 5 * degrees30
-        degrees330 = pi + (degrees30 * 5.0)
         anglePlus30 :: Double -> Int -> Double
         anglePlus30 angle flip = angle + (fromIntegral flip * degrees30)
         anglePlus150 :: Double -> Int -> Double
         anglePlus150 angle flip = angle + (fromIntegral flip * degrees150)        
         angleMinus90 :: Double -> Int -> Double
         angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
+        calcP1 origin len angle = fst origin + (len * (cos angle))
+        calcP2 origin len angle = snd origin + (len * (sin angle))        
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
-            let len' = len / 2.0 / cos30
+            let len' = lenf len
                 angle' = fromIntegral flip * angle + degrees90
-            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
+            in (calcP1 origin len' angle', calcP2 origin len' angle')
         moveOriginMinus30 :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOriginMinus30 len angle origin flip =
-            let len' = len / 2.0 / cos30
-                angle' = fromIntegral flip * angle - degrees90
-            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
+            let len' = lenf len
+                angle' = fromIntegral flip * angle - degrees30
+            in (calcP1 origin len' angle', calcP2 origin len' angle')
         initiator = 
             fmap ctorVecRule 
                 [ (id, project1of2, project3of4, 1, 1) ] --1
         generator = 
             fmap ctorVecRule 
-                [ (lenf, anglePlus30, moveOrigin, 1, 1) --1
-                , (lenf, angleMinus90, project3of4, 1, 1) --2
+                [ (lenf, anglePlus30, project3of4, 1, 1) --1
+                , (lenf, angleMinus90, moveOrigin, 1, 1) --2
                 , (lenf, anglePlus150, moveOriginMinus30, 1, 1) ] --3
     in
         (initiator, generator)
@@ -732,36 +733,29 @@ sierpinskiCarpet2 =
 
 sierpinskiGasket2 :: ([VecRule], [VecRule])
 sierpinskiGasket2 = 
-    let project1of2 x y = x
-        project3of4 w x y z = y
-        lenDiv3 :: Double -> Double
-        lenDiv3 len = len / 3.0
-        piOver2 = pi / 2.0
-        degrees90 = piOver2
-        degrees180 = pi
-        anglePlus90 :: Double -> Int -> Double
-        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)
-        angleMinus90 :: Double -> Int -> Double
-        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
-        anglePlus180 :: Double -> Int -> Double
-        anglePlus180 angle flip = angle + (fromIntegral flip * degrees180)
+    let lenDiv2 :: Double -> Double
+        lenDiv2 len = len / 2.0
+        degrees60 = pi / 3.0
+        degrees120 = 2 * degrees60
+        angleMinus120 :: Double -> Int -> Double
+        angleMinus120 angle flip = angle - (fromIntegral flip * degrees120)
+        anglePlus120 :: Double -> Int -> Double
+        anglePlus120 angle flip = angle + (fromIntegral flip * degrees120)
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
-            let len' = lenDiv3 len
-            in (fst origin + (len' * (cos angle)), snd origin + (len' * (sin angle)))           
+            let len' = lenDiv2 len
+                angle' = fromIntegral flip * angle - degrees60
+            in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))           
         initiator = 
             fmap ctorVecRule 
-                [ (id, project1of2, project3of4, 1, 1) ] --1
+                [ (id, project1of2, project3of4, 1, 1) --1
+                , (id, anglePlus120, project3of4, 1, 1) --2
+                , (id, angleMinus120, project3of4, 1, 1) ] --3
         generator = 
             fmap ctorVecRule 
-                [ (lenDiv3, project1of2, project3of4, 1, 1) -- 1 
-                , (lenDiv3, anglePlus90, project3of4, 1, 1) --2
-                , (lenDiv3, project1of2, project3of4, 1, 1) --3
-                , (lenDiv3, angleMinus90, project3of4, 1, 1) --4
-                , (lenDiv3, angleMinus90, project3of4, 1, 1) --5
-                , (lenDiv3, anglePlus180, project3of4, 1, 1) --6
-                , (lenDiv3, anglePlus90, project3of4, 1, 1) --7
-                , (lenDiv3, project1of2, moveOrigin, 1, 1) ] --8
+                [ (lenDiv2, project1of2, project3of4, 1, 1) -- 1 
+                , (lenDiv2, anglePlus120, project3of4, 1, 1) --2
+                , (lenDiv2, project1of2, moveOrigin, 1, 1) ] --3
     in (initiator, generator)
 
 tiles :: ([VecRule], [VecRule])
@@ -776,6 +770,8 @@ tiles =
         angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
         anglePlus180 :: Double -> Int -> Double
         anglePlus180 angle flip = angle + (fromIntegral flip * degrees180)
+        anglePlus90 :: Double -> Int -> Double
+        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)        
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
             let len' = lenDiv3 len
@@ -785,8 +781,8 @@ tiles =
             fmap ctorVecRule 
                 [ (id, project1of2, project3of4, 1, 1) --1
                 , (id, angleMinus90, project3of4, 1, 1) --2
-                , (id, angleMinus180, project3of4, 1, 1) --3
-                , (id, angleMinus90, project3of4, 1, 1) ] --4
+                , (id, anglePlus180, project3of4, 1, 1) --3
+                , (id, anglePlus90, project3of4, 1, 1) ] --4
         generator = 
             fmap ctorVecRule 
                 [ (lenDiv3, project1of2, moveOrigin, 1, 1) -- 1 
@@ -1021,13 +1017,13 @@ vectorFractal xob@(XmlObj
                                             reverse rules
                                         else
                                             rules
-                                    newOrigin =
+                                    newOrigin@(_, vecs, clz) =
                                         across len angle origin flipAngleFactor flipRulesFactor generation rules' vectors colorizer'
                                 in 
                                     if continuous then
                                         newOrigin
                                     else 
-                                        (vectorEndPoint origin len angle, vectors, colorizer')
+                                        (vectorEndPoint origin len angle, vecs, clz)
             in
                 across
                     len
@@ -1124,7 +1120,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     Left scmLefts --to do:  add another error for across, cons in
                                 else
                                     case scmRights of 
-                                        (SopDouble len' : SopDouble angle' : SopTuple origin' : []) -> --undefined
+                                        (SopDouble len' : SopDouble angle' : SopTuple origin' : []) ->
                                             down len' angle' origin' (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer' 
                                         otherwise -> 
                                             Left [ ScmError { errMessage = "scheme calls for across did not all succeed", errCaller = "across" } ]
@@ -1167,7 +1163,10 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                     if continuous then
                                         newOrigin
                                     else 
-                                        Right (vectorEndPoint origin len angle, vectors, colorizer')
+                                        case newOrigin of 
+                                            Right (_, vecs, clz) -> 
+                                                Right (vectorEndPoint origin len angle, vecs, clz)
+                                            Left x -> Left x
             in
                 across
                     len

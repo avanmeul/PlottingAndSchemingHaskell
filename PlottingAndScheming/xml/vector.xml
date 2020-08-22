@@ -4,7 +4,7 @@
   <vector>
     <info>
       <name>bee hive</name>
-      <description>0 vectors when run</description>
+      <description>to do:  find a reference</description>
     </info>
     <parameters>
       <generations>6</generations>
@@ -119,7 +119,7 @@
     </info>
     <parameters>
       <generations>6</generations>
-      <length>300</length>
+      <length>250</length>
       <coloring>
         <palette>
           <color>
@@ -340,7 +340,7 @@
   <vector>
     <info>
       <name>islands</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -449,7 +449,7 @@
       <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 117</description></info>
     <parameters>
       <generations>2</generations>
-      <length>200</length>
+      <length>150</length>
       <coloring>
         <palette>
           <color>
@@ -478,7 +478,7 @@
   <vector>
     <info>
       <name>islands #2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -576,11 +576,11 @@
   <vector>
     <info>
       <name>islands #2 (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 118</description>
     </info>
     <parameters>
       <generations>2</generations>
-      <length>250</length>
+      <length>200</length>
       <coloring>
         <palette>
           <color>
@@ -610,7 +610,7 @@
   <vector>
     <info>
       <name>islands and lakes</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -710,11 +710,11 @@
   <vector>
     <info>
       <name>islands and lakes (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 121</description>
     </info>
     <parameters>
       <generations>2</generations>
-      <length>200</length>
+      <length>175</length>
       <coloring>
         <palette>
           <color>
@@ -1320,7 +1320,7 @@
   <vector>
     <info>
       <name>sierpiński's carpet</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144</description>
     </info>
     <parameters>
       <generations>2</generations>
@@ -1418,11 +1418,11 @@
   <vector>
     <info>
       <name>sierpiński's carpet (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144</description>
     </info>
     <parameters>
       <generations>2</generations>
-      <length>100</length>
+      <length>75</length>
       <coloring>
         <palette>
           <color>
@@ -1451,7 +1451,7 @@
   <vector>
     <info>
       <name>sierpiński carpet #2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62</description>
     </info>
     <parameters>
       <generations>3</generations>
@@ -1524,14 +1524,14 @@
             )
           (list ; rules (generator)
             (list lenf project1.2 project3.4 1 1) ; 1 
-            (list lenf angle-plus-90 project3.4 1 1)
-            (list lenf project1.2 project3.4 1 1)
-            (list lenf angle-minus-90 project3.4 1 1)
-            (list lenf angle-minus-90 project3.4 1 1)
-            (list lenf angle-plus-180 project3.4 1 1)
-            (list lenf angle-plus-90 project3.4 1 1)
-            ;(list lenf project1.2 project3.4 1 1)
-            (list lenf project1.2 move-origin 1 1)
+            (list lenf angle-plus-90 project3.4 1 1) ;2
+            (list lenf project1.2 project3.4 1 1) ;3
+            (list lenf angle-minus-90 project3.4 1 1) ;4
+            (list lenf angle-minus-90 project3.4 1 1) ;5
+            (list lenf angle-plus-180 project3.4 1 1) ;6
+            (list lenf angle-plus-90 project3.4 1 1) ;7
+            ;(list lenf project1.2 project3.4 1 1) ;8
+            (list lenf project1.2 move-origin 1 1) ;9
             )))
       ]]>
     </rules>
@@ -1540,11 +1540,11 @@
   <vector>
     <info>
       <name>sierpiński carpet #2 (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62; fails</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62</description>
     </info>
     <parameters>
       <generations>3</generations>
-      <length>300</length>
+      <length>275</length>
       <coloring>
         <palette>
           <color>
@@ -1649,16 +1649,16 @@
         )
         (list
 	        (list 
-            (list identity project1.2 project3.4 1 1) ; seed
-            (list identity angle-plus-120 project3.4 1 1)
-            (list identity angle-minus-120 project3.4 1 1)
+            (list identity project1.2 project3.4 1 1) ;1
+            (list identity angle-plus-120 project3.4 1 1) ;2
+            (list identity angle-minus-120 project3.4 1 1) ;3
             )
           (list ; rules (generator)
-            (list len-div-2 project1.2 project3.4 1 1) ; 1
-            (list len-div-2 angle-plus-120 project3.4 1 1) ; 1
-            (list len-div-2 project1.2 project3.4 1 1) ; 1
-            (list len-div-2 angle-minus-120 project3.4 1 1)
-            (list len-div-2 project1.2 project3.4 1 1)
+            (list len-div-2 project1.2 project3.4 1 1) ;1
+            (list len-div-2 angle-plus-120 project3.4 1 1) ;2
+            (list len-div-2 project1.2 project3.4 1 1) ;3
+            (list len-div-2 angle-minus-120 project3.4 1 1) ;4
+            (list len-div-2 project1.2 project3.4 1 1) ;5
             )))
       ]]>
     </rules>
@@ -1667,11 +1667,11 @@
   <vector>
     <info>
       <name>sierpiński's gasket #2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144.  This should be fixed to not overwrite vectors.  0 vectors</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144.  This should be fixed to not overwrite vectors.</description>
     </info>
     <parameters>
       <generations>4</generations>
-      <length>325</length>
+      <length>300</length>
       <coloring>
         <palette>
           <color>
@@ -1734,19 +1734,16 @@
               )
               (cons
                 (+ (head origin) (* len (cos angle)))
-                (+ (tail origin) (* len (sin angle)))))))
-        )        
+                (+ (tail origin) (* len (sin angle))))))))        
         (list
 	        (list 
-            (list identity project1.2 project3.4 1 1) ; seed
-            (list identity angle-plus-120 project3.4 1 1)
-            (list identity angle-minus-120 project3.4 1 1))
+            (list identity project1.2 project3.4 1 1) ;1
+            (list identity angle-plus-120 project3.4 1 1) ;2
+            (list identity angle-minus-120 project3.4 1 1)) ;3
           (list ; rules (generator)
             (list len-div-2 project1.2 project3.4 1 1) ; 1
-            (list len-div-2 angle-plus-120 project3.4 1 1) ; 2            
-            ;(list len-div-2 project1.2 project3.4 1 1) ; 3
-            ;(list len-div-2 angle-minus-120 project3.4 1 1) ; 4            
-            (list len-div-2 project1.2 move 1 1) ; 5
+            (list len-div-2 angle-plus-120 project3.4 1 1) ; 2                      
+            (list len-div-2 project1.2 move 1 1) ; 3
             )))
       ]]>
     </rules>
@@ -1759,7 +1756,7 @@
     </info>
     <parameters>
       <generations>4</generations>
-      <length>325</length>
+      <length>275</length>
       <coloring>
         <palette>
           <color>
@@ -1851,9 +1848,9 @@
             (list identity angle-plus-90 project3.4 1 1)) ; 4
           (list ; rules (generator)
             (list lenf project1.2 project3.4 1 1) ; 1 
-            (list lenf angle-plus-85 project3.4 1 1)
-            (list lenf angle-minus-85 project3.4 1 1)
-            (list lenf project1.2 project3.4 1 1) ; 1 
+            (list lenf angle-plus-85 project3.4 1 1) ;2
+            (list lenf angle-minus-85 project3.4 1 1) ;3
+            (list lenf project1.2 project3.4 1 1) ;4 
             )))
       ]]>
     </rules>
@@ -2008,7 +2005,7 @@
   <vector>
     <info>
       <name>tiles</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?</description>
       <comments>implement tan in scheme</comments>
     </info>
     <parameters>
@@ -2095,12 +2092,12 @@
   <vector>
     <info>
       <name>tiles (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?</description>
       <comments>implement tan in scheme</comments>
     </info>
     <parameters>
       <generations>2</generations>
-      <length>300</length>
+      <length>275</length>
       <coloring>
         <palette>
           <color>
@@ -2130,7 +2127,7 @@
   <vector>
     <info>
       <name>tiles 2</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?</description>
       <comments>implement tan in scheme</comments>
     </info>
     <parameters>
@@ -2215,12 +2212,12 @@
   <vector>
     <info>
       <name>tiles 2 (built-in)</name>
-      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?; 0 vectors</description>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page ?</description>
       <comments>implement tan in scheme</comments>
     </info>
     <parameters>
       <generations>1</generations>
-      <length>200</length>
+      <length>175</length>
       <coloring>
         <palette>
           <color>

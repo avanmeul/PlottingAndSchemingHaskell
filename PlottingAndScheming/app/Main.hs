@@ -15,21 +15,15 @@ import Data.List
 
 to do:  
 
-create test harness to try scheme rule functions
 fix plots that are broken:  
     bee hive (0 vectors),
-    sierpinski's carpet (fails), 
-    island generator (fails) 
-    island and lakes (fails), 
-    islands #2 (fails), 
     sierpinski's gasket #2 (0 vectors), 
-    peano gosper (broken in original), 
-    peano gosper #2 (broken in original, fails in Haskell),
     tiles (0 vectors)
     tiles 2 (0 vectors)
-    sierpinski carpet #2 (fails)
+allow drawing seed (generation 0)
+define pi in scheme
+bug using car/cdr (in certain contexts)
 coloring for monkeys tree and mandelbrot doesn't match F# version
-vector button should be above plot
 package up all xml
 lambda calculus should use lambda symbol
 add text box for success/failure (or radio button)
