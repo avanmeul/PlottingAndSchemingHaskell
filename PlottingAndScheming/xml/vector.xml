@@ -1697,8 +1697,8 @@
       <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144.  This should be fixed to not overwrite vectors.  0 vectors</description>
     </info>
     <parameters>
-      <generations>5</generations>
-      <length>300</length>
+      <generations>4</generations>
+      <length>325</length>
       <coloring>
         <palette>
           <color>
@@ -1782,6 +1782,40 @@
             )))
       ]]>
     </rules>
+  </vector>
+  <!-- Sierpiński's gasket #2 -->
+  <vector>
+    <info>
+      <name>sierpiński's gasket #2 (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 144.  This should be fixed to not overwrite vectors.  0 vectors</description>
+    </info>
+    <parameters>
+      <generations>4</generations>
+      <length>325</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>1</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin" continuous="yes">sierpinskiGasket2</rules>
   </vector>  
   <!-- square spikes inverted -->
   <vector>
