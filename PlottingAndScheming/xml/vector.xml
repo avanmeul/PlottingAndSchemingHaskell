@@ -1563,6 +1563,52 @@
       ]]>
     </rules>
   </vector>
+  <!-- sierpiński carpet #2 (built-in) -->
+  <vector>
+    <info>
+      <name>sierpiński carpet #2 (built-in)</name>
+      <description>From "The Fractal Geometry of Nature" (Mandelbrot), page 62; fails</description>
+    </info>
+    <parameters>
+      <generations>3</generations>
+      <length>300</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>gray</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>orange</name>
+          </color>
+          <color>
+            <name>brown</name>
+          </color>
+          <color>
+            <name>yellow</name>
+          </color>
+          <color>
+            <name>navy</name>
+          </color>
+          <color>
+            <name>silver</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>1</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+    <rules type="builtin">sierpinskiCarpet2</rules>
+  </vector>
   <!-- Sierpiński's gasket -->
   <vector>
     <info>

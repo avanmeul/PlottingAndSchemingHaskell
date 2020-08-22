@@ -359,9 +359,9 @@ data VecAngle =
     VanScheme ScmObject 
     deriving (Show)
 
-data VecOrigin =
-    VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) |
-    VorScheme ScmObject
+data VecOrigin 
+    = VorBuiltIn (Double -> Double -> UI.Point -> Int -> UI.Point) 
+    | VorScheme ScmObject
     deriving (Show)
    
 data VecRule = VecRule 
@@ -372,6 +372,15 @@ data VecRule = VecRule
     , vrlFlipRules :: Int
     } deriving (Show)
 
+ctorVecRule :: ((Double -> Double), (Double -> Int -> Double), (Double -> Double -> UI.Point -> Int -> UI.Point), Int, Int) -> VecRule
+ctorVecRule (lenf, anglef, originf, flipa, flipr) =
+    VecRule 
+        { vrlLenf = VlnBuiltIn lenf
+        , vrlAnglef = VanBuiltIn anglef
+        , vrlOriginf = VorBuiltIn originf
+        , vrlFlipAngle = flipa
+        , vrlFlipRules = flipr }
+
 builtIns :: [ (String, ([VecRule], [VecRule]))]
 builtIns = 
     [ ("beeHive", beeHive)
@@ -380,7 +389,7 @@ builtIns =
     , ("islandsAndLakes", islandsAndLakes)
     , ("mandelbrotPeanoCurveIntervals13", mandelbrotPeanoCurveIntervals13) 
     , ("sierpinskiCarpet", sierpinskiCarpet)
-    --sierpinskiCarpet2
+    , ("sierpinskiCarpet2", sierpinskiCarpet2)
     --sierpinskiGasket2 (0 vectors)
     --tiles (0 vectors)
     --tiles2 (0 vectors)
@@ -419,13 +428,7 @@ beeHive =
                 angle' = fromIntegral flip * angle - degrees90
             in (fst origin + (len' * (cos angle')), snd origin + (len' * (sin angle')))
         initiator = 
-            [ VecRule 
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1
-                } ]
+            fmap ctorVecRule [(id, project1of2, project3of4, 1, 1)]
         generator = 
             [ VecRule --rule 1
                 { vrlLenf = VlnBuiltIn lenf
@@ -482,31 +485,11 @@ islands =
         project1of2 x y = x
         project3of4 w x y z = y
         initiator = 
-            [ VecRule --1
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn project1of2
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }
-            , VecRule --2
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn angleMinus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }
-            , VecRule --3
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn angleMinus180
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }
-            , VecRule --4
-                { vrlLenf = VlnBuiltIn id
-                , vrlAnglef = VanBuiltIn anglePlus90
-                , vrlOriginf = VorBuiltIn project3of4
-                , vrlFlipAngle = 1
-                , vrlFlipRules = 1 }                             
-            ]
+            fmap ctorVecRule 
+                [ (id, project1of2, project3of4, 1, 1) --1
+                , (id, angleMinus90, project3of4, 1, 1) --2
+                , (id, angleMinus180, project3of4, 1, 1) --3
+                , (id, anglePlus90, project3of4, 1, 1) ] --4
         generator = 
             [ VecRule --rule 1
                 { vrlLenf = VlnBuiltIn lenDiv8
@@ -1251,6 +1234,40 @@ sierpinskiCarpet =
             ]
     in
         (initiator, generator)
+
+sierpinskiCarpet2 :: ([VecRule], [VecRule])
+sierpinskiCarpet2 = 
+    let project1of2 x y = x
+        project3of4 w x y z = y
+        lenDiv3 :: Double -> Double
+        lenDiv3 len = len / 3.0
+        piOver2 = pi / 2.0
+        degrees90 = piOver2
+        degrees180 = pi
+        anglePlus90 :: Double -> Int -> Double
+        anglePlus90 angle flip = angle + (fromIntegral flip * degrees90)
+        angleMinus90 :: Double -> Int -> Double
+        angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
+        anglePlus180 :: Double -> Int -> Double
+        anglePlus180 angle flip = angle + (fromIntegral flip * degrees180)
+        moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
+        moveOrigin len angle origin flip =
+            let len' = lenDiv3 len
+            in (fst origin + (len' * (cos angle)), snd origin + (len' * (sin angle)))           
+        initiator = 
+            fmap ctorVecRule 
+                [ (id, project1of2, project3of4, 1, 1) ] --1
+        generator = 
+            fmap ctorVecRule 
+                [ (lenDiv3, project1of2, project3of4, 1, 1) -- 1 
+                , (lenDiv3, anglePlus90, project3of4, 1, 1) --2
+                , (lenDiv3, project1of2, project3of4, 1, 1) --3
+                , (lenDiv3, angleMinus90, project3of4, 1, 1) --4
+                , (lenDiv3, angleMinus90, project3of4, 1, 1) --5
+                , (lenDiv3, anglePlus180, project3of4, 1, 1) --6
+                , (lenDiv3, anglePlus90, project3of4, 1, 1) --7
+                , (lenDiv3, project1of2, moveOrigin, 1, 1) ] --8
+    in (initiator, generator)            
 
 vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
 vectorEndPoint vec len angle =
