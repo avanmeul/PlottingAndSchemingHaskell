@@ -72,8 +72,8 @@
               (angle (+ (* flip angle) 90-degrees))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (move-origin-minus-30
           (lambda (len angle origin flip)
             (let (
@@ -81,8 +81,8 @@
               (angle (- (* flip angle) 30-degrees))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))               
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))               
         )
         (list
 	        (list ; seed (initiator)
@@ -389,9 +389,9 @@
               (len (/ len 8))
               (angle (+ (* flip angle) pi-over-2))
               )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+              (cons 
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (revert-origin
           (lambda (len angle origin flip)
             (let (
@@ -399,17 +399,17 @@
               (angle (- (* flip angle) pi-over-2))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (origin-scale-by-3
           (lambda (len angle origin flip)
             (let (
               (angle (* flip angle))
               (new-len (* 3 (/ len 3)))
               )
-              (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
+              (cons 
+                (+ (head origin) (* new-len (cos angle)))
+                (+ (tail origin) (* new-len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -529,8 +529,8 @@
               (angle (+ (* flip angle) pi-over-2))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (revert-origin
           (lambda (len angle origin flip)
             (let (
@@ -538,8 +538,8 @@
               (angle (- (* flip angle) pi-over-2))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -661,8 +661,8 @@
               (angle (+ (* flip angle) pi-over-2))
               )
               (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
+                (+ (head origin) (* new-len (cos angle)))
+                (+ (tail origin) (* new-len (sin angle)))))))
         (revert-origin
           (lambda (len angle origin flip)
             (let (
@@ -670,8 +670,8 @@
               (angle (- (* flip angle) pi-over-2))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -845,33 +845,6 @@
           (lambda (angle flip) (- angle (* flip 90-degrees))))
         (angle-minus-180
           (lambda (angle flip) (- angle (* flip pi))))
-        (move-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (+ (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (revert-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (- (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (origin-scale-by-3
-          (lambda (len angle origin flip)
-            (let (
-              (angle (* flip angle))
-              (new-len (* 3 (/ len 3)))
-              )
-              (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -1397,8 +1370,8 @@
               (angle (+ (* flip angle) pi-over-2 pi-over-4))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (revert-origin
           (lambda (len angle origin flip)
             (let (
@@ -1406,8 +1379,8 @@
               (angle (- (* flip angle) pi-over-2 pi-over-4))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (origin-scale-by-3
           (lambda (len angle origin flip)
             (let (
@@ -1415,8 +1388,8 @@
               (new-len (* 3 (/ len 3)))
               )
               (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
+                (+ (head origin) (* new-len (cos angle)))
+                (+ (tail origin) (* new-len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -1539,8 +1512,8 @@
               ;(angle (+ (* flip angle) pi-over-2 pi-over-4))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))          
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))          
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -1734,8 +1707,6 @@
           (lambda (op) 
             (lambda (angle flip) 
               (op angle (* flip 120-degrees)))))
-        ;(angle-plus-120 (120-degree-f +))
-        ;(angle-minus-120 (120-degree-f -))
         (angle-plus-120 
           (lambda (angle flip)
             (+ angle (* flip 120-degrees))))
@@ -1762,22 +1733,19 @@
               (angle (- (* flip angle) 60-degrees))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        )
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
+        )        
         (list
 	        (list 
             (list identity project1.2 project3.4 1 1) ; seed
             (list identity angle-plus-120 project3.4 1 1)
-            (list identity angle-minus-120 project3.4 1 1)
-            )
+            (list identity angle-minus-120 project3.4 1 1))
           (list ; rules (generator)
             (list len-div-2 project1.2 project3.4 1 1) ; 1
-            (list len-div-2 angle-plus-120 project3.4 1 1) ; 2
-            
+            (list len-div-2 angle-plus-120 project3.4 1 1) ; 2            
             ;(list len-div-2 project1.2 project3.4 1 1) ; 3
-            ;(list len-div-2 angle-minus-120 project3.4 1 1) ; 4
-            
+            ;(list len-div-2 angle-minus-120 project3.4 1 1) ; 4            
             (list len-div-2 project1.2 move 1 1) ; 5
             )))
       ]]>
@@ -1871,33 +1839,6 @@
           (lambda (angle flip) (- angle (* flip 90-degrees))))
         (angle-minus-180
           (lambda (angle flip) (- angle (* flip pi))))
-        (move-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (+ (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (revert-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (- (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (origin-scale-by-3
-          (lambda (len angle origin flip)
-            (let (
-              (angle (* flip angle))
-              (new-len (* 3 (/ len 3)))
-              )
-              (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -1978,33 +1919,6 @@
           (lambda (angle flip) (- angle (* flip 90-degrees))))
         (angle-minus-180
           (lambda (angle flip) (- angle (* flip pi))))
-        (move-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (+ (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (revert-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (- (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (origin-scale-by-3
-          (lambda (len angle origin flip)
-            (let (
-              (angle (* flip angle))
-              (new-len (* 3 (/ len 3)))
-              )
-              (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -2025,6 +1939,71 @@
       ]]>
     </rules>
   </vector>
+<!-- test -->
+	<vector>
+    <info>
+			<name>test</name>
+			<description>From Winston's c curve.</description></info>
+    <parameters>
+      <generations>1</generations>
+      <length>225</length>
+      <coloring>
+        <palette>
+          <color>
+            <name>blue</name>
+          </color>
+          <color>
+            <name>maroon</name>
+          </color>
+          <color>
+            <name>gold</name>
+          </color>
+          <color>
+            <name>gray</name>
+          </color>
+        </palette>
+        <algorithm type="level">
+          <level>1</level>
+        </algorithm>
+      </coloring>
+    </parameters>
+		<rules type="lisp">
+ 	<![CDATA[
+  (let* (
+    (pi 3.141592653589793)
+    (pi-over-2 (/ pi 2))
+    (90-degrees pi-over-2)
+    (pi-over-4 (/ pi 4.0))
+    (cos-30 (cos 30))
+    (sqrt-of-2 (sqrt 2.0))
+    (identity (lambda (x) x))
+    (project1.2 (lambda (x y) x))
+    (project3.4 (lambda (w x y z) y))
+    (len-div-sqrt-of-2 (lambda (len) (/ len sqrt-of-2)))
+    (angle-plus-pi (lambda (angle flip) (+ angle (* flip pi))))
+    (left-elbow (lambda (angle flip) (+ angle (* flip pi-over-4))))
+    (right-elbow (lambda (angle flip) (- angle (* flip pi-over-4))))
+    (30-degrees (/ pi 6))
+    (cos-30 (cos 30-degrees))
+    (move-origin
+      (lambda (len angle origin flip)
+        (let (
+          (len (/ len 2 cos-30))
+          (angle (+ (* flip angle) 90-degrees))
+          )
+          (cons
+            (+ (head origin) (* len (cos angle)))
+            (+ (tail origin) (* len (sin angle)))))))
+    )
+    (list
+      (list ; seed (initiator)
+        (list identity project1.2 move-origin 1 -1) ; 1
+        ;(list identity angle-plus-pi project3.4 1 -1) ; 2
+        )
+      (list ; rules (generator)
+        (list len-div-sqrt-of-2 left-elbow project3.4 1 1) ; 1
+        (list len-div-sqrt-of-2 right-elbow project3.4 1 -1)))) ; 2
+  ]]></rules></vector>
   <!-- tiles -->
   <vector>
     <info>
@@ -2080,7 +2059,6 @@
           (lambda (angle flip) (- angle (* flip 90-degrees))))
         (angle-plus-180
           (lambda (angle flip) (+ angle (* flip pi))))
-        (two-thirds (/ 2 3))
         (move
           (lambda (len angle origin flip)
             (let (
@@ -2088,26 +2066,8 @@
               (len (/ len 3))
               )
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (revert-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (- (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (origin-scale-by-3
-          (lambda (len angle origin flip)
-            (let (
-              (angle (* flip angle))
-              (new-len (* 3 (/ len 3)))
-              )
-              (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))          
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))
@@ -2121,15 +2081,12 @@
             )
           (list ; rules (generator)
             (list lenf project1.2 move 1 1) ; 1 
-            (list lenf project1.2 project3.4 1 1) ; 1 
-            (list lenf angle-minus-90 project3.4 1 1) ; 1
-            (list lenf project1.2 project3.4 1 1) ; 1 
-            (list lenf angle-minus-90 project3.4 1 1) ; 1
-            
-            (list lenf angle-plus-180 project3.4 1 1)
-            
-             (list lenf angle-plus-180 project3.4 1 1)
-                                  
+            (list lenf project1.2 project3.4 1 1) ; 2 
+            (list lenf angle-minus-90 project3.4 1 1) ; 3
+            (list lenf project1.2 project3.4 1 1) ; 4
+            (list lenf angle-minus-90 project3.4 1 1) ; 5            
+            (list lenf angle-plus-180 project3.4 1 1) ;6         
+            (list lenf angle-plus-180 project3.4 1 1) ;7
             )))
       ]]>
     </rules>
@@ -2224,32 +2181,13 @@
           (lambda (angle flip) (- angle (* flip 90-degrees))))
         (angle-plus-180
           (lambda (angle flip) (+ angle (* flip pi))))
-        (two-thirds (/ 2 3))
         (move
           (lambda (len angle origin flip)
             (let (
               (len (/ len 3)))
               (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (revert-origin
-          (lambda (len angle origin flip)
-            (let (
-              (len (* 2 (/ len 3) sqrt-2))
-              (angle (- (* flip angle) pi-over-2 pi-over-4))
-              )
-              (cons
-                (+ (car origin) (* len (cos angle)))
-                (+ (cdr origin) (* len (sin angle)))))))
-        (origin-scale-by-3
-          (lambda (len angle origin flip)
-            (let (
-              (angle (* flip angle))
-              (new-len (* 3 (/ len 3)))
-              )
-              (cons
-                (+ (car origin) (* new-len (cos angle)))
-                (+ (cdr origin) (* new-len (sin angle)))))))
+                (+ (head origin) (* len (cos angle)))
+                (+ (tail origin) (* len (sin angle)))))))
         (identity (lambda (x) x))
         (project1.2 (lambda (x y) x))
         (project3.4 (lambda (w x y z) y))

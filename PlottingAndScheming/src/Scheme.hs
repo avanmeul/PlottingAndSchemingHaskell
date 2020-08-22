@@ -1331,8 +1331,8 @@ toScheme :: ScmInterop -> ScmObject
 toScheme (SopInt i) = ObjImmediate $ ImmInt i
 toScheme (SopDouble d) = ObjImmediate $ ImmFloat d
 toScheme (SopTuple (x, y)) = 
-    let tup = listToCons [ObjImmediate $ ImmFloat x, ObjImmediate $ ImmFloat y]
-    in listToCons [ObjSymbol "quote", tup]
+    let tup = ObjCons $ ScmCons { scmCar = ObjImmediate $ ImmFloat x, scmCdr = ObjImmediate $ ImmFloat y }        
+    in listToCons [ObjSymbol "quote", tup] --to do:  does this need to be added?
 
 scmScalarToDouble :: ScmObject -> Maybe Double
 scmScalarToDouble (ObjImmediate (ImmInt x)) = Just $ fromIntegral x
@@ -1342,23 +1342,12 @@ scmScalarToDouble _ = Nothing
 fmScheme :: ScmObject -> Maybe ScmInterop
 fmScheme (ObjImmediate (ImmInt i)) = Just $ SopInt i
 fmScheme (ObjImmediate (ImmFloat f)) = Just $ SopDouble f
-fmScheme x@(ObjCons _) =
-    case (cnsToList x) of
-        Just lst -> 
-            case (catMaybes $ fmap scmScalarToDouble lst) of
-                (p1 : p2 : []) -> Just $ SopTuple (p1, p2)
-                otherwise -> error "couldn't convert from Scheme to tuple"
-        Nothing -> error "couldn't convert from Scheme to tuple"
+fmScheme (ObjCons (ScmCons { scmCar = x, scmCdr = y })) =
+    case (scmScalarToDouble x, scmScalarToDouble y) of
+        (Just h, Just t) -> Just $ SopTuple (h, t)
+        (Nothing, Nothing) -> Nothing 
 fmScheme x = Nothing
 
-scmGetDouble :: ScmObject -> Double
-scmGetDouble = undefined
-
-scmGetInt :: ScmObject -> Int
-scmGetInt = undefined
-
-scmGetPoint :: ScmObject -> (Double, Double)
-scmGetPoint = undefined
 {-
 need test for unterminated string
 need to create function for paren checking using fold and returns a tuple (current, highest, lefts, rights, errorMaybe); maybe already done a different way

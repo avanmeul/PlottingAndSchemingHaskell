@@ -1119,7 +1119,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                 originf = scmApply o [scmLen, scmAngle, scmNewOrigin, scmFlipFactor]
                                 scmRights = catMaybes $ fmap fmScheme $ rights [lenf, anglef, originf]
                                 scmLefts = concat $ lefts [lenf, anglef, originf]
-                            in 
+                            in
                                 if not $ null scmLefts then
                                     Left scmLefts --to do:  add another error for across, cons in
                                 else

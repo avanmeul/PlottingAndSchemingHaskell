@@ -105,9 +105,8 @@ main = do
     -- putStrLn $ show vecs
     startGUI defaultConfig $ setup names
 
-
 canvasSize :: Int
-canvasSize = 100
+canvasSize = 50
 
 --to do:  use explicit recursion to go through the tabs only once, setting the one of interest, and resetting the ones not of interest
 
