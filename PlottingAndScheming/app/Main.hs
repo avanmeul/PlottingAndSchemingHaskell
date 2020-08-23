@@ -300,6 +300,12 @@ setup plots window = do
     on UI.click btnClearInput $ const $ do
         UI.element txtInput # set value ""
 
+    on UI.click cbxVector $ const $ do
+        index <- get UI.selection cbxVector
+        let plotObj = fetchVectorPlot plots index
+        UI.element txtVector # set UI.text (show plotObj)
+        UI.element txtVectorTranscript # set UI.text ("index:  " ++ (show $ maybe (-1) id index))
+
     on UI.click btnVecPlot $ const $ do
         index <- get UI.selection cbxVector
         let ((vecs, (width, height)), msg) = getVectors plots index
@@ -307,7 +313,7 @@ setup plots window = do
         UI.element canVec # set UI.height (maybe 200 id height)
         canVec # drawVecs vecs
         UI.element txtVectorTranscript # set UI.text msg
-        return canVec
+        return canVec        
 
     on UI.click cbxComplex $ const $ do
         -- index <- get UI.selection cbxVector

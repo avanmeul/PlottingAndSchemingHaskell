@@ -39,41 +39,61 @@ data XmlComplex = XmlObj
 
 -- //the goal of this module is to do complex plane fractals in an OOP style
 
+--I don't think the below is used; it looks like it was a coding experiment
+
 -- type 'a options =
 --     | Empty 
 --     | Contents of 'a
 --     | Error of string
 
-foo :: Complex Integer
-foo = 3 :+ 4
-
-data IteratedSet
-    = Mandelbrot (Maybe (Complex Double))
-    | Julia (Complex Double)
-    | NewtonBOF Double
-    
-    -- type iteratedSet = 
+-- type iteratedSet = 
 --     | Mandelbrot of complex Option
 --     | Julia of complex
 --     | NewtonBOF of float
+
+data IteratedSet
+    = ItsMandelbrot (Maybe (Complex Double))
+    | ItsJulia (Complex Double)
+    | ItsNewtonBOF Double
+    deriving (Show)
 
 -- type fateOrbitNumbering = 
 --     | Down
 --     | Up
 
+data FateOrbitNumbering
+    = FonUp
+    | FonDown
+    deriving (Show)
+
 -- type iteratedFateAlgorithm =
 --     | Remainder 
 --     | Quotient
 
+data IteratedFateAlgorithm
+    = IfaRemainder
+    | IfaQuotient
+    deriving (Show)
+
 -- type orbitPattern =
 --     | Fixpoint
 --     | Oscillate
+
+data OrbitPattern
+    = ObpFixpoint
+    | ObpOscillate
+    deriving (Show)
 
 -- //equations
 
 -- type newtonEquationBOF =
 --     {   f : (complex -> complex);
 --         f' : (complex -> complex); }
+
+data NewtonEquationBoF = NewtonEquationBoF
+    { nebf :: Complex Double -> Complex Double 
+    , nebf' :: Complex Double -> Complex Double }
+    -- deriving (Show) --to do:  research error that disallows show
 
 -- type newtonEquation =
 --     {   f : (complex -> complex -> complex); 

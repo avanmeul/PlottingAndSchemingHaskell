@@ -22,11 +22,17 @@ import Data.Either
 Copyright (c) 2020, 2015, 2009, 2008, 2007, 2007 by André Marc van Meulebrouck.  All rights reserved worldwide.
 
 File:  Vector.hs.
+2020-08-21:  all fractals working, went surfing the next day
 2020-08-19:  some lisp fractals working
 2020-08-15:  builtin fractal working
 -}
 
---to do:  line record:  thickness = 2, color, p1, p2
+{-
+to do:
+    -> materialize seed, rule indexes as attributes in Vector data structure for post processing coloring
+    seed would be passed as a parameter so any depth of recursion can know what seed it came from
+    -> line record:  thickness = 2, color, p1, p2
+-}
 
 data Vector = Vector 
     { vecP1 :: UI.Point
