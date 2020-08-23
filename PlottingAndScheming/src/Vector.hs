@@ -126,7 +126,7 @@ data XmlObj = XmlObj
     , xobLength :: Double
     , xobRules :: String
     , xobBuiltIn :: Bool
-    , xobContinuous :: Bool --to do
+    , xobContinuous :: Bool
     , xobColors :: [Color]
     , xobAlgorithm :: ColoringAlgorithm
     } deriving (Eq, Show)

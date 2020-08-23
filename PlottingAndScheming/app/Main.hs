@@ -176,7 +176,24 @@ setup plots window = do
             , [row [UI.element txtVectorTranscript]]
             ]
         ]
-    divComplex <- UI.div
+    --complex
+    cbxComplex <- UI.select 
+    txtComplex <- UI.textarea #. "send-textarea"
+    btnComplexPlot <- UI.button #+ [string "plot complex"]
+    canComplex <- UI.canvas
+        # set UI.height canvasSize
+        # set UI.width  canvasSize  
+    txtComplexTranscript <- UI.textarea #. "send-textarea"          
+    divComplex <- UI.div #+
+        [grid 
+            [ [row [UI.element cbxComplex]]
+            , [row [UI.element txtComplex]]
+            , [row [UI.element btnComplexPlot]]
+            , [row [UI.element canComplex]]
+            , [row [UI.element txtComplexTranscript]]
+            ]
+        ]
+    --2d
     div2d <- UI.div
     div3d <- UI.div
     divLsystem <- UI.div
@@ -292,8 +309,11 @@ setup plots window = do
         UI.element txtVectorTranscript # set UI.text msg
         return canVec
 
-    on UI.click cbxVector $ const $ do
-        index <- get UI.selection cbxVector
-        let plotObj = fetchVectorPlot plots index
-        UI.element txtVector # set UI.text plotObj
-        UI.element txtVectorTranscript # set UI.text (show index)
+    on UI.click cbxComplex $ const $ do
+        -- index <- get UI.selection cbxVector
+        -- let plotObj = fetchVectorPlot plots index
+        UI.element txtComplex # set UI.text "hello, complex plane fractals"
+        UI.element txtComplexTranscript # set UI.text "under construction"
+    
+    on UI.click btnComplexPlot $ const $ do
+        UI.element txtComplexTranscript # set UI.text "hey"

@@ -1,4 +1,19 @@
 module Complex where
+
+import Data.Complex
+
+data XmlComplex = XmlObj
+    { xcmName :: String
+    , xcmDesc :: String
+    -- , xcmIterator :: String --to do:  sum type for iterator types
+    -- , xobGenerations :: Int
+    -- , xobLength :: Double
+    -- , xobRules :: String
+    -- , xobBuiltIn :: Bool
+    -- , xobContinuous :: Bool
+    -- , xobColors :: [Color]
+    -- , xobAlgorithm :: ColoringAlgorithm
+    } deriving (Eq, Show)
     
 -- (* Copyright (c) 2009, 2008, 2007, 2006 by André van Meulebrouck.  All rights reserved worldwide. *)
 
@@ -29,7 +44,15 @@ module Complex where
 --     | Contents of 'a
 --     | Error of string
 
--- type iteratedSet = 
+foo :: Complex Integer
+foo = 3 :+ 4
+
+data IteratedSet
+    = Mandelbrot (Maybe (Complex Double))
+    | Julia (Complex Double)
+    | NewtonBOF Double
+    
+    -- type iteratedSet = 
 --     | Mandelbrot of complex Option
 --     | Julia of complex
 --     | NewtonBOF of float
