@@ -32,6 +32,7 @@ to do:
     -> materialize seed, rule indexes as attributes in Vector data structure for post processing coloring
     seed would be passed as a parameter so any depth of recursion can know what seed it came from
     -> line record:  thickness = 2, color, p1, p2
+    -> pass only index of colorizer?
 -}
 
 data Vector = Vector 

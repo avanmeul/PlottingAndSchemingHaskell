@@ -6,6 +6,7 @@ module Main where
 
 import Scheme
 import Vector
+import Complex
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -73,6 +74,8 @@ getVectors plots i =
 main :: IO ()
 main = do
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
+    complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
+    
     -- index <- Just 8 --get UI.selection cbxVector
     -- let plotObj = fetchVectorXmlObj names $ Just 8
     --     vecs = 
@@ -97,7 +100,7 @@ main = do
     -- putStrLn $ show $ names !! 11
     -- let vecs = debugPlot names 8 --8 is bee hive built-in
     -- putStrLn $ show vecs
-    startGUI defaultConfig $ setup names
+    startGUI defaultConfig $ setup (names, complexPlots)
 
 canvasSize :: Int
 canvasSize = 50
@@ -129,8 +132,17 @@ fetchVectorXmlObj plots i =
 
 fetchVectorPlot :: [XmlObj] -> Maybe Int -> String
 fetchVectorPlot plots i = maybe "" show $ fetchVectorXmlObj plots i
+
+fetchVectorXmlComplex :: [XmlComplex] -> Maybe Int -> Maybe XmlComplex
+fetchVectorXmlComplex plots i = 
+    case i of
+        Just x -> Just $ plots !! x
+        otherwise -> Nothing
+
+fetchComplexPlot :: [XmlComplex] -> Maybe Int -> String
+fetchComplexPlot plots i = maybe "" show $ fetchVectorXmlComplex plots i
  
-setup :: [XmlObj] -> Window -> UI ()
+setup :: ([XmlObj], [XmlComplex]) -> Window -> UI ()
 setup plots window = do
     return window # set title "Plotting and Scheming in Haskell"
     txtInput  <- UI.textarea #. "send-textarea"
@@ -156,7 +168,7 @@ setup plots window = do
     btnCombinator <- UI.button #+ [string "combinator"]
     btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
-    cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) plots --["one", "two", "three"]
+    cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) (fst plots) --["one", "two", "three"]
     canVec <- UI.canvas
         # set UI.height canvasSize
         # set UI.width  canvasSize
@@ -177,7 +189,7 @@ setup plots window = do
             ]
         ]
     --complex
-    cbxComplex <- UI.select 
+    cbxComplex <-  UI.select #+ map (\XmlComplex { xcmName = i } -> UI.option #+ [string i]) (snd plots) --["one", "two", "three"]
     txtComplex <- UI.textarea #. "send-textarea"
     btnComplexPlot <- UI.button #+ [string "plot complex"]
     canComplex <- UI.canvas
@@ -302,13 +314,13 @@ setup plots window = do
 
     on UI.click cbxVector $ const $ do
         index <- get UI.selection cbxVector
-        let plotObj = fetchVectorPlot plots index
+        let plotObj = fetchVectorPlot (fst plots) index
         UI.element txtVector # set UI.text (show plotObj)
         UI.element txtVectorTranscript # set UI.text ("index:  " ++ (show $ maybe (-1) id index))
 
     on UI.click btnVecPlot $ const $ do
         index <- get UI.selection cbxVector
-        let ((vecs, (width, height)), msg) = getVectors plots index
+        let ((vecs, (width, height)), msg) = getVectors (fst plots) index
         UI.element canVec # set UI.width (maybe 200 id width)
         UI.element canVec # set UI.height (maybe 200 id height)
         canVec # drawVecs vecs
@@ -316,9 +328,9 @@ setup plots window = do
         return canVec        
 
     on UI.click cbxComplex $ const $ do
-        -- index <- get UI.selection cbxVector
-        -- let plotObj = fetchVectorPlot plots index
-        UI.element txtComplex # set UI.text "hello, complex plane fractals"
+        index <- get UI.selection cbxComplex
+        let plotObj = fetchComplexPlot (snd plots) index
+        UI.element txtComplex # set UI.text (show plotObj)
         UI.element txtComplexTranscript # set UI.text "under construction"
     
     on UI.click btnComplexPlot $ const $ do

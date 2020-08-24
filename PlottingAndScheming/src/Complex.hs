@@ -1,8 +1,17 @@
 module Complex where
 
 import Data.Complex
+import Text.XML
+import Prelude hiding (readFile, writeFile)
+import Text.XML as X
+import Text.XML.Cursor as C
+import qualified Data.Text as T
+import Text.Read
+import Data.List
+import Data.Maybe
+import Data.Either
 
-data XmlComplex = XmlObj
+data XmlComplex = XmlComplex
     { xcmName :: String
     , xcmDesc :: String
     -- , xcmIterator :: String --to do:  sum type for iterator types
@@ -108,6 +117,82 @@ data NewtonEquationBoF = NewtonEquationBoF
 -- type equation = {
 --     name : string;
 --     equation : complexEquation; }
+
+ctorXmlComplex :: [Cursor] -> XmlComplex
+ctorXmlComplex el =
+    let 
+        info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+        desc = Name { nameLocalName = T.pack "description", nameNamespace = Nothing, namePrefix = Nothing }
+--         params = Name { nameLocalName = T.pack "parameters", nameNamespace = Nothing, namePrefix = Nothing }
+--         rules = Name { nameLocalName = T.pack "rules", nameNamespace = Nothing, namePrefix = Nothing }
+--         gen = Name { nameLocalName = T.pack "generations", nameNamespace = Nothing, namePrefix = Nothing }
+--         len = Name { nameLocalName = T.pack "length", nameNamespace = Nothing, namePrefix = Nothing }
+--         coloring = Name { nameLocalName = T.pack "coloring", nameNamespace = Nothing, namePrefix = Nothing }
+--         typeAtt = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
+--         palette = Name { nameLocalName = T.pack "palette", nameNamespace = Nothing, namePrefix = Nothing }
+--         color = Name { nameLocalName = T.pack "color", nameNamespace = Nothing, namePrefix = Nothing }
+--         algorithm = Name { nameLocalName = T.pack "algorithm", nameNamespace = Nothing, namePrefix = Nothing }
+--         continuous = Name { nameLocalName = T.pack "continuous", nameNamespace = Nothing, namePrefix = Nothing }
+        complex1desc = el >>= descendant
+        info1 = complex1desc >>= C.element info >>= child
+        name1 = info1 >>= C.element nm >>= child >>= content
+        fractalName = if null name1 then "" else head $ map T.unpack name1
+        desc1 = info1 >>= C.element desc >>= child >>= content
+        description = if null desc1 then "" else head $ map T.unpack desc1
+--         params1 = vec1desc >>= C.element params >>= child
+--         rules1 = vec1desc >>= C.element rules
+--         rulesType1 = rules1 >>= C.attribute typeAtt
+--         rules1Continuous = rules1 >>= C.attribute continuous
+--         rulesContent1 = rules1 >>= child >>= content
+--         rulesValue = if null rulesContent1 then "" else head $ map T.unpack rulesContent1
+--         gen1 = params1 >>= C.element gen >>= child >>= content
+--         genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
+--         generations = maybe 1 id genMaybe
+--         len1 = params1 >>= C.element len >>= child >>= content
+--         lenMaybe = readMaybe (head $ map T.unpack len1) :: Maybe Double
+--         length = maybe 1.0 id lenMaybe
+--         coloring1 = params1 >>= C.element coloring >>= child
+--         palette1 = coloring1 >>= C.element palette >>= child
+--         color1 = palette1 >>= C.element color >>= child
+--         colorName1 = color1 >>= C.element nm >>= child >>= content
+--         algorithm1 = coloring1 >>= C.element algorithm
+--         algType = algorithm1 >>= C.attribute typeAtt
+--         algUnpacked = map T.unpack algType
+--         alg = if null algUnpacked then "level" else head algUnpacked
+--         cont = 
+--             if null rules1Continuous then
+--                 True
+--             else
+--                 "yes" == (head $ map T.unpack rules1Continuous)
+--         builtin =
+--             if null rulesType1 then 
+--                 True
+--             else 
+--                 "builtin" == (head $ map T.unpack rulesType1)
+--         colorAlg = ctorColoringAlgorithm alg algorithm1
+    in
+        XmlComplex
+            { xcmName = fractalName
+            , xcmDesc = description
+            -- , xobGenerations = generations
+            -- , xobLength = length
+            -- , xobRules = rulesValue
+            -- , xobBuiltIn = builtin
+            -- , xobColors = map T.unpack colorName1
+            -- , xobAlgorithm = maybe (CalLevel 1) id colorAlg
+            -- , xobContinuous = cont
+            }
+
+parseXmlComplex :: String -> IO [XmlComplex]
+parseXmlComplex fname = do
+    doc <- readFile def fname
+    let cursor = fromDocument doc
+        complex = Name { nameLocalName = T.pack "complex", nameNamespace = Nothing, namePrefix = Nothing }
+        vecs = child cursor >>= C.element complex
+        plotObjects = map (\x -> ctorXmlComplex [x]) vecs
+        po1 = head plotObjects 
+    return plotObjects
 
 -- let complexOne = complex 1.0 0.0
 -- let complexTwo = complex 2.0 0.0
