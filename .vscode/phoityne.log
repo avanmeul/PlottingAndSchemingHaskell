@@ -43,3 +43,8 @@
 2020-08-20 14:07:11.954159200000 [$pid(ThreadId 4)] WARNING REQUEST - unsupported request command. {"command":"stepOut","arguments":{"threadId":0},"type":"request","seq":37}
 2020-08-20 14:07:16.968798700000 [$pid(ThreadId 5)] ERROR APP - user error (ExecResult not found.)
 2020-08-20 14:09:04.911783200000 [$pid(ThreadId 5)] ERROR APP - user error (loaded module can not find from path. <e:\data\computer\software\programming\haskell\PlottingAndScheming\PlottingAndScheming\src\vector.hs> [("Main","E:/data/computer/software/programming/haskell/PlottingAndScheming/PlottingAndScheming/app/Main.hs"),("Scheme","E:\\data\\computer\\software\\programming\\haskell\\PlottingAndScheming\\PlottingAndScheming\\src\\Scheme.hs"),("Vector","E:\\data\\computer\\software\\programming\\haskell\\PlottingAndScheming\\PlottingAndScheming\\src\\Vector.hs")])
+2020-08-24 13:29:15.739973900000 [$pid(ThreadId 5)] ERROR APP - user error (loaded module can not find from path. <e:\data\computer\software\programming\haskell\PlottingAndScheming\PlottingAndScheming\app\Main.hs> [])
+2020-08-24 13:29:15.785851900000 [$pid(ThreadId 5)] ERROR APP - user error (loaded module can not find from path. <e:\data\computer\software\programming\haskell\PlottingAndScheming\PlottingAndScheming\src\vector.hs> [])
+2020-08-24 13:29:15.815770700000 [$pid(ThreadId 5)] ERROR APP - start debugging failed. user error (ExecResult not found.) : Left "user error (ExecResult not found.)"
+2020-08-25 03:00:15.781038700000 [$pid(ThreadId 4)] CRITICAL REQUEST - invalid HANDLE. eof.
+2020-08-25 03:00:16.783924400000 [$pid(ThreadId 8)] CRITICAL THREAD_MGR - Critical exit started.

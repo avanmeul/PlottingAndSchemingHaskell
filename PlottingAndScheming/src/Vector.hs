@@ -33,6 +33,7 @@ to do:
     seed would be passed as a parameter so any depth of recursion can know what seed it came from
     -> line record:  thickness = 2, color, p1, p2
     -> pass only index of colorizer?
+    -> instead of incrementing the palette; reverse it (as a way to get a second palette?)
 -}
 
 data Vector = Vector 

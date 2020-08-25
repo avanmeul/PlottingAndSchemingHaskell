@@ -108,11 +108,23 @@ data NewtonEquationBoF = NewtonEquationBoF
 --     {   f : (complex -> complex -> complex); 
 --         f' : (complex -> complex -> complex); }
 
+data NewtonEquation = NewtonEquation
+    { neqf :: Complex Double -> Complex Double -> Complex Double 
+    , neqf' :: Complex Double -> Complex Double -> Complex Double }
+    -- deriving (Show)
+
 -- type complexEquation = 
 --     | Generic of (complex -> complex -> complex)
 --     | Phoenix of (complex -> complex -> complex -> complex)
 --     | NewtonBOF of newtonEquationBOF
 --     | Newton of newtonEquation
+
+data ComplexEquation 
+    = CeqGeneric (Complex Double -> Complex Double -> Complex Double)
+    | CeqPhoenix (Complex Double -> Complex Double -> Complex Double -> Complex Double) 
+    | CeqNewtonBoF NewtonEquationBoF
+    | CeqNewton NewtonEquation
+    -- deriving (Show)
 
 -- type equation = {
 --     name : string;
@@ -195,10 +207,29 @@ parseXmlComplex fname = do
     return plotObjects
 
 -- let complexOne = complex 1.0 0.0
+
+complexOne :: Complex Double
+complexOne = 1.0 :+ 0.0
+
 -- let complexTwo = complex 2.0 0.0
+
+complexTwo :: Complex Double
+complexTwo = 2.0 :+ 0.0
+
 -- let complexThree = complex 3.0 0.0
+
+complexThree :: Complex Double
+complexThree = 0.0 :+ 1.0
+
 -- let complexI = complex 0.0 1.0
+
+complexI :: Complex Double
+complexI = 0.0 :+ 1.0
+
 -- let complexZero = complex 0.0 0.0
+
+complexZero :: Complex Double
+complexZero = 0.0 :+ 0.0
 
 -- let (equations : equation list) = [
 --     {   name = "mandelbrot"; 
@@ -316,6 +347,40 @@ parseXmlComplex fname = do
 --                     (fun c z -> 7.0 * (pown z 6)); }; }; 
 --     ]
 
+equations :: [(String, ComplexEquation)]
+equations = 
+    [ ("mandelbrot", CeqGeneric (\c z -> (z :: Complex Double)**2 + (c :: Complex Double)))
+    , ("San Marco dragon", CeqGeneric (\ c z -> c * (complexOne - z)**2))
+    , ("z cubed", CeqGeneric (\c z -> z**3 + c))
+    , ("cos", CeqGeneric (\c z -> cos z + c))
+    , ("phoenix", CeqPhoenix (\c z p -> z * z + ((realPart c) :+ 0.0) + ((0.0 :+ imagPart c) * p)))
+    , ("potts-spins model i", CeqGeneric (\c z -> (((z * z) + c - complexOne) / (2.0 * z + c - complexTwo))**2))
+    , ("potts-spins model ii", CeqGeneric 
+        (\c z -> 
+            let cmpCminus1 = c - complexOne
+                cmpCminus2 = c - complexTwo
+                cmpCminus1timesCminus2 = cmpCminus1 * cmpCminus2
+                cmpCsqMinus3cPlus3 = c * c - (complexThree * c) + complexThree
+                cmpZsq = z * z
+                newZ = 
+                    ((cmpZsq * z) + 
+                        (complexThree * cmpCminus1 * z) + cmpCminus1timesCminus2) /
+                    (complexThree * cmpZsq + 
+                        (complexThree * cmpCminus2 * z) + cmpCsqMinus3cPlus3)
+            in newZ * newZ))
+    , ("critter", CeqNewtonBoF
+            (NewtonEquationBoF 
+                { nebf = (\z -> (z - complexOne) * (z * z + z + (0.5 :+ 0.0)))
+                , nebf' = (\z -> ((z - complexOne) * ((complexTwo * z) + complexOne)) + (z * z) + z + (0.5 :+ 0.0)) } )) 
+    , ("plate 27", CeqNewton (NewtonEquation { neqf = (\c z -> z**3 - (c :: Complex Double)), neqf' = (\c z -> 3.0 * (z**2)) } ))
+    , ("plate 28", CeqNewton (NewtonEquation { neqf = (\c z -> z**3 - (2.0 * z) + c), neqf' = (\c z -> 3.0 * z**2 - complexTwo)}))
+    , ("z^3", CeqNewton (NewtonEquation { neqf = (\c z -> z**3 + c), neqf' = (\c z -> 3.0 * z**2)}))
+    , ("z^4", CeqNewton (NewtonEquation { neqf = (\c z -> z**4 + c), neqf' = (\c z -> 4.0 * z**3)}))
+    , ("z^5", CeqNewton (NewtonEquation { neqf = (\c z -> z**5 + c), neqf' = (\c z -> 5.0 * z**4)}))
+    , ("z^6", CeqNewton (NewtonEquation { neqf = (\c z -> z**6 + c), neqf' = (\c z -> 6.0 * z**5)}))
+    , ("z^7", CeqNewton (NewtonEquation { neqf = (\c z -> z**7 + c), neqf' = (\c z -> 7.0 * z**6)}))
+    ]
+
 -- let equationFind name =
 --     let rec iter lst =
 --         match lst with
@@ -326,6 +391,12 @@ parseXmlComplex fname = do
 --             else 
 --                 iter t
 --     iter equations
+
+findEquation :: [ (String, ComplexEquation) ] -> String -> Maybe ComplexEquation
+findEquation alist tgt =
+    case (find (\(c, _) -> c == tgt) alist) of
+        Just (_, e) -> Just e
+        Nothing -> Nothing
 
 -- type iteratedFateColoring = {
 --     palette : Color array;

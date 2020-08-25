@@ -143,7 +143,7 @@ fetchComplexPlot :: [XmlComplex] -> Maybe Int -> String
 fetchComplexPlot plots i = maybe "" show $ fetchVectorXmlComplex plots i
  
 setup :: ([XmlObj], [XmlComplex]) -> Window -> UI ()
-setup plots window = do
+setup (xmlVec, xmlComplex) window = do
     return window # set title "Plotting and Scheming in Haskell"
     txtInput  <- UI.textarea #. "send-textarea"
     txtOutput  <- UI.textarea #. "send-textarea"
@@ -168,7 +168,7 @@ setup plots window = do
     btnCombinator <- UI.button #+ [string "combinator"]
     btnMrcm <- UI.button #+ [string "mrcm"]
     btnScratch <- UI.button #+ [string "scratch"]
-    cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) (fst plots) --["one", "two", "three"]
+    cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) xmlVec
     canVec <- UI.canvas
         # set UI.height canvasSize
         # set UI.width  canvasSize
@@ -189,7 +189,7 @@ setup plots window = do
             ]
         ]
     --complex
-    cbxComplex <-  UI.select #+ map (\XmlComplex { xcmName = i } -> UI.option #+ [string i]) (snd plots) --["one", "two", "three"]
+    cbxComplex <-  UI.select #+ map (\XmlComplex { xcmName = i } -> UI.option #+ [string i]) xmlComplex
     txtComplex <- UI.textarea #. "send-textarea"
     btnComplexPlot <- UI.button #+ [string "plot complex"]
     canComplex <- UI.canvas
@@ -314,13 +314,13 @@ setup plots window = do
 
     on UI.click cbxVector $ const $ do
         index <- get UI.selection cbxVector
-        let plotObj = fetchVectorPlot (fst plots) index
+        let plotObj = fetchVectorPlot xmlVec index
         UI.element txtVector # set UI.text (show plotObj)
         UI.element txtVectorTranscript # set UI.text ("index:  " ++ (show $ maybe (-1) id index))
 
     on UI.click btnVecPlot $ const $ do
         index <- get UI.selection cbxVector
-        let ((vecs, (width, height)), msg) = getVectors (fst plots) index
+        let ((vecs, (width, height)), msg) = getVectors xmlVec index
         UI.element canVec # set UI.width (maybe 200 id width)
         UI.element canVec # set UI.height (maybe 200 id height)
         canVec # drawVecs vecs
@@ -329,7 +329,7 @@ setup plots window = do
 
     on UI.click cbxComplex $ const $ do
         index <- get UI.selection cbxComplex
-        let plotObj = fetchComplexPlot (snd plots) index
+        let plotObj = fetchComplexPlot xmlComplex index
         UI.element txtComplex # set UI.text (show plotObj)
         UI.element txtComplexTranscript # set UI.text "under construction"
     
