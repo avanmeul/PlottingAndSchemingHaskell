@@ -1,5 +1,5 @@
 {-
-André van Meulebrouck
+Andrï¿½ van Meulebrouck
 scheme.hs
 -}
 
@@ -17,29 +17,29 @@ import Text.Regex.Posix
 --}
 
 data TokenType =
-	LeftTok |
-	RightTok |
-	SingleTok |
-	DoubleTok |
-	WhiteTok |
-	AlphaTok |
-	IntTok |
-	DotTok |
-	DashTok 
-	deriving (Eq, Show)
+    LeftTok |
+    RightTok |
+    SingleTok |
+    DoubleTok |
+    WhiteTok |
+    AlphaTok |
+    IntTok |
+    DotTok |
+    DashTok 
+    deriving (Eq, Show)
 
 data Token =
-	LeftParen |
-	RightParen |
-	Atom String | --deprecated
-	Dot |
-	Symbol String |
-	Integer String |
-	Float String |
-	Whitespace String |
-	Str String|
-	SingleQuote 
-	deriving (Show)
+    LeftParen |
+    RightParen |
+    Atom String | --deprecated
+    Dot |
+    Symbol String |
+    Integer String |
+    Float String |
+    Whitespace String |
+    Str String|
+    SingleQuote 
+    deriving (Show)
 
 data InProcess = 
 	AtomProc |

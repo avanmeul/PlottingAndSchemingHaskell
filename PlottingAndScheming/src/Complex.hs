@@ -1,5 +1,6 @@
 module Complex where
 
+import qualified Graphics.UI.Threepenny as UI
 import Data.Complex
 import Text.XML
 import Prelude hiding (readFile, writeFile)
@@ -10,6 +11,7 @@ import Text.Read
 import Data.List
 import Data.Maybe
 import Data.Either
+-- import TwoD
 
 data XmlComplex = XmlComplex
     { xcmName :: String
@@ -417,6 +419,14 @@ findEquation alist tgt =
 --         | iteratedFateAlgorithm.Remainder -> 
 --             x.palette.[i % len]
 
+data IteratedFateColoring = IteratedFateColoring
+    { ifcPalette :: [UI.Color]
+    , ifcOrbitNumbering :: FateOrbitNumbering 
+    , ifcAlgorithm :: IteratedFateAlgorithm }
+    deriving (Show)
+
+--not sure this is needed
+
 -- let schemeParseComplex c =
 --     let pat = "([+|-]{0,1}[0-9]*[.]*[0-9]+)([+|-]{1}[0-9]*[.]*[0-9]*)[i]"
 --     if Regex.IsMatch (c, pat) then
@@ -438,6 +448,9 @@ findEquation alist tgt =
 --     else
 --         None
 
+schemeParseComplex :: String -> Maybe (Complex Double)
+schemeParseComplex c = undefined
+
 -- type iteratedSurvivor = {
 --     iterations : int; //to do:  remove this
 --     coloring : iteratedFateColoring; } with    
@@ -446,6 +459,14 @@ findEquation alist tgt =
 --             Some (x.coloring.getColor iterations iterationsMax)
 --         else
 --             None
+
+data IteratedSurvivor = IteratedSurvivor
+    { itsIterations :: Int
+    , itsColoring :: IteratedFateColoring }
+    deriving (Show)
+
+checkFate :: Int -> Int -> Maybe UI.Color
+checkFate iterations iterationsMax = undefined
 
 -- type iteratedEscapee = {
 --     threshold : double;
@@ -466,6 +487,15 @@ findEquation alist tgt =
 --         | _, false -> 
 --             None
 
+data IteratedEscapee = IteratedEscapee 
+    { iteThreshold :: Complex Double 
+    , iteColoringInfinity :: IteratedFateColoring
+    , iteBiomorph :: Maybe IteratedFateColoring }
+    deriving (Show)
+
+checkFateEscapee :: Complex Double -> Int -> Int -> Maybe UI.Color
+checkFateEscapee z iterations iterationsMax = undefined
+
 -- type iteratedFixpoint = {
 --     fixpoint : complex;
 --     epsilon : complex option;
@@ -475,7 +505,16 @@ findEquation alist tgt =
 --             Some (x.coloring.getColor iterations iterationsMax)
 --         else 
 --             None
-    
+
+data IteratedFixpoint = IteratedFixpoint 
+    { itfFixpoint :: Complex Double 
+    , itfEpsilon :: Maybe (Complex Double)
+    , itfColoring :: Maybe (Complex Double) }
+    deriving (Show)
+
+checkFateFixPoint :: Complex Double -> Int -> Int -> Maybe UI.Color
+checkFateFixPoint z iterations iterationsMax = undefined
+
 -- type iteratedCriticalValue = {
 --     criticalValue : complex;
 --     iteratedCriticalValue: complex;
@@ -494,6 +533,17 @@ findEquation alist tgt =
 --                 Some (x.coloring.getColor iterations iterationsMax)
 --             else 
 --                 None
+
+data IteratedCriticalValue = IteratedCriticalValue
+    { itcCriticalValue :: Complex Double
+    , itcIteratedCriticalValue :: Complex Double
+    , itcComparison :: Double -> Double -> Bool
+    , itcEpsilon :: Maybe Double
+    , itcColoring :: IteratedFateColoring }
+    -- deriving (Show)
+
+checkFateCriticalValue :: Complex Double -> Int -> Int -> Maybe UI.Color
+checkFateCriticalValue z iterations iterationsMax = undefined
 
 -- let xname n = XName.op_Implicit(n)
 
@@ -519,6 +569,13 @@ findEquation alist tgt =
 --         None
 --     else
 --         Some at.Value
+
+data PlotCoordinates = PlotCoordinates
+    { plcXml :: String 
+    , plcSwapXY :: Maybe Bool
+    -- , plcCoords :: Coordinates 
+    }
+    deriving (Show)
 
 -- type plotCoordinates = {
 --     xml : XElement;

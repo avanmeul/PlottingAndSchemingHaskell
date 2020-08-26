@@ -1,4 +1,4 @@
-module 2d where
+module TwoD where
     
 -- //namespace vanmeule.FSharp.PlottingAndScheming
 
@@ -37,6 +37,16 @@ module 2d where
 --     (distance min max) / 2.0 + min
 
 -- //to do:  move to a utilities module
+
+data Coordinates = Coordinates
+    { ctsCenterX :: Double 
+    , ctsCenterY :: Double
+    , ctsUnitDistanceX :: Double
+    , ctsUnitDistanceY :: Double
+    , ctsPixelDistanceX :: Double
+    , ctsPixelDistanceY :: Double 
+    , ctsUnitsPerPixel :: Double }
+    deriving (Show)
 
 -- type coordinates = {
 --     centerX : float<units>;
