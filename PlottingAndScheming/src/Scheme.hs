@@ -10,6 +10,13 @@ File:  Scheme.hs
 
 -}
 
+{-
+to do:  
+    -> output pane for print statements
+    -> canvas for plotting, hookup graphic primitives to interpreter
+    -> tab for transcript (that allows saving)
+-}
+
 module Scheme 
     -- ( 
     --   evalResults
