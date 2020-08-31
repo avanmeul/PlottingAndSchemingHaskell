@@ -34,6 +34,7 @@ to do:
     -> line record:  thickness = 2, color, p1, p2
     -> pass only index of colorizer?
     -> instead of incrementing the palette; reverse it (as a way to get a second palette?)
+    -> change type attribute to builtin {yes, no}
 -}
 
 data Vector = Vector 

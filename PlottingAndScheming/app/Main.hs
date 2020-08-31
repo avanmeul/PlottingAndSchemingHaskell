@@ -70,9 +70,17 @@ getVectors plots i =
                         (([], (Just 100, Just 100)), "failed to get xml for plot, error:  " ++ (show x))
             otherwise -> 
                (([], (Just 100, Just 100)), "failed to get vectors for plot")
-        
+
+printHello :: IO ()
+printHello = do
+    putStrLn "hello"
+
 main :: IO ()
 main = do
+    -- x <- printHello
+    -- _ <- x
+    -- return ()
+
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
     

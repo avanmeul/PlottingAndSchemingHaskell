@@ -12,6 +12,7 @@ import Data.List
 import Data.Maybe
 import Data.Either
 import TwoD
+import Scheme
     
 -- (* Copyright (c) 2009, 2008, 2007, 2006 by André van Meulebrouck.  All rights reserved worldwide. *)
 
@@ -336,8 +337,6 @@ data IteratedFateColoring = IteratedFateColoring
     , ifcAlgorithm :: IteratedFateAlgorithm }
     deriving (Show)
 
---not sure this is needed
-
 -- let schemeParseComplex c =
 --     let pat = "([+|-]{0,1}[0-9]*[.]*[0-9]+)([+|-]{1}[0-9]*[.]*[0-9]*)[i]"
 --     if Regex.IsMatch (c, pat) then
@@ -359,22 +358,25 @@ data IteratedFateColoring = IteratedFateColoring
 --     else
 --         None
 
+--not sure this is needed
+
 schemeParseComplex :: String -> Maybe (Complex Double)
 schemeParseComplex c = undefined
 
 -- type iteratedSurvivor = {
 --     iterations : int; //to do:  remove this
---     coloring : iteratedFateColoring; } with    
---     member x.checkFate (iterations : int) (iterationsMax : int) =
---         if iterations >= iterationsMax - 1 then
---             Some (x.coloring.getColor iterations iterationsMax)
---         else
---             None
+--     coloring : iteratedFateColoring; } with
 
 data IteratedSurvivor = IteratedSurvivor
     { itsIterations :: Int
     , itsColoring :: IteratedFateColoring }
     deriving (Show)
+
+--     member x.checkFate (iterations : int) (iterationsMax : int) =
+--         if iterations >= iterationsMax - 1 then
+--             Some (x.coloring.getColor iterations iterationsMax)
+--         else
+--             None
 
 checkFate :: Int -> Int -> Maybe UI.Color
 checkFate iterations iterationsMax = undefined
@@ -383,6 +385,13 @@ checkFate iterations iterationsMax = undefined
 --     threshold : double;
 --     coloringInfinity : iteratedFateColoring;
 --     coloringBiomorph : iteratedFateColoring option; } with 
+
+data IteratedEscapee = IteratedEscapee 
+    { iteThreshold :: Complex Double 
+    , iteColoringInfinity :: IteratedFateColoring
+    , iteBiomorph :: Maybe IteratedFateColoring }
+    deriving (Show)
+
 --     member x.checkFate (z : complex) (iterations : int) (iterationsMax : int) =
 --         let outOfBounds = z.Magnitude > x.threshold
 --         match x.coloringBiomorph, outOfBounds with
@@ -398,12 +407,6 @@ checkFate iterations iterationsMax = undefined
 --         | _, false -> 
 --             None
 
-data IteratedEscapee = IteratedEscapee 
-    { iteThreshold :: Complex Double 
-    , iteColoringInfinity :: IteratedFateColoring
-    , iteBiomorph :: Maybe IteratedFateColoring }
-    deriving (Show)
-
 checkFateEscapee :: Complex Double -> Int -> Int -> Maybe UI.Color
 checkFateEscapee z iterations iterationsMax = undefined
 
@@ -411,17 +414,18 @@ checkFateEscapee z iterations iterationsMax = undefined
 --     fixpoint : complex;
 --     epsilon : complex option;
 --     coloring : iteratedFateColoring; } with
---     member x.checkFate (z : complex) (iterations : int) (iterationsMax : int) =        
---         if z = x.fixpoint then
---             Some (x.coloring.getColor iterations iterationsMax)
---         else 
---             None
 
 data IteratedFixpoint = IteratedFixpoint 
     { itfFixpoint :: Complex Double 
     , itfEpsilon :: Maybe (Complex Double)
     , itfColoring :: Maybe (Complex Double) }
     deriving (Show)
+
+--     member x.checkFate (z : complex) (iterations : int) (iterationsMax : int) =        
+--         if z = x.fixpoint then
+--             Some (x.coloring.getColor iterations iterationsMax)
+--         else 
+--             None
 
 checkFateFixPoint :: Complex Double -> Int -> Int -> Maybe UI.Color
 checkFateFixPoint z iterations iterationsMax = undefined
@@ -432,6 +436,15 @@ checkFateFixPoint z iterations iterationsMax = undefined
 --     comparison : float -> float -> bool;
 --     epsilon : float option;
 --     coloring : iteratedFateColoring; } with
+
+data IteratedCriticalValue = IteratedCriticalValue
+    { itcCriticalValue :: Complex Double
+    , itcIteratedCriticalValue :: Complex Double
+    , itcComparison :: Double -> Double -> Bool
+    , itcEpsilon :: Maybe Double
+    , itcColoring :: IteratedFateColoring }
+    -- deriving (Show)
+
 --     member x.checkFate (z : complex) (iterations : int) (iterationsMax : int) = 
 --         match x.epsilon with
 --         | None ->       
@@ -444,14 +457,6 @@ checkFateFixPoint z iterations iterationsMax = undefined
 --                 Some (x.coloring.getColor iterations iterationsMax)
 --             else 
 --                 None
-
-data IteratedCriticalValue = IteratedCriticalValue
-    { itcCriticalValue :: Complex Double
-    , itcIteratedCriticalValue :: Complex Double
-    , itcComparison :: Double -> Double -> Bool
-    , itcEpsilon :: Maybe Double
-    , itcColoring :: IteratedFateColoring }
-    -- deriving (Show)
 
 checkFateCriticalValue :: Complex Double -> Int -> Int -> Maybe UI.Color
 checkFateCriticalValue z iterations iterationsMax = undefined
@@ -485,6 +490,14 @@ checkFateCriticalValue z iterations iterationsMax = undefined
 --     xml : XElement;
 --     swapXY : bool option;
 --     coords : coordinates; } with
+
+data PlotCoordinates = PlotCoordinates
+    { plcXml :: String 
+    , plcSwapXY :: Maybe Bool
+    , plcCoords :: Coordinates 
+    }
+    deriving (Show)
+
 --     static member create (xml : XElement) = 
 --         let swapXY = 
 --             Option.bind 
@@ -552,13 +565,6 @@ checkFateCriticalValue z iterations iterationsMax = undefined
 --             swapXY = swapXY;
 --             coords = coords; }
 
-data PlotCoordinates = PlotCoordinates
-    { plcXml :: String 
-    , plcSwapXY :: Maybe Bool
-    , plcCoords :: Coordinates 
-    }
-    deriving (Show)
-
 ctorPlotCoordinates :: Double -> Double -> Double -> Double -> Double -> Double -> PlotCoordinates
 ctorPlotCoordinates = undefined
 
@@ -596,6 +602,8 @@ ctorPlotCoordinates = undefined
 --     member x.palette n =
 --         x.palettes.[n]
 
+--to do
+
 -- type xmlColoring = {
 --     xml : XElement;
 --     coloring : iteratedFateColoring; } with
@@ -621,6 +629,8 @@ ctorPlotCoordinates = undefined
 --         {   xml = xml;
 --             coloring = coloring; }
 
+--to do
+
 -- type xmlFateSurvivor = {
 --     xml : XElement;
 --     survivor : iteratedSurvivor; } with
@@ -633,6 +643,8 @@ ctorPlotCoordinates = undefined
 --             coloring = coloring.coloring; }
 --         {   xml = xml;
 --             survivor = survivor; }
+
+--to do
 
 -- type xmlFateEscapee = {
 --     xml : XElement;
@@ -658,6 +670,8 @@ ctorPlotCoordinates = undefined
 --         {   xml = xml;
 --             escapee = escapee; }
 
+--to do
+
 -- type xmlFateFixpoint = {
 --     xml : XElement;
 --     fixpoint : iteratedFixpoint; } with
@@ -677,7 +691,14 @@ ctorPlotCoordinates = undefined
 --                 epsilon = None;
 --                 coloring = coloring; }
 --         {   xml = xml;
---             fixpoint = fixpoint; }         
+--             fixpoint = fixpoint; }
+
+-- type iteratorMandelbrot = {
+--     mutable z : complex option;
+--     mutable c : complex option;
+--     mutable iterations : int option;
+--     set : iteratedSet;
+--     equation : complex -> complex -> complex; } with
 
 data IteratorMandelbrot = IteratorMandelbrot 
     { itmZ :: Maybe (Complex Double)
@@ -686,12 +707,6 @@ data IteratorMandelbrot = IteratorMandelbrot
     , itmSet :: IteratedSet
     } deriving (Show)
 
--- type iteratorMandelbrot = {
---     mutable z : complex option;
---     mutable c : complex option;
---     mutable iterations : int option;
---     set : iteratedSet;
---     equation : complex -> complex -> complex; } with
 --     static member create eq set =
 --         match set with
 --         | iteratedSet.Mandelbrot o -> 
@@ -700,6 +715,9 @@ data IteratorMandelbrot = IteratorMandelbrot
 --             {z = None; c = Some o; iterations = None; set = set; equation = eq; }
 --         | _ -> 
 --             failwith "not implemented yet"
+
+--to do:  ctorIteratorMandelbrot
+
 --     member x.init z =
 --         x.iterations <- Some 0
 --         match x.set with 
@@ -711,6 +729,9 @@ data IteratorMandelbrot = IteratorMandelbrot
 --             x.z <- Some z
 --             ()
 --         | _ -> failwith "not implemented yet"
+
+--to do:  init method
+
 --     member x.next () =
 --         match x.z, x.c with 
 --         | Some z, Some c ->
@@ -724,14 +745,7 @@ data IteratorMandelbrot = IteratorMandelbrot
 --             failwith "attempt to iterate before initialization"
 --         ()
 
-data IteratorPhoenix = IteratorPhoenix 
-    { itpP :: Maybe (Complex Double)
-    , itpZ :: Maybe (Complex Double)
-    , itpC :: Maybe (Complex Double) 
-    , itpIterations :: Maybe Int
-    , itpSet :: IteratedSet 
-    , itpEquation :: Complex Double -> Complex Double -> Complex Double -> Complex Double }
-    -- deriving (Show)
+--to do:  next method
 
 -- type iteratorPhoenix = {
 --     mutable p : complex option;
@@ -740,6 +754,16 @@ data IteratorPhoenix = IteratorPhoenix
 --     mutable iterations : int option;
 --     set : iteratedSet;
 --     equation : complex -> complex -> complex -> complex; } with
+
+data IteratorPhoenix = IteratorPhoenix 
+    { itpP :: Maybe (Complex Double)
+    , itpZ :: Maybe (Complex Double)
+    , itpC :: Maybe (Complex Double)
+    , itpIterations :: Maybe Int
+    , itpSet :: IteratedSet 
+    , itpEquation :: Complex Double -> Complex Double -> Complex Double -> Complex Double }
+    -- deriving (Show)
+
 --     static member create eq set =
 --         match set with
 --         | iteratedSet.Mandelbrot o -> 
@@ -748,6 +772,9 @@ data IteratorPhoenix = IteratorPhoenix
 --             {p = None; z = None; c = Some o; iterations = None; set = set; equation = eq; }
 --         | _ -> 
 --             failwith "not implemented yet"
+
+--to do:  ctorIteratorPhoenix
+
 --     member x.init z =
 --         x.iterations <- Some 0
 --         x.p <- Some complexZero
@@ -760,6 +787,9 @@ data IteratorPhoenix = IteratorPhoenix
 --             x.z <- Some z
 --             ()
 --         | _ -> failwith "illegal set for phoenix iterator"
+
+--to do:  initIteratorPhoenix
+
 --     member x.next () =
 --         match x.z, x.c, x.p with 
 --         | Some z, Some c, Some p ->
@@ -782,12 +812,27 @@ data IteratorPhoenix = IteratorPhoenix
 --     f : complex -> complex; 
 --     f' : complex -> complex; 
 --     s : complex; } with 
+
+data IteratorNewtonBoF = IteratorNewtonBoF 
+    { inbZ :: Maybe (Complex Double)
+    , inbIterations :: Maybe Int
+    , inbF :: Complex Double -> Complex Double 
+    , inbF' :: Complex Double -> Complex Double 
+    , inbS :: Complex Double }
+    -- deriving (Show)
+
 --     static member create (eq : newtonEquationBOF) s =
 --         {z = None; iterations = None; f = eq.f; f' = eq.f'; s = s}
+
+--to do:  ctorIteratorNewtonBoF
+
 --     member x.init z = 
 --         x.z <- Some z
 --         x.iterations <- Some 0
 --         ()
+
+--to do:  init
+
 --     member x.next () = 
 --         match x.z, x.s with
 --         | Some z, s ->
@@ -802,6 +847,8 @@ data IteratorPhoenix = IteratorPhoenix
 --             failwith "attempt to iterate before initilization"
 --         ()
 
+--to do:  next
+
 -- type iteratorNewton = {
 --     mutable z : complex option;
 --     mutable iterations : int option;
@@ -810,6 +857,17 @@ data IteratorPhoenix = IteratorPhoenix
 --     f' : complex -> complex -> complex; 
 --     mutable c : complex option; 
 --     set : iteratedSet;} with 
+
+data IteratorNewton = IteratorNewton
+    { itnZ :: Maybe (Complex Double) 
+    , itnIterations :: Maybe Int 
+    , itnOrbits :: [Complex Double]
+    , itnf :: Complex Double -> Complex Double -> Complex Double 
+    , itnf' :: Complex Double -> Complex Double -> Complex Double 
+    , itnC :: Maybe (Complex Double)
+    , itnSet :: IteratedSet }
+    -- deriving (Show)
+
 --     static member create (eq : newtonEquation) set =
 --         let c =
 --             match set with 
@@ -820,6 +878,9 @@ data IteratorPhoenix = IteratorPhoenix
 --             | iteratedSet.NewtonBOF s -> 
 --                 failwith "inappropriate set argument for this type of newton"
 --         {z = None; iterations = None; f = eq.f; f' = eq.f'; set = set; c = c; orbits = []}
+
+--ctorIteratorNewton
+
 --     member x.init z = 
 --         x.z <- Some z
 --         x.iterations <- Some 0
@@ -835,6 +896,9 @@ data IteratorPhoenix = IteratorPhoenix
 --             ()
 --         | _ -> failwith "illegal set for this type of newton iterator"
 --         ()
+
+--to do
+
 --     member x.next () = 
 --         match x.z, x.c with
 --         | Some z, Some c ->
@@ -849,16 +913,6 @@ data IteratorPhoenix = IteratorPhoenix
 --             failwith "attempt to iterate before initilization"
 --         ()
 
-data IteratorNewton = IteratorNewton
-    { itnZ :: Maybe (Complex Double) 
-    , itnIterations :: Maybe Int 
-    , itnOrbits :: [Complex Double]
-    , itnf :: Complex Double -> Complex Double -> Complex Double 
-    , itnf' :: Complex Double -> Complex Double -> Complex Double 
-    , itnC :: Maybe (Complex Double)
-    , itnSet :: IteratedSet }
-    -- deriving (Show)
-
 -- type iterator =
 --     | Mandelbrot of iteratorMandelbrot
 --     | Phoenix of iteratorPhoenix 
@@ -869,7 +923,7 @@ data Iterator
     = ItrMandelbrot IteratorMandelbrot
     | ItrPhoenix IteratorPhoenix
     | ItrNewton IteratorNewton
-    -- | ItrNewtonBoF IteratorNewtonBoF
+    | ItrNewtonBoF IteratorNewtonBoF
     -- deriving (Show) 
 
 -- //master to do list
@@ -940,8 +994,25 @@ data Iterator
 --         else 
 --             failwith "bad iterator specified"
 
-xmlIterator :: [Cursor] -> Iterator
-xmlIterator = undefined
+xmlIterator :: [Cursor] -> Either ScmError Iterator --should this return an Either?
+xmlIterator itr = 
+    let attType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
+        elFunction = Name { nameLocalName = T.pack "function", nameNamespace = Nothing, namePrefix = Nothing }
+        elSet = Name { nameLocalName = T.pack "set", nameNamespace = Nothing, namePrefix = Nothing }
+        itrType = itr >>= C.attribute attType
+        itrChild = itr >>= child
+        itrFunction = itrChild >>= C.element elFunction
+        itrSet = itrChild >>= C.element elSet
+        itrSetName = itrSet >>= C.attribute attType
+    in 
+        if null itrSetName then
+            Left $ ScmError { errMessage = "x", errCaller = "x" }
+        else
+            case (head $ map T.unpack itrSetName) of
+                "phoenix" -> undefined
+                "newton BOF" -> undefined
+                "newton" -> undefined
+                otherwise -> undefined
 
 -- type xmlFateCriticalValue = {
 --     xml : XElement;
@@ -1000,6 +1071,9 @@ xmlIterator = undefined
 --     orbitType : orbitPattern;
 --     mutable matches : complex list; //to do:  add matches to this list
 --     coloring : iteratedFateColoring; } with
+
+--to do:  IteratedOrbitCheck
+
 --     member x.checkFate (it : iterator) (iterationsMax : int) =
 --         let iterations, z, orbits = 
 --             match it with
@@ -1027,6 +1101,8 @@ xmlIterator = undefined
 --                     None
 --             else 
 --                 None
+
+--to do:  check fate
 
 -- type xmlFateOrbitCheck = {
 --     xml : XElement;
@@ -1060,6 +1136,8 @@ xmlIterator = undefined
 --     | Fixpoint of xmlFateFixpoint
 --     | CriticalValue of xmlFateCriticalValue
 --     | OrbitCheck of xmlFateOrbitCheck
+
+--to do:  sum type fate
 
 -- type plotFates = {
 --     xml : XElement;
@@ -1164,6 +1242,9 @@ xmlIterator = undefined
 --     width : int;
 --     height : int;
 --     rawImage : byte[]; } with 
+
+--to do
+
 --     static member create w h =
 --         let pf = PixelFormats.Bgr32
 --         let rawStride = (w * pf.BitsPerPixel + 7) / 8
