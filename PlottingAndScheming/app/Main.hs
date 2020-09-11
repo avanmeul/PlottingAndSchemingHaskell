@@ -7,6 +7,7 @@ module Main where
 import Scheme
 import Vector
 import Complex
+import Scratch
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -156,6 +157,7 @@ setup (xmlVec, xmlComplex) window = do
     txtInput  <- UI.textarea #. "send-textarea"
     txtOutput  <- UI.textarea #. "send-textarea"
     txtScratch <- UI.textarea #. "send-textarea"
+    txtScratchOut <- UI.textarea #. "send-textarea"
     txtVector <- UI.textarea #. "send-textarea"
     txtVectorTranscript <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
@@ -165,6 +167,8 @@ setup (xmlVec, xmlComplex) window = do
     btnEval <- UI.button #+ [string "eval"]
     btnTest <- UI.button #+ [string "run test suite"]
     btnVecPlot <- UI.button #+ [string "plot vector"]
+    btnScratch <- UI.button #+ [string "scratch"]
+    btnScratchTest <- UI.button #+ [string "test it"]
     divTab <- UI.div #. "header" #+ [string "plotting and scheming"]
     btnScheme <- UI.button #+ [string "scheme"] # set UI.style [("color", "blue")]
     btnVector <- UI.button #+ [string "vector"]
@@ -175,7 +179,6 @@ setup (xmlVec, xmlComplex) window = do
     btnLambda <- UI.button #+ [string "lambda"]
     btnCombinator <- UI.button #+ [string "combinator"]
     btnMrcm <- UI.button #+ [string "mrcm"]
-    btnScratch <- UI.button #+ [string "scratch"]
     cbxVector <- UI.select #+ map (\XmlObj { xobName = i } -> UI.option #+ [string i]) xmlVec
     canVec <- UI.canvas
         # set UI.height canvasSize
@@ -215,13 +218,22 @@ setup (xmlVec, xmlComplex) window = do
         ]
     --2d
     div2d <- UI.div
+    --3d
     div3d <- UI.div
+    --lsystem
     divLsystem <- UI.div
+    --mrcm
     divMrcm <- UI.div
+    --lambda
     divLambda <- UI.div
+    --combinator
     divCombinator <- UI.div
+    --scratch
     divScratch <- UI.div #+
-        [grid [[row [UI.element txtScratch]]]]
+        [grid 
+            [ [row [UI.element txtScratch]]
+            , [row [UI.element btnScratchTest]]
+            , [row [UI.element txtScratchOut]]]]
 
     getBody window #+ 
         [ UI.div #+ 
@@ -343,3 +355,7 @@ setup (xmlVec, xmlComplex) window = do
     
     on UI.click btnComplexPlot $ const $ do
         UI.element txtComplexTranscript # set UI.text "hey"
+
+    on UI.click btnScratchTest $ const $ do
+        txt <- get value txtScratch
+        UI.element txtScratchOut # set UI.text txt      

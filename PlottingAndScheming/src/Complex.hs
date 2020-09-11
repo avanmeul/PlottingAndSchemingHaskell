@@ -53,7 +53,7 @@ import Scheme
 data IteratedSet
     = ItsMandelbrot (Maybe (Complex Double))
     | ItsJulia (Complex Double)
-    | ItsNewtonBOF Double
+    | ItsNewtonBoF Double
     deriving (Show)
 
 -- type fateOrbitNumbering = 
@@ -336,32 +336,6 @@ data IteratedFateColoring = IteratedFateColoring
     , ifcOrbitNumbering :: FateOrbitNumbering 
     , ifcAlgorithm :: IteratedFateAlgorithm }
     deriving (Show)
-
--- let schemeParseComplex c =
---     let pat = "([+|-]{0,1}[0-9]*[.]*[0-9]+)([+|-]{1}[0-9]*[.]*[0-9]*)[i]"
---     if Regex.IsMatch (c, pat) then
---         let r = Regex pat
---         let s = r.Match c
---         let n = s.Groups
---         if n.Count = 3 then
---             let real = n.[1]
---             let imag = n.[2]
---             let s, v = Double.TryParse real.Value
---             let real = if s then Some v else None
---             let s, v = Double.TryParse imag.Value
---             let imag = if s then Some v else None
---             if real.IsSome && imag.IsSome then
---                 Some (complex real.Value imag.Value)
---             else 
---                 None
---         else None
---     else
---         None
-
---not sure this is needed
-
-schemeParseComplex :: String -> Maybe (Complex Double)
-schemeParseComplex c = undefined
 
 -- type iteratedSurvivor = {
 --     iterations : int; //to do:  remove this
@@ -962,6 +936,46 @@ data Iterator
 --                     | _ -> 
 --                         //to do:  don't hardcode
 --                         iteratedSet.NewtonBOF 0.0
+
+xmlSet :: [Cursor] -> Either ScmError IteratedSet
+xmlSet cur = 
+    let attType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
+        elFunction = Name { nameLocalName = T.pack "function", nameNamespace = Nothing, namePrefix = Nothing }
+        elSet = Name { nameLocalName = T.pack "set", nameNamespace = Nothing, namePrefix = Nothing }
+        attConstant = Name { nameLocalName = T.pack "constant", nameNamespace = Nothing, namePrefix = Nothing }
+        itrType = cur >>= C.attribute attType
+        itrChild = cur >>= child
+        itrFunction = itrChild >>= C.element elFunction
+        itrSet = itrChild >>= C.element elSet
+        itrSetName = itrSet >>= C.attribute attType
+    in 
+        --to do:  this is the set
+        if null itrSetName then --to do:  move this into a function
+            Left $ ScmError { errMessage = "x", errCaller = "x" }
+        else
+            case (head $ map T.unpack itrSetName) of
+                "mandelbrot" -> 
+                    Right $ ItsMandelbrot Nothing
+                "julia" -> 
+                    let const = itrSet >>= C.attribute attConstant
+                    in
+--                         let c = set.Attribute (xname "constant")
+--                         match c with
+--                         | null -> failwith "no constant specified"
+--                         | _ -> 
+--                             let c = schemeParseComplex c.Value
+--                             match c with
+--                             | Some c ->
+--                                 iteratedSet.Julia c
+--                             | None ->
+--                                 failwith "incorrectly formatted Julia constant"
+                        undefined
+                "newton BOF" -> 
+                    --ItsNewtonBoF
+                    undefined
+                otherwise -> 
+                    undefined
+
 --             let eq = fetchElement it "function"
 --             let itType = it.Attribute (xname "type")
 --             let fname = 
@@ -999,20 +1013,31 @@ xmlIterator itr =
     let attType = Name { nameLocalName = T.pack "type", nameNamespace = Nothing, namePrefix = Nothing }
         elFunction = Name { nameLocalName = T.pack "function", nameNamespace = Nothing, namePrefix = Nothing }
         elSet = Name { nameLocalName = T.pack "set", nameNamespace = Nothing, namePrefix = Nothing }
+        elConstant = Name { nameLocalName = T.pack "constant", nameNamespace = Nothing, namePrefix = Nothing }
         itrType = itr >>= C.attribute attType
         itrChild = itr >>= child
         itrFunction = itrChild >>= C.element elFunction
-        itrSet = itrChild >>= C.element elSet
-        itrSetName = itrSet >>= C.attribute attType
+        itrSet = xmlSet $ itrChild >>= C.element elSet
+        -- itrSetName = itrSet >>= C.attribute attType
     in 
-        if null itrSetName then
-            Left $ ScmError { errMessage = "x", errCaller = "x" }
-        else
-            case (head $ map T.unpack itrSetName) of
-                "phoenix" -> undefined
-                "newton BOF" -> undefined
-                "newton" -> undefined
-                otherwise -> undefined
+        undefined
+        --to do:  this is the set
+        -- if null itrSetName then --to do:  move this into a function
+        --     Left $ ScmError { errMessage = "x", errCaller = "x" }
+        -- else
+        --     case (head $ map T.unpack itrSetName) of
+        --         "mandelbrot" -> 
+        --             -- ItsMandelbrot 
+        --             undefined
+        --         "julia" -> 
+        --             --ItsJulia
+        --             --to do:  read constant
+        --             undefined
+        --         "newton BOF" -> 
+        --             --ItsNewtonBoF
+        --             undefined
+        --         otherwise -> 
+        --             undefined
 
 -- type xmlFateCriticalValue = {
 --     xml : XElement;

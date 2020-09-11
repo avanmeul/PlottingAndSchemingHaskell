@@ -45,6 +45,7 @@ import Data.IORef
 -- import Test.HSpec
 import Text.Show.Functions
 import Data.Maybe
+import Data.Complex
 
 {-
 Open question:  if true and false were defined as combinators, the user could define if.
@@ -1148,6 +1149,38 @@ parseFloat s =
         if m == ""
         then (Nothing, s)
         else (Just (TokFloat m), drop (length m) s)
+
+-- let schemeParseComplex c =
+--     let pat = "([+|-]{0,1}[0-9]*[.]*[0-9]+)([+|-]{1}[0-9]*[.]*[0-9]*)[i]"
+--     if Regex.IsMatch (c, pat) then
+--         let r = Regex pat
+--         let s = r.Match c
+--         let n = s.Groups
+--         if n.Count = 3 then
+--             let real = n.[1]
+--             let imag = n.[2]
+--             let s, v = Double.TryParse real.Value
+--             let real = if s then Some v else None
+--             let s, v = Double.TryParse imag.Value
+--             let imag = if s then Some v else None
+--             if real.IsSome && imag.IsSome then
+--                 Some (complex real.Value imag.Value)
+--             else 
+--                 None
+--         else None
+--     else
+--         None
+
+--not sure this is needed
+
+schemeParseComplex :: String -> Maybe (Complex Double)
+schemeParseComplex c = 
+    let m = c =~ "([+|-]{0,1}[0-9]*[.]*[0-9]+)([+|-]{1}[0-9]*[.]*[0-9]*)[i]" :: String
+    in 
+        if m == ""
+        then Nothing
+        else 
+            undefined
 
 parseDot :: String -> (Maybe Token, String)
 parseDot [] = (Nothing, [])
