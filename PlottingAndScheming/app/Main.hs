@@ -7,7 +7,7 @@ module Main where
 import Scheme
 import Vector
 import Complex
-import Scratch
+import Scratch as S
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -78,38 +78,14 @@ printHello = do
 
 main :: IO ()
 main = do
+    result
     -- x <- printHello
     -- _ <- x
     -- return ()
 
-    names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
-    complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
-    
-    -- index <- Just 8 --get UI.selection cbxVector
-    -- let plotObj = fetchVectorXmlObj names $ Just 8
-    --     vecs = 
-    --         case plotObj of
-    --             Just x -> vectorFractal x
-    --             otherwise -> Left [ScmError { errMessage = "could not get plot object", errCaller = "main" }]
-    -- putStrLn $ show vecs
-    -- let obj = head names --plotObj = fetchVectorXmlObj names 0 -- index
-    -- vecs = vectorFractal obj
-    -- putStrLn "going to call vector fractal"
-    -- putStrLn $ "vecs = " ++ (show $ vectorFractal $ head names)
-    -- let plotObj = fetchVectorPlot names $ Just 1
-    -- let plotObj = fetchVectorXmlObj names $ Just 1
-    --     rules = fetchRule plotObj
-    --     evaled = evalString rules
-    --     evaledStr = 
-    --         case evaled of
-    --             Right x -> printHeap $ last x
-    --             Left x -> show x
-    --     -- evaled' = evalHeaps rules
-    -- putStrLn $ "evaled = " ++ evaledStr    
-    -- putStrLn $ show $ names !! 11
-    -- let vecs = debugPlot names 8 --8 is bee hive built-in
-    -- putStrLn $ show vecs
-    startGUI defaultConfig $ setup (names, complexPlots)
+    -- names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
+    -- complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
+    -- startGUI defaultConfig $ setup (names, complexPlots)
 
 canvasSize :: Int
 canvasSize = 50
@@ -357,5 +333,5 @@ setup (xmlVec, xmlComplex) window = do
         UI.element txtComplexTranscript # set UI.text "hey"
 
     on UI.click btnScratchTest $ const $ do
-        txt <- get value txtScratch
-        UI.element txtScratchOut # set UI.text txt      
+        -- txt <- S.result
+        UI.element txtScratchOut # set UI.text "hey" --S.result      
