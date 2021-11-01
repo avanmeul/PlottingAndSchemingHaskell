@@ -209,7 +209,7 @@ createCons (h : t) =
 
 createPair :: [ScmObject] -> Maybe ScmCons
 createPair [] = Nothing
-createPair (h : []) = Nothing
+createPair [h] = Nothing
 createPair (h1 : h2 : t) = 
     let cons = ScmCons { scmCar = h2, scmCdr = h1 } 
     in addToCons cons t
@@ -220,8 +220,7 @@ tokNonSemantic (TokComment _) = True
 tokNonSemantic _ = False
 
 toksRemoveNonSemantic :: [Token] -> [Token]
-toksRemoveNonSemantic x = 
-    filter (\x -> not $ tokNonSemantic x) x
+toksRemoveNonSemantic = filter $ not . tokNonSemantic
   
 buildHeap :: [Token] -> Either (String, [Token]) (ScmObject, [Token]) --to do:  should be ScmError rather than String
 buildHeap [] = 
@@ -231,10 +230,10 @@ buildHeap ((TokSymbol i@('#' : s)) : t) =
 buildHeap ((TokSymbol x) : t) =
     Right (ObjSymbol x, t)
 buildHeap (TokSingleQuote : t) =
-    case (buildHeap t) of 
+    case buildHeap t of 
         Left (m, t) -> Left (m, t)
         Right (x, t) -> 
-            case (createCons [x, ObjSymbol "quote"]) of
+            case createCons [x, ObjSymbol "quote"] of
                 Nothing -> Left ("buildHeap:  failed to create object of a quote", t)
                 Just x -> Right (ObjCons x, t)
 buildHeap ((TokString x) : t) =
@@ -250,31 +249,31 @@ buildHeap ((TokFloat x) : t) =
 buildHeap (TokLeftParen : TokRightParen : t) =
     Right (ObjImmediate $ ImmSym "()", t)
 buildHeap (TokLeftParen : t) = --walk across top level list until a right paren is discovered
-    let res = iter t [] where
+    let res = iter t [] 
         iter :: [Token] -> [ScmObject] -> Either (String, [Token]) (ScmCons, [Token])
         iter [] lst =
             Left ("out of tokens", [])
         iter (TokRightParen : t) lst =
             let res = createCons lst in
-                case (res) of
+                case res of
                     Nothing -> Left ("buildHeap:  failure to create cons cells, site 1", t)
                     Just x -> Right (x, t)
         iter (TokDot : t) lst = 
             let cdr = buildHeap t in
-                case (cdr) of 
+                case cdr of 
                     Right (o, TokRightParen : rst) -> 
                         let res = createPair (o : lst) in
-                            case (res) of 
+                            case res of 
                                 Nothing -> Left ("buildHeap:  failure to create dotted pair", rst)
                                 Just x -> Right (x, rst)
-                    otherwise ->
+                    _ ->
                         Left ("buildHeap:  bad tail in dotted pair", t)
         iter toks lst =
-            case (buildHeap toks) of
+            case buildHeap toks of
                 Left x -> Left x
                 Right (o, t) -> iter t (o : lst)
     in
-        case (res) of
+        case res of
             Left (e, t) -> Left ("buildHeap:  failed to create cons cells, site 2", t)
             Right (x, t) -> Right (ObjCons x, t)
 buildHeap (TokRightParen : t) = --if this happens, it indicates that a right occurred without a prior left, i.e. )(
@@ -293,20 +292,21 @@ printHeap (ObjImmediate (ImmInt x)) = show x
 printHeap (ObjImmediate (ImmFloat x)) = show x
 printHeap (ObjImmediate (ImmString x)) = "\"" ++ x ++ "\""
 printHeap (ObjImmediate _) = "#<error:  unknown immediate>"
-printHeap (ObjPrimitive (ScmPrimitive { priName = nm, priFunction = _ })) = "#<primitive " ++ nm ++ ">"
+printHeap (ObjPrimitive ScmPrimitive { priName = nm, priFunction = _ }) = "#<primitive " ++ nm ++ ">"
 printHeap (ObjClosure x) = "#<closure>"
 printHeap (ObjThunk x) = "#<thunk>"
 printHeap (ObjError x) = "#<error>"
 printHeap (ObjCons x) = concat $ reverse $ iter ["("] $ ObjCons x where
     iter :: [String] -> ScmObject -> [String]
-    iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = (ObjImmediate (ImmSym "()")) })) = 
+    iter lst (ObjCons ScmCons { scmCar = h, scmCdr = (ObjImmediate (ImmSym "()")) }) = 
         ")" : printHeap h : lst
-    iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = (ObjCons t) })) = --cdr has more list elements
-        iter (" " : (printHeap h) : lst) (ObjCons t)
-    iter lst (ObjCons (ScmCons { scmCar = h, scmCdr = t })) = --cdr isn't cons and isn't ()
-        ")" : (printHeap t) : " . " : (printHeap h) : lst                              
+    iter lst (ObjCons ScmCons { scmCar = h, scmCdr = (ObjCons t) }) = --cdr has more list elements
+        iter (" " : printHeap h : lst) (ObjCons t)
+    iter lst (ObjCons ScmCons { scmCar = h, scmCdr = t }) = --cdr isn't cons and isn't ()
+        ")" : printHeap t : " . " : printHeap h : lst
+    iter lst _ = error "unexpected Scheme argument given to printHeap"                           
 printHeap (ObjContext x) = "#<context>"
-printHeap x = "#<unknown object type:  " ++ (show x) ++ ">"
+printHeap x = "#<unknown object type:  " ++ show x ++ ">"
 
 {-
 Haskell LISP equivalents of LISP:
@@ -323,16 +323,16 @@ scmQuote _ _ = Left [ ScmError { errCaller = "scmQuote", errMessage = "bad arg" 
 
 scmHead :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --to do:  refactor case to equations
 scmHead ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) =
-    case (eval ctx h) of
-        Right (ObjCons (ScmCons { scmCar = h, scmCdr = _ })) -> Right h
-        otherwise -> Left [ ScmError { errCaller = "head (site 1)", errMessage = "bad arg" } ]
+    case eval ctx h of
+        Right (ObjCons ScmCons { scmCar = h, scmCdr = _ }) -> Right h
+        _ -> Left [ ScmError { errCaller = "head (site 1)", errMessage = "bad arg" } ]
 scmHead _ _ = Left [ ScmError { errCaller = "head (site 2)", errMessage = "bad arg" } ]
 
 scmTail :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
-scmTail ctx (ObjCons (ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") })) = 
-    case (eval ctx h) of
-        Right (ObjCons (ScmCons { scmCar = _, scmCdr = t })) -> Right t
-        otherwise -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
+scmTail ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) = 
+    case eval ctx h of
+        Right (ObjCons ScmCons { scmCar = _, scmCdr = t }) -> Right t
+        _ -> Left [ ScmError { errCaller = "tail (site 1)", errMessage = "bad arg" } ]
 scmTail _ _ = Left [ ScmError { errCaller = "tail (site 2)", errMessage = "bad arg" } ]
 
 scmDefine :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
@@ -346,11 +346,11 @@ scmDefine ctx args =
                 let thunks = thunkifyArgList ctx [o]
                     env = filter (\ (l, v) -> l /= s) $ ctxEnv ctx --this needs to be the extended environment
                 in 
-                    if (length thunks == 1 && (null $ ctxStk ctx)) then
-                        Right $ ObjContext (ScmContext { ctxEnv = (s, (head thunks)) : env, ctxStk = [] })
+                    if length thunks == 1 && null (ctxStk ctx) then
+                        Right $ ObjContext (ScmContext { ctxEnv = (s, head thunks) : env, ctxStk = [] })
                     else 
                         Left [ScmError { errCaller = "scmDefine", errMessage = "too many args or not at top level" }]
-            otherwise -> 
+            _ -> 
                 Left [ScmError { errCaller = "scmDefine", errMessage = "arguments to define were invalid" }]
 
 scmIf :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
@@ -365,17 +365,17 @@ scmIf ctx args =
     in
         case (predicate, thenClause, elseClause, cdr3) of
             (Just p, Just t, Just e, Just (ObjImmediate (ImmSym "()"))) -> 
-                case (eval ctx p) of
+                case eval ctx p of
                     Right (ObjImmediate (ImmSym "#t")) ->
                         eval ctx t
                     Right (ObjImmediate (ImmSym "#f")) ->
                         eval ctx e
                     Right x ->
-                        Left [ScmError { errCaller = "scmIf", errMessage = "invalid predicate:  " ++ (show x) }]
+                        Left [ScmError { errCaller = "scmIf", errMessage = "invalid predicate:  " ++ show x }]
                     Left x -> 
                         Left $ ScmError { errCaller = "scmIf", errMessage = "predicate evaluation failed:  " ++ (show p) } : x
-            otherwise -> 
-                let msg = "invalid if:  predicate = " ++ (show predicate) ++ " then = " ++ (show thenClause) ++ ", else = " ++ (show elseClause) in
+            _ -> 
+                let msg = "invalid if:  predicate = " ++ show predicate ++ " then = " ++ show thenClause ++ ", else = " ++ show elseClause in
                     Left [ScmError { errCaller = "scmIf", errMessage = msg }]
 
 scmZero :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
@@ -384,7 +384,7 @@ scmZero ctx args =
     in 
         case arg of
             Just x -> 
-                case (eval ctx x) of
+                case eval ctx x of
                     Right (ObjImmediate (ImmInt x)) ->
                         if x == 0 then
                             Right symTrue
@@ -396,94 +396,99 @@ scmZero ctx args =
                         else 
                             Right symFalse
                     Left x ->
-                        Left $ ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show x) } : x
-                    otherwise -> 
-                        Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show x) }]
+                        Left $ ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ show x } : x
+                    _ -> 
+                        Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ show x }]
             Nothing -> 
-                Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ (show arg) }]
+                Left [ScmError { errCaller = "scmZero", errMessage = "bad argument:  " ++ show arg }]
 
 scmAdd :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmAdd ctx args = 
-    case (cnsToList args) of
+    case cnsToList args of
         Just x -> 
             iter x (Just 0, Just 0.0) where
                 iter :: [ScmObject] -> (Maybe Int, Maybe Double) -> Either [ScmError] ScmObject
                 iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
                 iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
                 iter (h : t) (sumi, Just f) = 
-                    case (eval ctx h) of
+                    case eval ctx h of
                         Right (ObjImmediate (ImmInt x)) -> 
                             case sumi of
-                                Just i -> iter t (Just $ i + x, Just $ f + (fromIntegral x))
-                                otherwise -> iter t (Nothing, Just $ f + (fromIntegral x))
+                                Just i -> iter t (Just $ i + x, Just $ f + fromIntegral x)
+                                _ -> iter t (Nothing, Just $ f + fromIntegral x)
                         Right (ObjImmediate (ImmFloat x)) -> 
                             iter t (Nothing, Just $ f + x)
                         Right x -> 
-                            Left [ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ (show h) }]
+                            Left [ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ show h }]
                         Left x -> 
-                            Left $ ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ (show x) } : x
-        Nothing -> Left $ [ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ (show args) }]
+                            Left (ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ show h} : x)
+                iter _ _ = Left [ScmError { errCaller = "scmAdd", errMessage = "unexpected argument:  " ++ show x }]
+        Nothing -> Left [ScmError { errCaller = "scmAdd", errMessage = "bad argument:  " ++ show args }]
 
 scmMul :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmMul ctx args = 
-    case (cnsToList args) of
+    case cnsToList args of
         Just x -> 
             iter x (Just 1, Just 1.0) where
                 iter :: [ScmObject] -> (Maybe Int, Maybe Double) -> Either [ScmError] ScmObject
                 iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
                 iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
                 iter (h : t) (sumi, Just f) = 
-                    case (eval ctx h) of
+                    case eval ctx h of
                         Right (ObjImmediate (ImmInt x)) -> 
                             case sumi of
-                                Just i -> iter t (Just $ i * x, Just $ f * (fromIntegral x))
-                                otherwise -> iter t (Nothing, Just $ f * (fromIntegral x))
+                                Just i -> iter t (Just $ i * x, Just $ f * fromIntegral x)
+                                _ -> iter t (Nothing, Just $ f * fromIntegral x)
                         Right (ObjImmediate (ImmFloat x)) -> 
                             iter t (Nothing, Just $ f * x)
                         Right x -> 
-                            Left [ScmError { errCaller = "scmMul", errMessage = "bad argument:  " ++ (show h) }]
+                            Left [ScmError { errCaller = "scmMul", errMessage = "bad argument:  " ++ show h }]
                         Left x -> 
-                            Left $ ScmError { errCaller = "scmMul", errMessage = "argument caused failure:  " ++ (show h) } : x
-        Nothing -> Left [ScmError { errCaller = "scmMul", errMessage = "bad argument:  " ++ (show args) }]
+                            Left $ ScmError { errCaller = "scmMul", errMessage = "argument caused failure:  " ++ show h } : x
+                iter _ _ = Left [ScmError { errCaller = "scmMul", errMessage = "unexpected argument:  " ++ show x }]
+        Nothing -> Left [ScmError { errCaller = "scmMul", errMessage = "bad argument:  " ++ show args }]
 
 scmSub :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --plus, minus, times, divide; add, sub, mul, div (to do:  rename to the latter)
 scmSub ctx args = 
-    case (cnsToList args) of
+    case cnsToList args of
         Just [] -> 
             Left [ScmError { errCaller = "scmSub", errMessage = "arity must be greater than 0" }]
-        Just (h : []) ->
-            case (eval ctx h) of
-                Right (ObjImmediate (ImmInt x)) -> Right (ObjImmediate (ImmInt $ 0 - x))
+        Just [h] ->
+            case eval ctx h of
+                Right (ObjImmediate (ImmInt x)) -> Right (ObjImmediate (ImmInt $ negate x))
                 Right (ObjImmediate (ImmFloat x)) -> Right (ObjImmediate (ImmFloat $ 0.0 - x))
-                otherwise -> 
-                    Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
+                _ -> 
+                    Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ show h }]
         Just x@(h : t) -> iter x (Nothing, Nothing) where
             iter :: [ScmObject] -> (Maybe Int, Maybe Double) -> Either [ScmError] ScmObject
             iter [] (Just i, Just f) = Right $ ObjImmediate $ ImmInt i
             iter [] (Nothing, Just x) = Right $ ObjImmediate $ ImmFloat x
             iter (h : t) (resi, resf) = 
-                case (eval ctx h) of
+                case eval ctx h of
                     Right (ObjImmediate (ImmInt x)) -> 
                         case (resi, resf) of
                             (Nothing, Nothing) -> iter t (Just x, Just $ fromIntegral x)
-                            (Just i, Just f) -> iter t (Just $ i - x, Just $ f - (fromIntegral x))
-                            (Nothing, Just f) -> iter t (Nothing, Just $ f - (fromIntegral x))
+                            (Just i, Just f) -> iter t (Just $ i - x, Just $ f - fromIntegral x)
+                            (Nothing, Just f) -> iter t (Nothing, Just $ f - fromIntegral x)
+                            _ -> Left [ScmError { errCaller = "scmSub", errMessage = "unexpected arguments:  " ++ show (resi, resf) }]
                     Right (ObjImmediate (ImmFloat x)) ->
                         case (resi, resf) of
                             (Nothing, Nothing) -> iter t (Nothing, Just x)
                             (_, Just f) -> iter t (Nothing, Just $ f - x)
+                            _ -> Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ show (resi, resf) }]
                     Right x -> 
-                        Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show h) }]
+                        Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ show h }]
                     Left x -> 
-                        Left $ ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show x) } : x
+                        Left $ ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ show x } : x
+            iter _ _ = Left [ScmError { errCaller = "scmSub", errMessage = "unexpected argument to scmSub" }]
         Nothing -> 
-            Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ (show args) }]
+            Left [ScmError { errCaller = "scmSub", errMessage = "bad argument:  " ++ show args }]
 
 divOp :: ScmNumber -> ScmNumber -> ScmNumber
 divOp (NumInt x) (NumInt y) = 
     let (quotient, remainder) = x `quotRem` y
     in 
-        if (remainder == 0) then
+        if remainder == 0 then
             NumInt quotient
         else
             let q = fromIntegral quotient
@@ -492,79 +497,80 @@ divOp (NumInt x) (NumInt y) =
             in 
                 NumFloat $ q + (r / divisor)
 divOp (NumInt x) (NumFloat y) = 
-    NumFloat ((fromIntegral x) / y)
+    NumFloat (fromIntegral x / y)
 divOp (NumFloat x) (NumInt y) = 
-    NumFloat (x / (fromIntegral y))
+    NumFloat (x / fromIntegral y)
 divOp (NumFloat x) (NumFloat y) = 
     NumFloat (x / y)
 
 scmDiv :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmDiv ctx args = --to do:  maybe not convert to a Haskell list (adds overhead), and maybe create ObjNumber to remove numbers from ObjImmediate
-    case (cnsToList args) of
+    case cnsToList args of
         Just [] -> 
             Left [ScmError { errCaller = "scmDiv", errMessage = "arity must be greater than 0" }]
-        Just (h : []) ->
-            case (eval ctx h) of
+        Just [h] ->
+            case eval ctx h of
                 Right (ObjImmediate (ImmInt x)) ->
-                    case (divOp (NumInt 1) (NumInt x)) of
+                    case divOp (NumInt 1) (NumInt x) of
                         NumInt x -> Right $ ObjImmediate $ ImmInt x
                         NumFloat x -> Right $ ObjImmediate $ ImmFloat x
-                otherwise -> 
-                    Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 1):  " ++ (show h) }]
+                _ -> 
+                    Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 1):  " ++ show h }]
         Just x@(h : t) -> iter x Nothing where
             iter :: [ScmObject] -> Maybe ScmNumber -> Either [ScmError] ScmObject
             iter [] (Just (NumFloat x)) = Right $ ObjImmediate $ ImmFloat x
             iter [] (Just (NumInt x)) = Right $ ObjImmediate $ ImmInt x
             iter (h : t) Nothing = 
-                case (eval ctx h) of
+                case eval ctx h of
                     Right (ObjImmediate (ImmInt x)) -> 
                         iter t (Just (NumInt x))
                     Right (ObjImmediate (ImmFloat x)) -> 
                         iter t (Just (NumFloat x))
                     Right x -> 
-                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 2):  " ++ (show h) }]
+                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 2):  " ++ show h }]
                     Left x -> 
-                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 3):  " ++ (show x) } : x
+                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 3):  " ++ show x } : x
             iter (h : t) (Just n@(NumFloat f)) = 
-                case (eval ctx h) of
+                case eval ctx h of
                     Right (ObjImmediate (ImmInt x)) -> 
                         iter t (Just (divOp n (NumFloat (fromIntegral x)))) --(Just (NumFloat $ f / (fromIntegral x)))
                     Right (ObjImmediate (ImmFloat x)) -> 
                         iter t (Just (divOp n (NumFloat x)))                      
                     Right x -> 
-                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ (show h) }]
+                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ show h }]
                     Left x -> 
-                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 5):  " ++ (show x) } : x                
+                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 5):  " ++ show x } : x                
             iter (h : t) (Just n@(NumInt i)) = 
-                case (eval ctx h) of
+                case eval ctx h of
                     Right (ObjImmediate (ImmInt x)) -> 
                         iter t $ Just $ divOp n $ NumInt x
                     Right (ObjImmediate (ImmFloat x)) -> 
                         iter t $ Just $ divOp n $ NumFloat x                       
                     Right x -> 
-                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ (show h) }]
+                        Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 4):  " ++ show h }]
                     Left x -> 
-                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 5):  " ++ (show x) } : x
+                        Left $ ScmError { errCaller = "scmDiv", errMessage = "bad argument (site 5):  " ++ show x } : x
+            iter _ _ = Left [ScmError { errCaller = "scmDiv", errMessage = "unexpected arguments to scmDiv:  " ++ show h }]
         Nothing -> 
-            Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument:  " ++ (show args) }]
+            Left [ScmError { errCaller = "scmDiv", errMessage = "bad argument:  " ++ show args }]
 
 evalCar :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 evalCar ctx args =
-    case (safeCar $ Just args) of
+    case safeCar $ Just args of
         Just x -> 
             eval ctx x
         Nothing -> 
-            Left [ScmError { errCaller = "safeEval", errMessage = "bad args:  " ++ (show args) }]
+            Left [ScmError { errCaller = "safeEval", errMessage = "bad args:  " ++ show args }]
 
 scmSin :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --never returns an int (unlike Scheme)
 scmSin ctx args = 
-    case (evalCar ctx args) of
+    case evalCar ctx args of
         Right (ObjImmediate (ImmInt x)) -> 
             Right $ ObjImmediate $ ImmFloat $ sin $ fromIntegral x
         Right (ObjImmediate (ImmFloat x)) -> 
             Right $ ObjImmediate $ ImmFloat $ sin x
         Right x -> 
-            Left [ScmError { errCaller = "scmSin", errMessage = "bad argument:  " ++ (show x) }]
+            Left [ScmError { errCaller = "scmSin", errMessage = "bad argument:  " ++ show x }]
         Left x -> Left $ ScmError { errCaller = "scmSin", errMessage = "evaluation failed" } : x
 
 -- scmSin :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
@@ -591,13 +597,13 @@ scmSin ctx args =
 
 scmCos :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --never returns an int (unlike Scheme)
 scmCos ctx args = 
-    case (evalCar ctx args) of
+    case evalCar ctx args of
         Right (ObjImmediate (ImmInt x)) -> 
             Right $ ObjImmediate $ ImmFloat $ cos $ fromIntegral x
         Right (ObjImmediate (ImmFloat x)) -> 
             Right $ ObjImmediate $ ImmFloat $ cos x
         Right x -> 
-            Left [ScmError { errCaller = "scmCos", errMessage = "bad argument:  " ++ (show x) }]
+            Left [ScmError { errCaller = "scmCos", errMessage = "bad argument:  " ++ show x }]
         Left x -> Left $ ScmError { errCaller = "scmCos", errMessage = "evaluation failed" } : x
 
 scmSqrt :: ScmContext -> ScmObject -> Either [ScmError] ScmObject --never returns an int (unlike Scheme)
@@ -608,7 +614,7 @@ scmSqrt ctx args =
         Right (ObjImmediate (ImmFloat x)) -> 
             Right $ ObjImmediate $ ImmFloat $ sqrt x
         Right x -> 
-            Left [ScmError { errCaller = "scmSqrt", errMessage = "bad argument:  " ++ (show x) }]
+            Left [ScmError { errCaller = "scmSqrt", errMessage = "bad argument:  " ++ show x }]
         Left x -> Left $ ScmError { errCaller = "scmSqrt", errMessage = "evaluation failed" } : x
 
 scmNull :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
@@ -622,11 +628,11 @@ scmNull ctx args =
                     Right (ObjCons x) -> 
                         Right symFalse
                     Left x ->
-                        Left $ ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show x) } : x
+                        Left $ ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ show x } : x
                     otherwise -> 
-                        Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show x) }]
+                        Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ show x }]
             Nothing -> 
-                Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ (show arg) }]
+                Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ show arg }]
 
 scmConstructor :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmConstructor ctx args = 
@@ -645,22 +651,24 @@ scmConstructor ctx args =
                         (Left e, Left l) -> 
                             Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of args failed" }], e, l]
                         (Left e, Right l) -> 
-                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of arg1 failed" }], e]
+                            Left $ ScmError { errCaller = "scmConstructor", errMessage = "eval of arg1 failed" } : e
                         (Right e, Left l) -> 
-                            Left $ concat [[ScmError { errCaller = "scmConstructor", errMessage = "eval of arg2 failed" }], l]                            
-            otherwise -> 
+                            Left $ ScmError { errCaller = "scmConstructor", errMessage = "eval of arg2 failed" } : l
+            _ -> 
                 Left [ScmError { errCaller = "scmConstructor", errMessage = "arguments to cons were invalid" }]
 
 createLetBindings :: ScmContext -> ScmObject -> Either [ScmError] [(String, ScmObject)]
 createLetBindings ctx obj = iter obj [] where
     iter :: ScmObject -> [(String, ScmObject)] -> Either [ScmError] [(String, ScmObject)]
     iter (ObjImmediate (ImmSym "()")) res = Right $ reverse res
-    iter (ObjCons c@(ScmCons { scmCar = h, scmCdr = t })) res =
-        case (cnsToList h) of
-            Just (ObjSymbol l : o : []) -> 
+    iter (ObjCons c@ScmCons { scmCar = h, scmCdr = t }) res =
+        case cnsToList h of
+            Just [ObjSymbol l, o] -> 
                 iter t $ (l, head $ thunkifyArgList ctx [o]) : res
             Nothing -> 
-                Left [ ScmError { errCaller = "", errMessage = "bad arguments:  " ++ (show c)}]
+                Left [ ScmError { errCaller = "createLetBindings", errMessage = "bad arguments:  " ++ show c }]
+            _ -> Left [ ScmError { errCaller = "createLetBindings", errMessage = "unexpected arguments" }]
+    iter _ _ =  Left [ ScmError { errCaller = "createLetBindings", errMessage = "unexpected arguments" }]
 
 scmLet :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmLet ctx args = 
@@ -671,24 +679,24 @@ scmLet ctx args =
         (Just p, Just b) -> 
             let stk = ctxStk ctx
                 env = ctxEnv ctx
-                parent = if (null stk) then Nothing else Just $ head stk
+                parent = if null stk then Nothing else Just $ head stk
                 bindings = createLetBindings ctx p
             in case bindings of
                 Right p -> 
                     let blk = ScmBlock { blkBindings = p, blkParent = parent, blkType = SbtLet } --create block
                     in 
-                        if (length (nub (fmap (\ (l, o) -> l) p)) == length p) then
+                        if length (nub (fmap fst p)) == length p then
                             eval (ScmContext { ctxStk = blk : stk, ctxEnv = env }) b
                         else 
                             Left [ ScmError { errCaller = "scmLet", errMessage = "duplicate bindings are not allowed in let" } ]
                 Left e -> 
                     Left $ ScmError { errCaller = "scmLet", errMessage = "failure on binding creation"} : e
         (Nothing, Nothing) ->
-            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) ++ ", bad body:  " ++ (show body) } ]
+            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ show bindings ++ ", bad body:  " ++ show body } ]
         (Just p, Nothing) ->
-            Left [ ScmError { errCaller = "scmLet", errMessage = "bad body:  " ++ (show body) } ]
+            Left [ ScmError { errCaller = "scmLet", errMessage = "bad body:  " ++ show body } ]
         (Nothing, Just b) -> 
-            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ (show bindings) } ]
+            Left [ ScmError { errCaller = "scmLet", errMessage = "bad bindings:  " ++ show bindings } ]
 
 --this one requires creating a reverse list of bindings and doing tails of it
 
@@ -1322,7 +1330,7 @@ evalHeaps ctx lst = iter ctx lst [] where
     iter :: ScmContext -> [ScmObject] -> [(ScmObject, ScmObject)] -> Either [ScmError] [(ScmObject, ScmObject)]
     iter ctx [] res = Right $ reverse res
     iter ctx (h : t) res = 
-        case (eval ctx h) of 
+        case eval ctx h of 
             Right x@(ObjContext c) -> iter c t $ (h, x) : res
             Right x -> iter ctx t $ (h, x) : res
             Left x -> Left (ScmError { errCaller = "evalHeaps", errMessage = "failed in evaluating " ++ (show h) } : x)
@@ -1382,7 +1390,7 @@ scmScalarToDouble _ = Nothing
 fmScheme :: ScmObject -> Maybe ScmInterop
 fmScheme (ObjImmediate (ImmInt i)) = Just $ SopInt i
 fmScheme (ObjImmediate (ImmFloat f)) = Just $ SopDouble f
-fmScheme (ObjCons (ScmCons { scmCar = x, scmCdr = y })) =
+fmScheme (ObjCons ScmCons { scmCar = x, scmCdr = y }) =
     case (scmScalarToDouble x, scmScalarToDouble y) of
         (Just h, Just t) -> Just $ SopTuple (h, t)
         (Nothing, Nothing) -> Nothing 

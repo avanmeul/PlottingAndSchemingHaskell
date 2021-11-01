@@ -12,6 +12,7 @@ import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
+import qualified Scratch as S
 
 {-
 
@@ -78,14 +79,14 @@ printHello = do
 
 main :: IO ()
 main = do
-    result
+    -- result
     -- x <- printHello
     -- _ <- x
     -- return ()
-
-    -- names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
-    -- complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
-    -- startGUI defaultConfig $ setup (names, complexPlots)
+    --GUI
+    names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
+    complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
+    startGUI defaultConfig $ setup (names, complexPlots)
 
 canvasSize :: Int
 canvasSize = 50
@@ -113,7 +114,7 @@ fetchVectorXmlObj :: [XmlObj] -> Maybe Int -> Maybe XmlObj
 fetchVectorXmlObj plots i = 
     case i of
         Just x -> Just $ plots !! x
-        otherwise -> Nothing
+        _ -> Nothing
 
 fetchVectorPlot :: [XmlObj] -> Maybe Int -> String
 fetchVectorPlot plots i = maybe "" show $ fetchVectorXmlObj plots i
@@ -122,11 +123,11 @@ fetchVectorXmlComplex :: [XmlComplex] -> Maybe Int -> Maybe XmlComplex
 fetchVectorXmlComplex plots i = 
     case i of
         Just x -> Just $ plots !! x
-        otherwise -> Nothing
+        _ -> Nothing
 
 fetchComplexPlot :: [XmlComplex] -> Maybe Int -> String
 fetchComplexPlot plots i = maybe "" show $ fetchVectorXmlComplex plots i
- 
+
 setup :: ([XmlObj], [XmlComplex]) -> Window -> UI ()
 setup (xmlVec, xmlComplex) window = do
     return window # set title "Plotting and Scheming in Haskell"
@@ -291,8 +292,9 @@ setup (xmlVec, xmlComplex) window = do
         expression <- get value txtInput
         UI.element txtOutput # set UI.text (strToTok expression)
 
-    on UI.click btnTest $ const $ do
-        UI.element txtOutput # set UI.text (show $ parseTest' parseTests)
+    on UI.click btnTest $ const $ do        
+        UI.element txtOutput # set UI.text (show S.scratchResult)
+        -- UI.element txtOutput # set UI.text (rev [1, 2, 3])
 
     on UI.click btnAst $ const $ do
         expression <- get value txtInput
@@ -333,5 +335,5 @@ setup (xmlVec, xmlComplex) window = do
         UI.element txtComplexTranscript # set UI.text "hey"
 
     on UI.click btnScratchTest $ const $ do
-        -- txt <- S.result
-        UI.element txtScratchOut # set UI.text "hey" --S.result      
+        txtInput <- get value txtScratch
+        UI.element txtScratchOut # set UI.text txtInput

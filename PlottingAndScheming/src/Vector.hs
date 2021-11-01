@@ -8,7 +8,7 @@ module Vector where
 import Scheme
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import Text.XML
+-- import Text.XML --avm:  test to see if this is necessary
 import Prelude hiding (readFile, writeFile)
 import Text.XML as X
 import Text.XML.Cursor as C
@@ -54,7 +54,7 @@ setPixel pt clr can = do
     can # UI.fillRect pt 1 1
 
 drawVec :: Vector -> UI.Element -> UI ()
-drawVec (Vector { vecP1 = p1, vecP2 = p2, vecColor = clr }) c = do
+drawVec Vector { vecP1 = p1, vecP2 = p2, vecColor = clr } c = do
     c # set' UI.strokeStyle clr
     c # UI.beginPath
     c # UI.moveTo p1
@@ -93,7 +93,7 @@ checkPair arg1 arg2 (Nothing, Just hi) =
     in (Just $ head sorted, Just $ last sorted)
 
 checkExtrema :: Vector -> Extremes -> Extremes
-checkExtrema (Vector { vecP1 = (x1, y1), vecP2 = (x2, y2) }) (Extremes { xLo = xLow, xHi = xHigh, yLo = yLow, yHi = yHigh }) = 
+checkExtrema Vector { vecP1 = (x1, y1), vecP2 = (x2, y2) } Extremes { xLo = xLow, xHi = xHigh, yLo = yLow, yHi = yHigh } = 
     let (xlo, xhi) = checkPair x1 x2 (xLow, xHigh)
         (ylo, yhi) = checkPair y1 y2 (yLow, yHigh)
     in Extremes { xLo = xlo, xHi = xhi, yLo = ylo, yHi = yhi }
@@ -118,7 +118,7 @@ normalizeVectors vecs =
                     in Vector { vecP1 = (x1', y1'), vecP2 = (x2', y2'), vecColor = c }
                 vecs' = map adjust vecs
             in (vecs', (Just $ ceiling width, Just $ ceiling height))
-        otherwise -> 
+        _ -> 
             (vecs, (Nothing, Nothing))
 
 --to do:  level should have Level and Image should have Subtractor via a newtype
@@ -153,7 +153,7 @@ ctorColoringAlgorithm typ el =
                 lvlActual = findLevel nm
             in
                 Just $ CalImage  lvlActual
-        otherwise -> 
+        _ -> 
             Nothing
     where 
         findLevel :: Name -> Int
