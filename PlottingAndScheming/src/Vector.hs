@@ -99,16 +99,16 @@ checkExtrema Vector { vecP1 = (x1, y1), vecP2 = (x2, y2) } Extremes { xLo = xLow
     in Extremes { xLo = xlo, xHi = xhi, yLo = ylo, yHi = yhi }
 
 findExtrema :: [Vector] -> Extremes
-findExtrema vecs = 
-    foldr checkExtrema (Extremes { xLo = Nothing, xHi = Nothing, yLo = Nothing, yHi = Nothing }) vecs
+findExtrema = 
+    foldr checkExtrema (Extremes { xLo = Nothing, xHi = Nothing, yLo = Nothing, yHi = Nothing })
     
 normalizeVectors :: [Vector] -> ([Vector], (Maybe Int, Maybe Int))
 normalizeVectors vecs =
-    case (findExtrema vecs) of
-        (Extremes { xLo = Just xl, xHi = Just xh, yLo = Just yl, yHi = Just yh }) ->
+    case findExtrema vecs of
+        Extremes { xLo = Just xl, xHi = Just xh, yLo = Just yl, yHi = Just yh } ->
             let width = xh - xl
                 height = yh - yl
-                adjust = \(Vector { vecP1 = (x1, y1), vecP2 = (x2,y2), vecColor = c }) -> 
+                adjust = \Vector { vecP1 = (x1, y1), vecP2 = (x2,y2), vecColor = c } -> 
                     let x1' = x1 - xl
                         y1' = yh - y1 --quadrant I
                         -- y1' = y1 - yl
@@ -161,7 +161,7 @@ ctorColoringAlgorithm typ el =
             let lvl = el >>= child >>= C.element nm >>= child >>= content
                 lvlUnpack = map T.unpack lvl
                 lvlMaybe = if null lvlUnpack then Nothing else readMaybe (head lvlUnpack) :: Maybe Int
-            in maybe 1 id lvlMaybe
+            in fromMaybe 1 lvlMaybe
 
 ctorXmlObj :: [Cursor] -> XmlObj
 ctorXmlObj el =
@@ -193,10 +193,10 @@ ctorXmlObj el =
         rulesValue = if null rulesContent1 then "" else head $ map T.unpack rulesContent1
         gen1 = params1 >>= C.element gen >>= child >>= content
         genMaybe = readMaybe (head $ map T.unpack gen1) :: Maybe Int
-        generations = maybe 1 id genMaybe
+        generations = fromMaybe 1 genMaybe
         len1 = params1 >>= C.element len >>= child >>= content
         lenMaybe = readMaybe (head $ map T.unpack len1) :: Maybe Double
-        length = maybe 1.0 id lenMaybe
+        length = fromMaybe 1.0 lenMaybe
         coloring1 = params1 >>= C.element coloring >>= child
         palette1 = coloring1 >>= C.element palette >>= child
         color1 = palette1 >>= C.element color >>= child
@@ -206,15 +206,9 @@ ctorXmlObj el =
         algUnpacked = map T.unpack algType
         alg = if null algUnpacked then "level" else head algUnpacked
         cont = 
-            if null rules1Continuous then
-                True
-            else
-                "yes" == (head $ map T.unpack rules1Continuous)
+            null rules1Continuous || "yes" == head (map T.unpack rules1Continuous)
         builtin =
-            if null rulesType1 then 
-                True
-            else 
-                "builtin" == (head $ map T.unpack rulesType1)
+            null rulesType1 || "builtin" == head (map T.unpack rulesType1)
         colorAlg = ctorColoringAlgorithm alg algorithm1
     in
         XmlObj 
@@ -225,7 +219,7 @@ ctorXmlObj el =
             , xobRules = rulesValue
             , xobBuiltIn = builtin
             , xobColors = map T.unpack colorName1
-            , xobAlgorithm = maybe (CalLevel 1) id colorAlg
+            , xobAlgorithm = fromMaybe (CalLevel 1) colorAlg
             , xobContinuous = cont
             }
 
@@ -268,12 +262,12 @@ ctorPalettePicker colors =
     PalettePicker { ppkPalette = colors, ppkLoc = -1 }
 
 paletteColor :: PalettePicker -> Color --to do:  redo as an array
-paletteColor (PalettePicker { ppkPalette = p, ppkLoc = l }) = 
+paletteColor PalettePicker { ppkPalette = p, ppkLoc = l } = 
     p !! l
 
 paletteInc :: PalettePicker -> PalettePicker
-paletteInc (PalettePicker { ppkPalette = pp, ppkLoc = l }) = 
-    PalettePicker { ppkPalette = pp, ppkLoc = (l + 1) `mod` (length pp)}
+paletteInc PalettePicker { ppkPalette = pp, ppkLoc = l } = 
+    PalettePicker { ppkPalette = pp, ppkLoc = (l + 1) `mod` length pp }
 
 paletteSetLoc :: PalettePicker -> Int -> PalettePicker
 paletteSetLoc pp i =
@@ -282,7 +276,7 @@ paletteSetLoc pp i =
     else
         let palette = ppkPalette pp
         in 
-            PalettePicker { ppkPalette = palette, ppkLoc = i `mod` (length palette) } 
+            PalettePicker { ppkPalette = palette, ppkLoc = i `mod` length palette } 
 
 data SizeColorizer = SizeColorizer 
     { sczPicker :: PalettePicker
@@ -313,19 +307,19 @@ ctorSizeColorizer pp numRules subtractor generations =
 
 checkSizeColorizer :: SizeColorizer -> Int -> Double -> SizeColorizer
 checkSizeColorizer sc i size =
-    if i `mod` (sczNumberOfRules sc) == 0 then
+    if i `mod` sczNumberOfRules sc == 0 then
         -- check to see if we know about this size already
-        case findIndex (==size) (sczSizes sc) of
+        case elemIndex size (sczSizes sc) of
             Just x -> 
                 --use size index to set the index of the color picker
                 let pp = paletteSetLoc (sczPicker sc) x
                 in sc { sczPicker = pp }
             Nothing -> 
                 --add newly found size
-                let newSizes = (sczSizes sc) ++ [size]
+                let newSizes = sczSizes sc ++ [size]
                 in sc 
-                    { sczSizes = (sczSizes sc) ++ [size]
-                    , sczPicker = paletteSetLoc (sczPicker sc) ((length newSizes) -1) }
+                    { sczSizes = sczSizes sc ++ [size]
+                    , sczPicker = paletteSetLoc (sczPicker sc) (length newSizes - 1) }
     else
         sc
 
@@ -381,7 +375,7 @@ data VecRule = VecRule
     , vrlFlipRules :: Int
     } deriving (Show)
 
-ctorVecRule :: ((Double -> Double), (Double -> Int -> Double), (Double -> Double -> UI.Point -> Int -> UI.Point), Int, Int) -> VecRule
+ctorVecRule :: (Double -> Double, Double -> Int -> Double, Double -> Double -> UI.Point -> Int -> UI.Point, Int, Int) -> VecRule
 ctorVecRule (lenf, anglef, originf, flipa, flipr) =
     VecRule 
         { vrlLenf = VlnBuiltIn lenf
@@ -405,7 +399,7 @@ builtIns =
 
 findBuiltin :: [ (String, ([VecRule], [VecRule])) ] -> String -> Maybe ([VecRule], [VecRule])
 findBuiltin alist tgt =
-    case (find (\(c, _) -> c == tgt) alist) of
+    case find (\(c, _) -> c == tgt) alist of
         Just (_, v) -> Just v
         Nothing -> Nothing
 
@@ -427,8 +421,8 @@ beeHive =
         anglePlus150 angle flip = angle + (fromIntegral flip * degrees150)        
         angleMinus90 :: Double -> Int -> Double
         angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
-        calcP1 origin len angle = fst origin + (len * (cos angle))
-        calcP2 origin len angle = snd origin + (len * (sin angle))        
+        calcP1 origin len angle = fst origin + (len * cos angle)
+        calcP2 origin len angle = snd origin + (len * sin angle)       
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
             let len' = lenf len
@@ -465,8 +459,8 @@ islands =
         angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
         angleMinus180 :: Double -> Int -> Double
         angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
-        calcP1 origin len angle = fst origin + (len * (cos angle))
-        calcP2 origin len angle = snd origin + (len * (sin angle))
+        calcP1 origin len angle = fst origin + (len * cos angle)
+        calcP2 origin len angle = snd origin + (len * sin angle)
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
             let len' = lenDiv8 len
@@ -520,8 +514,8 @@ islands2 =
         angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
         angleMinus180 :: Double -> Int -> Double
         angleMinus180 angle flip = angle - (fromIntegral flip * degrees180)        
-        calcP1 origin len angle = fst origin + (len * (cos angle))
-        calcP2 origin len angle = snd origin + (len * (sin angle))
+        calcP1 origin len angle = fst origin + (len * cos angle)
+        calcP2 origin len angle = snd origin + (len * sin angle)
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
             let len' = lenDiv8 len
@@ -579,8 +573,8 @@ islandsAndLakes =
         angleMinus90 angle flip = angle - (fromIntegral flip * degrees90)
         angleMinus180 :: Double -> Int -> Double
         angleMinus180 angle flip = angle - (fromIntegral flip * pi)        
-        calcP1 origin len angle = fst origin + (len * (cos angle))
-        calcP2 origin len angle = snd origin + (len * (sin angle))
+        calcP1 origin len angle = fst origin + (len * cos angle)
+        calcP2 origin len angle = snd origin + (len * sin angle)
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
             let len' = lenDiv6 len
@@ -624,30 +618,30 @@ mandelbrotPeanoCurveIntervals13 :: ([VecRule], [VecRule])
 mandelbrotPeanoCurveIntervals13 = 
     let lenDiv3 len = len / 3.0
         degrees60 = pi / 3.0
-        anglePlus60 angle flip = angle + (degrees60 * (fromIntegral flip))
-        angleLess60 angle flip = angle - (degrees60 * (fromIntegral flip))
+        anglePlus60 angle flip = angle + (degrees60 * fromIntegral flip)
+        angleLess60 angle flip = angle - (degrees60 * fromIntegral flip)
         fivePiOver6 = 5.0 * pi / 6.0
-        anglePlus5PiOver6 angle flip = angle + (fivePiOver6 * (fromIntegral flip))
-        angleLess5PiOver6 angle flip = angle - (fivePiOver6 * (fromIntegral flip))
+        anglePlus5PiOver6 angle flip = angle + (fivePiOver6 * fromIntegral flip)
+        angleLess5PiOver6 angle flip = angle - (fivePiOver6 * fromIntegral flip)
         lenDiv3sqrt3 len = len / (3.0 * sqrt 3.0)
-        angleLessPiHalves angle flip = angle - ((fromIntegral flip) * pi / 2.0)
+        angleLessPiHalves angle flip = angle - (fromIntegral flip * pi / 2.0)
         initiator = 
             fmap ctorVecRule 
                 [ (id, project1of2, project3of4, 1, 1) ] --1
         generator = 
             fmap ctorVecRule 
-                [ (lenDiv3, anglePlus60, project3of4, (-1), 1) --1            
+                [ (lenDiv3, anglePlus60, project3of4, - 1, 1) --1            
                 , (lenDiv3, anglePlus60, project3of4, 1, 1) --2              
                 , (lenDiv3, project1of2, project3of4, 1, 1) --3            
                 , (lenDiv3, angleLess60, project3of4, 1, 1) --4          
                 , (lenDiv3sqrt3, anglePlus5PiOver6, project3of4, 1, 1) --5          
-                , (lenDiv3sqrt3, anglePlus5PiOver6, project3of4, (-1), 1) --6      
-                , (lenDiv3sqrt3, angleLess5PiOver6, project3of4, (-1), 1) --7     
-                , (lenDiv3sqrt3, angleLessPiHalves, project3of4, (-1), 1) --8  
+                , (lenDiv3sqrt3, anglePlus5PiOver6, project3of4, - 1, 1) --6      
+                , (lenDiv3sqrt3, angleLess5PiOver6, project3of4, - 1, 1) --7     
+                , (lenDiv3sqrt3, angleLessPiHalves, project3of4, - 1, 1) --8  
                 , (lenDiv3, project1of2, project3of4, 1, 1) --9
                 , (lenDiv3sqrt3, angleLess5PiOver6, project3of4, 1, 1) --10
-                , (lenDiv3sqrt3, angleLess5PiOver6, project3of4, (-1), 1) --11
-                , (lenDiv3, project1of2, project3of4, (-1), 1) --12
+                , (lenDiv3sqrt3, angleLess5PiOver6, project3of4, - 1, 1) --11
+                , (lenDiv3, project1of2, project3of4, - 1, 1) --12
                 , (lenDiv3, project1of2, project3of4, 1, 1) ] --13
     in
         (initiator, generator)
@@ -820,7 +814,7 @@ tiles2 =
         moveOrigin :: Double -> Double -> (Double, Double) -> Int -> (Double, Double)
         moveOrigin len angle origin flip =
             let len' = lenDiv3 len
-            in (fst origin + (len' * (cos angle)), snd origin + (len' * (sin angle)))           
+            in (fst origin + (len' * cos angle), snd origin + (len' * sin angle))           
         initiator = 
             fmap ctorVecRule 
                 [ (id, project1of2, project3of4, 1, 1) --1
@@ -840,7 +834,7 @@ tiles2 =
 
 vectorEndPoint :: UI.Point -> Double -> Double -> UI.Point
 vectorEndPoint vec len angle =
-    (((fst vec) + (len * cos angle)), ((snd vec) + (len * sin angle)))
+    (fst vec + (len * cos angle), snd vec + (len * sin angle))
 
 scmToInt :: ScmObject -> Maybe Int
 scmToInt (ObjImmediate (ImmInt x)) = Just x
@@ -852,11 +846,11 @@ isScmClosure _ = Nothing
 
 lispToVecRule :: ScmObject -> Maybe VecRule
 lispToVecRule x@(ObjCons _) = 
-    case (cnsToList x) of
+    case cnsToList x of
         Just l -> 
             let flipa = scmToInt $ l !! 3
                 flipr = scmToInt $ l !! 4
-                lenf = isScmClosure $ l !! 0
+                lenf = isScmClosure $ head l
                 anglef = isScmClosure $ l !! 1
                 originf = isScmClosure $ l !! 2
             in 
@@ -868,23 +862,23 @@ lispToVecRule x@(ObjCons _) =
                             , vrlOriginf = VorScheme o
                             , vrlFlipAngle = fa
                             , vrlFlipRules = fr }
-                    otherwise -> Nothing
-        otherwise -> Nothing
+                    _ -> Nothing
+        _ -> Nothing
 lispToVecRule _ = Nothing 
 
 rulesToList :: Maybe ScmObject -> Maybe [VecRule]
 rulesToList (Just x@(ObjCons _)) = 
-    case (cnsToList x) of
+    case cnsToList x of
         Just t -> 
-            Just $ catMaybes $ fmap lispToVecRule t
-        otherwise -> 
+            Just $ mapMaybe lispToVecRule t
+        _ -> 
             Nothing
 rulesToList _ = Nothing
 
 fetchRules :: String -> Bool -> ([VecRule], [VecRule])
 fetchRules rules builtIn =
     if builtIn then
-        case (findBuiltin builtIns rules) of
+        case findBuiltin builtIns rules of
             Just x -> x
             Nothing -> error $ "couldn't find built-in rule for " ++ rules --to do:  remove this
     else --call LISP
@@ -897,8 +891,8 @@ fetchRules rules builtIn =
                             cdr = rulesToList $ safeCar $ safeCdr exp
                         in case (car, cdr) of
                             (Just seed, Just rules) -> (seed, rules)
-                            otherwise -> error "couldn't make seed and rules from LISP"
-                    Left x -> error $ "fetchRules:  scheme eval failed.  Error:  " ++ (show x) --to do:  remove error
+                            _ -> error "couldn't make seed and rules from LISP"
+                    Left x -> error $ "fetchRules:  scheme eval failed.  Error:  " ++ show x --to do:  remove error
         in evaledStr
 
 {-
@@ -933,12 +927,12 @@ drawFunction vecs clz len angle origin =
 quitFunction :: Int -> Double -> Int -> Bool --in common
 quitFunction generations = 
     if generations < 0 then --perhaps this is to stop recursing based on length of the vector rather than generations; shouldn't use neg numbers like this (use sum type instead)
-        \len generation -> len < (fromIntegral generations)
+        \len generation -> len < fromIntegral generations
     else 
         \len generation -> generation == generations     
 
 vectorFractal :: XmlObj -> Either [ScmError] [Vector]
-vectorFractal xob@(XmlObj 
+vectorFractal xob@XmlObj 
     { xobName = n
     , xobDesc = d
     , xobGenerations = gen
@@ -947,7 +941,7 @@ vectorFractal xob@(XmlObj
     , xobLength = l
     , xobRules = r
     , xobColors = colors
-    , xobAlgorithm = colorAlg }) =
+    , xobAlgorithm = colorAlg } =
     let (seed, rules) = fetchRules r True
         pp = ctorPalettePicker colors
         numRules = length rules
@@ -1006,14 +1000,15 @@ vectorFractal xob@(XmlObj
                             across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer
                         originf = o len angle newOrigin flipAngleFactor
                     in
-                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'       
+                        down lenf anglef originf (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer'
+                across _ _ _ _ _ _ _ _ _ = error "unexpected arguments to across"
                 down :: Double -> Double -> UI.Point -> Int -> Int -> Int -> [Vector] -> VectorColorizer -> (UI.Point, [Vector], VectorColorizer)
                 down len angle origin flipAngleFactor flipRulesFactor generation vectors colorizer =
                     let colorizer' =
                             case colorizer of
                                 VczLevel l ->
                                     VczLevel $ checkLevel l generation
-                                otherwise -> 
+                                _ -> 
                                     colorizer
                     in 
                         let quit = quitf len generation
@@ -1055,7 +1050,7 @@ vectorFractal xob@(XmlObj
                     0.0 --flip rules
                     (quitFunction gen)
         in Right vectors
-vectorFractal xob@(XmlObj --lisp specified vector fractals
+vectorFractal xob@XmlObj --lisp specified vector fractals
     { xobName = _
     , xobDesc = _
     , xobGenerations = gen
@@ -1064,7 +1059,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
     , xobLength = l
     , xobRules = r
     , xobColors = colors
-    , xobAlgorithm = colorAlg }) 
+    , xobAlgorithm = colorAlg } 
     =
     let (seed, rules) = fetchRules r False
         pp = ctorPalettePicker colors
@@ -1113,7 +1108,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                     vectors 
                     colorizer 
                     = --across for lisp
-                    case (across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer) of
+                    case across len angle origin flipAngleFactor flipRulesFactor generation restSeed vectors colorizer of
                         Right (newOrigin, vectors', colorizer') -> --across is okay, we can attempt down call
                             let scmLen = toScheme $ SopDouble len
                                 lenf = scmApply l [scmLen]
@@ -1122,16 +1117,16 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                                 anglef = scmApply a [scmAngle, scmFlipFactor]
                                 scmNewOrigin = toScheme $ SopTuple newOrigin
                                 originf = scmApply o [scmLen, scmAngle, scmNewOrigin, scmFlipFactor]
-                                scmRights = catMaybes $ fmap fmScheme $ rights [lenf, anglef, originf]
+                                scmRights = mapMaybe fmScheme (rights [lenf, anglef, originf])
                                 scmLefts = concat $ lefts [lenf, anglef, originf]
                             in
                                 if not $ null scmLefts then
                                     Left scmLefts --to do:  add another error for across, cons in
                                 else
                                     case scmRights of 
-                                        (SopDouble len' : SopDouble angle' : SopTuple origin' : []) ->
+                                        [SopDouble len', SopDouble angle', SopTuple origin'] ->
                                             down len' angle' origin' (flipAngleFactor * flipAngle) (flipRulesFactor * flipRules) (generation + 1) vectors' colorizer' 
-                                        otherwise -> 
+                                        _ -> 
                                             Left [ ScmError { errMessage = "scheme calls for across did not all succeed", errCaller = "across" } ]
                         e@(Left _) -> --we're toast already
                             e
@@ -1153,7 +1148,7 @@ vectorFractal xob@(XmlObj --lisp specified vector fractals
                             case colorizer of
                                 VczLevel l ->
                                     VczLevel $ checkLevel l generation
-                                otherwise -> 
+                                _ -> 
                                     colorizer
                     in 
                         let quit = quitf len generation

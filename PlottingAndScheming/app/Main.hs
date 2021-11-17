@@ -13,6 +13,7 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import Data.List
 import qualified Scratch as S
+import Data.Maybe
 
 {-
 
@@ -38,6 +39,8 @@ add scrolling to text boxes for expression and result
 parse failures should return Left (string, [Token])
 possibly add untokenize button?
 put all debug buttons in a debug tab
+clear output button on REPL
+clear plot on vector tab
 
 -}
 
@@ -64,13 +67,13 @@ getVectors plots i =
     in 
         case plotObj of
             Just x -> 
-                case (vectorFractal x) of
+                case vectorFractal x of
                     Right x -> 
                         let v@(vecs', _) = normalizeVectors x
-                        in (v, "number of vectors:  " ++ (show $ length vecs'))
-                    Left x -> 
-                        (([], (Just 100, Just 100)), "failed to get xml for plot, error:  " ++ (show x))
-            otherwise -> 
+                        in (v, "number of vectors:  " ++ show (length vecs'))
+                    Left x ->
+                        (([], (Just 100, Just 100)), "failed to get xml for plot, error:  " ++ show x)
+            _ -> 
                (([], (Just 100, Just 100)), "failed to get vectors for plot")
 
 printHello :: IO ()
@@ -144,6 +147,7 @@ setup (xmlVec, xmlComplex) window = do
     btnEval <- UI.button #+ [string "eval"]
     btnTest <- UI.button #+ [string "run test suite"]
     btnVecPlot <- UI.button #+ [string "plot vector"]
+    btnVecErase <- UI.button #+ [string "erase plot"]
     btnScratch <- UI.button #+ [string "scratch"]
     btnScratchTest <- UI.button #+ [string "test it"]
     divTab <- UI.div #. "header" #+ [string "plotting and scheming"]
@@ -173,6 +177,7 @@ setup (xmlVec, xmlComplex) window = do
             , [row [UI.element txtVector]]
             , [row [UI.element btnVecPlot]] 
             , [row [UI.element canVec]]
+            , [row [UI.element btnVecErase]]--to do:  hook up erase plot functionality
             , [row [UI.element txtVectorTranscript]]
             ]
         ]
@@ -314,16 +319,25 @@ setup (xmlVec, xmlComplex) window = do
         index <- get UI.selection cbxVector
         let plotObj = fetchVectorPlot xmlVec index
         UI.element txtVector # set UI.text (show plotObj)
-        UI.element txtVectorTranscript # set UI.text ("index:  " ++ (show $ maybe (-1) id index))
+        UI.element txtVectorTranscript # set UI.text ("index:  " ++ show (fromMaybe (-1) index))
 
     on UI.click btnVecPlot $ const $ do
         index <- get UI.selection cbxVector
         let ((vecs, (width, height)), msg) = getVectors xmlVec index
-        UI.element canVec # set UI.width (maybe 200 id width)
-        UI.element canVec # set UI.height (maybe 200 id height)
+        UI.element canVec # set UI.width (fromMaybe 200 width)
+        UI.element canVec # set UI.height (fromMaybe 200 height)
         canVec # drawVecs vecs
         UI.element txtVectorTranscript # set UI.text msg
-        return canVec        
+        return canVec
+
+    on UI.click btnVecErase $ const $ do
+        index <- get UI.selection cbxVector
+        -- let ((vecs, (width, height)), msg) = getVectors xmlVec index
+        UI.element canVec # set UI.width 200
+        UI.element canVec # set UI.height 200
+        -- canVec # drawVecs vecs
+        UI.element txtVectorTranscript # set UI.text "plot erased"
+        return canVec         
 
     on UI.click cbxComplex $ const $ do
         index <- get UI.selection cbxComplex

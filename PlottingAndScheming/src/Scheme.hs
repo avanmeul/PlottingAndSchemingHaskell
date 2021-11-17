@@ -629,7 +629,7 @@ scmNull ctx args =
                         Right symFalse
                     Left x ->
                         Left $ ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ show x } : x
-                    otherwise -> 
+                    _ -> 
                         Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ show x }]
             Nothing -> 
                 Left [ScmError { errCaller = "scmNull", errMessage = "bad argument:  " ++ show arg }]
