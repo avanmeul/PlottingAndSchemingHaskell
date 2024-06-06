@@ -11,7 +11,9 @@ File:  Scheme.hs
 -}
 
 {-
-to do:  
+to do:
+    -> add text box to lambda screen with to do list
+    -> implement raw so as to allow (define quote (lambda (x) (raw x)))
     -> output pane for print statements
     -> canvas for plotting, hookup graphic primitives to interpreter
     -> tab for transcript (that allows saving)
@@ -133,10 +135,19 @@ data ScmObject =
     ObjPrimitive ScmPrimitive
     deriving (Show) --to do:  add Eq
 
+--avm 8 jan 24 mo:  get rid of thkEvaled (it isn't needed)
+--avm 9 may 24 th:  evaluated thunks get put into a list keyed by unevaled value
+
+data ScmHeapThunk = ScmHeapThunk
+    { hthCtx :: ScmContext
+    , hthUnevaled :: ScmObject
+    , hthEvaled :: Maybe ScmObject }
+    deriving (Show) --to do:  add Eq
+
 data ScmThunk = ScmThunk
     { thkCtx :: ScmContext
     , thkValue :: ScmObject
-    , thkEvaled :: Bool }
+    , thkEvaled :: Bool } --remove this member and find out evaluated status from Haskell
     deriving (Show) --to do:  add Eq
 
 data ScmCons = ScmCons
@@ -316,6 +327,10 @@ cnsHead
 cnsTail
 cnsNil
 -}
+
+scmRaw :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
+scmRaw = 
+    undefined
 
 scmQuote :: ScmContext -> ScmObject -> Either [ScmError] ScmObject
 scmQuote ctx (ObjCons ScmCons { scmCar = h, scmCdr = ObjImmediate (ImmSym "()") }) = Right h
@@ -1416,8 +1431,8 @@ parseTests =
     , ("(car '(a b c))", [TokLeftParen,TokSymbol "car",TokWhitespace " ",TokSingleQuote,TokLeftParen,TokSymbol "a",TokWhitespace " ",TokSymbol "b",TokWhitespace " ",TokSymbol "c",TokRightParen,TokRightParen])
     , ("(car '(a b . c))", [TokLeftParen,TokSymbol "car",TokWhitespace " ",TokSingleQuote,TokLeftParen,TokSymbol "a",TokWhitespace " ",TokSymbol "b",TokWhitespace " ",TokDot,TokWhitespace " ",TokSymbol "c",TokRightParen,TokRightParen])
     , ("(car '(234324fsdfds-sdfdsfsdf3.5))", [TokLeftParen,TokSymbol "car",TokWhitespace " ",TokSingleQuote,TokLeftParen,TokSymbol "234324fsdfds-sdfdsfsdf3.5",TokRightParen,TokRightParen])
-    , ("(car (cdr (cons '(-3. . +5) (cons 4.5 23423432))))",
-        [TokLeftParen
+    , ("(car (cdr (cons '(-3. . +5) (cons 4.5 23423432))))"
+    , [TokLeftParen
         ,TokSymbol "car"
         ,TokWhitespace " "
         ,TokLeftParen,TokSymbol "cdr"

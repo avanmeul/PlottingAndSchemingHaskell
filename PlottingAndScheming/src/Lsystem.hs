@@ -1,5 +1,65 @@
 module Lsystem where
-    
+
+import qualified Graphics.UI.Threepenny as UI
+import Text.XML
+import Prelude hiding (readFile, writeFile)
+import Text.XML as X
+import Text.XML.Cursor as C
+import qualified Data.Text as T
+import Text.Read
+import Data.List
+import Data.Maybe
+import Data.Either
+import TwoD
+import Scheme    
+
+data XmlLsystem = XmlLsystem
+    { xlsName :: String
+    -- , xlsDesc :: String
+    -- , xcmIterator :: String --to do:  sum type for iterator types
+    -- , xobGenerations :: Int
+    -- , xobLength :: Double
+    -- , xobRules :: String
+    -- , xobBuiltIn :: Bool
+    -- , xobContinuous :: Bool
+    -- , xobColors :: [Color]
+    -- , xobAlgorithm :: ColoringAlgorithm
+    } deriving (Eq, Show)
+
+ctorXmlLsystem :: [Cursor] -> XmlLsystem
+ctorXmlLsystem el = --to do:  flesh this out
+    let 
+        -- info = Name { nameLocalName = T.pack "info", nameNamespace = Nothing, namePrefix = Nothing }
+        nm = Name { nameLocalName = T.pack "name", nameNamespace = Nothing, namePrefix = Nothing }
+        descendents = el >>= descendant
+        elName = descendents >>= C.element nm >>= child >>= content
+        -- info1 = descendants >>= C.element info >>= child >>= content
+        -- name1 = info1 >>= C.element nm >>= child >>= content
+        fractalName = if null elName then "" else head $ map T.unpack elName
+  
+    in
+        XmlLsystem
+            { xlsName = fractalName
+            --, xlsDesc = description
+            -- , xobGenerations = generations
+            -- , xobLength = length
+            -- , xobRules = rulesValue
+            -- , xobBuiltIn = builtin
+            -- , xobColors = map T.unpack colorName1
+            -- , xobAlgorithm = maybe (CalLevel 1) id colorAlg
+            -- , xobContinuous = cont
+            }        
+
+parseXmlLsystem :: String -> IO [XmlLsystem]
+parseXmlLsystem fname = do
+    doc <- readFile def fname
+    let cursor = fromDocument doc
+        lsystem = Name { nameLocalName = T.pack "lsystem", nameNamespace = Nothing, namePrefix = Nothing }
+        vecs = child cursor >>= C.element lsystem
+        plotObjects = map (\x -> ctorXmlLsystem [x]) vecs
+        po1 = head plotObjects 
+    return plotObjects
+
 -- (* Copyright (c) 2009, 2008, 2007, 2006 by André van Meulebrouck.  All rights reserved worldwide. *)
 
 -- (*
@@ -476,7 +536,7 @@ module Lsystem where
 --     win.Content <- scroll
 --     let name = 
 --         let name = plotObj.xml.Element (xname "name")
---         if name <> null then
+-- --         if name <> null then
 --             name.Value
 --         else failwith "bad name for plot"
 --     win.Title <- name + " [generation=" + generations.ToString() + "]"

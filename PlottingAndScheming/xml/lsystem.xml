@@ -267,7 +267,7 @@
       			<vector>
         			<length>15</length></vector></parameters></lsystem>
 	<lsystem>
-    		<name>hilbert 2</name>
+		<name>hilbert 2</name>
 		<angle>90</angle>
 		<axiom>x</axiom>
 		<rules>

@@ -7,6 +7,7 @@ module Main where
 import Scheme
 import Vector
 import Complex
+import Lsystem
 import Scratch as S
 import Control.Monad
 import qualified Graphics.UI.Threepenny as UI
@@ -14,16 +15,14 @@ import Graphics.UI.Threepenny.Core
 import Data.List
 import qualified Scratch as S
 import Data.Maybe
+-- import Data.String.Unicode
 
 {-
 
 to do:  
 
-fix plots that are broken:  
-    bee hive (0 vectors),
-    sierpinski's gasket #2 (0 vectors), 
-    tiles (0 vectors)
-    tiles 2 (0 vectors)
+need btn click event for Lsystem
+need unicode strings for lambda calculus interpreter
 allow drawing seed (generation 0)
 define pi in scheme
 bug using car/cdr (in certain contexts)
@@ -89,7 +88,8 @@ main = do
     --GUI
     names <- parseXmlVector "PlottingAndScheming/xml/vector.xml"
     complexPlots <- parseXmlComplex "PlottingAndScheming/xml/complex.xml"
-    startGUI defaultConfig $ setup (names, complexPlots)
+    lsystemPlots <- parseXmlLsystem "PlottingAndScheming/xml/lsystem.xml"
+    startGUI defaultConfig $ setup (names, complexPlots, lsystemPlots)
 
 canvasSize :: Int
 canvasSize = 50
@@ -128,18 +128,32 @@ fetchVectorXmlComplex plots i =
         Just x -> Just $ plots !! x
         _ -> Nothing
 
+fetchXmlLsystem :: [XmlLsystem] -> Maybe Int -> Maybe XmlLsystem
+fetchXmlLsystem plots i =
+    case i of
+        Just x -> Just $ plots !! x
+        _ -> Nothing
+
 fetchComplexPlot :: [XmlComplex] -> Maybe Int -> String
 fetchComplexPlot plots i = maybe "" show $ fetchVectorXmlComplex plots i
 
-setup :: ([XmlObj], [XmlComplex]) -> Window -> UI ()
-setup (xmlVec, xmlComplex) window = do
+fetchLsystemPlot :: [XmlLsystem] -> Maybe Int -> String
+fetchLsystemPlot plots i = maybe "" show $ fetchXmlLsystem plots i
+
+setup :: ([XmlObj], [XmlComplex], [XmlLsystem]) -> Window -> UI ()
+setup (xmlVec, xmlComplex, xmlLsystem) window = do
     return window # set title "Plotting and Scheming in Haskell"
+    --scratch tab
     txtInput  <- UI.textarea #. "send-textarea"
     txtOutput  <- UI.textarea #. "send-textarea"
     txtScratch <- UI.textarea #. "send-textarea"
     txtScratchOut <- UI.textarea #. "send-textarea"
     txtVector <- UI.textarea #. "send-textarea"
     txtVectorTranscript <- UI.textarea #. "send-textarea"
+    txtLambda <- UI.textarea #. "send-textarea"
+    txtLambdaOut <- UI.textarea #. "send-textarea"
+    txtLambdaInput <- UI.textarea #. "send-textarea"
+    txtLambdaOutput <- UI.textarea #. "send-textarea"
     btnClear <- UI.button #+ [string "clear result"]
     btnClearInput <- UI.button #+ [string "clear input"]
     btnTokenize <- UI.button #+ [string "tokenize"]
@@ -150,6 +164,7 @@ setup (xmlVec, xmlComplex) window = do
     btnVecErase <- UI.button #+ [string "erase plot"]
     btnScratch <- UI.button #+ [string "scratch"]
     btnScratchTest <- UI.button #+ [string "test it"]
+    btnLambdaXform <- UI.button #+ [string "transform"]
     divTab <- UI.div #. "header" #+ [string "plotting and scheming"]
     btnScheme <- UI.button #+ [string "scheme"] # set UI.style [("color", "blue")]
     btnVector <- UI.button #+ [string "vector"]
@@ -182,13 +197,20 @@ setup (xmlVec, xmlComplex) window = do
             ]
         ]
     --complex
-    cbxComplex <-  UI.select #+ map (\XmlComplex { xcmName = i } -> UI.option #+ [string i]) xmlComplex
+    cbxComplex <- UI.select #+ map (\XmlComplex { xcmName = i } -> UI.option #+ [string i]) xmlComplex
+    cbxLsystem <- UI.select #+ map (\XmlLsystem { xlsName = i } -> UI.option #+ [string i]) xmlLsystem
     txtComplex <- UI.textarea #. "send-textarea"
+    txtLsystem <- UI.textarea #. "send-textarea"
     btnComplexPlot <- UI.button #+ [string "plot complex"]
+    btnLsystemPlot <- UI.button #+ [string "plot lsystem"]
     canComplex <- UI.canvas
         # set UI.height canvasSize
-        # set UI.width  canvasSize  
+        # set UI.width  canvasSize
+    canLsystem <- UI.canvas
+        # set UI.height canvasSize
+        # set UI.width  canvasSize          
     txtComplexTranscript <- UI.textarea #. "send-textarea"          
+    txtLsystemTranscript <- UI.textarea #. "send-textarea"          
     divComplex <- UI.div #+
         [grid 
             [ [row [UI.element cbxComplex]]
@@ -203,11 +225,23 @@ setup (xmlVec, xmlComplex) window = do
     --3d
     div3d <- UI.div
     --lsystem
-    divLsystem <- UI.div
+    divLsystem <- UI.div #+
+        [grid
+            [ [row [UI.element cbxLsystem]]
+            , [row [UI.element txtLsystem]]
+            , [row [UI.element btnLsystemPlot]]
+            , [row [UI.element canLsystem]]
+            , [row [UI.element txtLsystemTranscript]]
+            ]
+        ]
     --mrcm
     divMrcm <- UI.div
     --lambda
-    divLambda <- UI.div
+    divLambda <- UI.div #+
+        [grid 
+            [ [row [UI.element txtLambda]]
+            , [row [UI.element btnLambdaXform]]
+            , [row [UI.element txtLambdaOutput]]]]
     --combinator
     divCombinator <- UI.div
     --scratch
@@ -220,7 +254,8 @@ setup (xmlVec, xmlComplex) window = do
     getBody window #+ 
         [ UI.div #+ 
             [ UI.element btnScheme, UI.element btnVector, UI.element btnComplex, UI.element btnLsystem
-            , UI.element btn2d, UI.element btn3d, UI.element btnMrcm, UI.element btnLambda, UI.element btnCombinator, UI.element btnScratch]
+            , UI.element btn2d, UI.element btn3d, UI.element btnMrcm, UI.element btnLambda, UI.element btnCombinator
+            , UI.element btnScratch]
         , UI.element divScheme 
         , UI.element divVector
             # set UI.style [("display", "none")]
@@ -344,10 +379,24 @@ setup (xmlVec, xmlComplex) window = do
         let plotObj = fetchComplexPlot xmlComplex index
         UI.element txtComplex # set UI.text (show plotObj)
         UI.element txtComplexTranscript # set UI.text "under construction"
+
+    on UI.click cbxLsystem $ const $ do
+        index <- get UI.selection cbxLsystem
+        -- let plotObj = fetchLsystemPlot XmlLsystem index
+        -- UI.element txtLsystem # set UI.text (show plotObj)
+        -- UI.element txtLsystemTranscript # set UI.text "under construction"
+        undefined      
     
     on UI.click btnComplexPlot $ const $ do
-        UI.element txtComplexTranscript # set UI.text "hey"
+        UI.element txtComplexTranscript # set UI.text "not implemented yet"
+
+    on UI.click btnLsystemPlot $ const $ do
+        UI.element txtLsystemTranscript # set UI.text "not implemented yet"        
 
     on UI.click btnScratchTest $ const $ do
         txtInput <- get value txtScratch
         UI.element txtScratchOut # set UI.text txtInput
+
+    on UI.click btnLambdaXform $ const $ do
+        txtLambdaInput <- get value txtLambda
+        UI.element txtLambdaOutput # set UI.text txtLambdaInput        
